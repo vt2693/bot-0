@@ -20,22 +20,42 @@ else
   cd hermes-relay
 fi
 
-# Tokens file (only create if missing)
-if [ ! -f "$HOME/.hermes-tokens.env" ]; then
-  cat > "$HOME/.hermes-tokens.env" <<'EOF'
-# Fill values, then run: bash start_android.sh
-export SPACE_URL="https://vt2693-bot-0.hf.space"
-export TELEGRAM_BOT_TOKEN=""
-export BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
-export GROQ_API_KEY=""
-export NVIDIA_API_KEY=""
+# Prompt for tokens (always runs)
+echo ""
+echo "=== Hermes Relay Tokens ==="
+echo "(press Enter to keep existing value, or skip if blank)"
+echo ""
+
+# Load existing values if any
+if [ -f "$HOME/.hermes-tokens.env" ]; then
+  . "$HOME/.hermes-tokens.env"
+fi
+
+read -p "SPACE_URL [${SPACE_URL:-https://vt2693-bot-0.hf.space}]: " input
+SPACE_URL="${input:-${SPACE_URL:-https://vt2693-bot-0.hf.space}}"
+
+read -p "TELEGRAM_BOT_TOKEN [${TELEGRAM_BOT_TOKEN:-}]: " input
+TELEGRAM_BOT_TOKEN="${input:-$TELEGRAM_BOT_TOKEN}"
+
+BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
+
+read -p "GROQ_API_KEY [${GROQ_API_KEY:-}]: " input
+GROQ_API_KEY="${input:-$GROQ_API_KEY}"
+
+read -p "NVIDIA_API_KEY [${NVIDIA_API_KEY:-}]: " input
+NVIDIA_API_KEY="${input:-$NVIDIA_API_KEY}"
+
+cat > "$HOME/.hermes-tokens.env" <<EOF
+export SPACE_URL="${SPACE_URL}"
+export TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN}"
+export BOT_TOKEN="\${TELEGRAM_BOT_TOKEN}"
+export GROQ_API_KEY="${GROQ_API_KEY}"
+export NVIDIA_API_KEY="${NVIDIA_API_KEY}"
 export WORK_DIR="/sdcard/Download"
 export POLL_INTERVAL="3"
 EOF
-  chmod 600 "$HOME/.hermes-tokens.env"
-  echo "Created $HOME/.hermes-tokens.env — EDIT IT with your tokens."
-else
-  echo "$HOME/.hermes-tokens.env exists — keeping it."
-fi
+chmod 600 "$HOME/.hermes-tokens.env"
+echo "Saved $HOME/.hermes-tokens.env"
 
-echo "Done. cd ~/hermes-relay && nano ~/.hermes-tokens.env && bash start_android.sh"
+echo ""
+echo "Done. Run: bash start_android.sh"
