@@ -6,7 +6,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Install deps
 pkg update -y
 pkg install -y python ffmpeg tmux termux-api git
-python -m pip install --upgrade pip
 
 # Repo: git pull if exists, clone if not
 if [ -f "$SCRIPT_DIR/relay.py" ]; then
