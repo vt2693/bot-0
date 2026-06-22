@@ -1,0 +1,10 @@
+gradio>=5.5.0,<6.0.0
+fastapi>=0.115.0,<1.0.0
+uvicorn[standard]>=0.32.0,<1.0.0
+python-multipart>=0.0.12,<1.0.0
+openai>=1.0.0,<3.0.0
+httpx>=0.25.0,<1.0.0
+numpy>=1.24.0,<2.0.0
+hermes-agent~=0.16.0
+browser-use>=0.1.0,<1.0.0
+langchain-openai>=0.3.0,<1.0.0
