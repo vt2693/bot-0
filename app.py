@@ -159,7 +159,9 @@ def create_app() -> FastAPI:
         if not tg.configured:
             return JSONResponse({"ok": False, "error": "telegram not configured"})
         try:
-            tg.enqueue_update(await request.json())
+            import json
+            raw = (await request.body()).decode("utf-8")
+            tg.enqueue_update(json.loads(raw))
             return JSONResponse({"ok": True})
         except Exception as e:
             return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
