@@ -1,10 +1,9 @@
 #!/data/data/com.termux/files/usr/bin/bash
-set -e
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || cd ~/hermes-relay
 
 ENV_FILE="$HOME/.hermes-tokens.env"
 if [ ! -f "$ENV_FILE" ]; then
-  echo "Missing $ENV_FILE. Create it from .hermes-tokens.env.example."
+  echo "Missing $ENV_FILE. Run: setup_android.sh"
   exit 1
 fi
 . "$ENV_FILE"
