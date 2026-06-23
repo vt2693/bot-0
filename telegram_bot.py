@@ -4,6 +4,8 @@ import json
 import asyncio
 import logging
 import threading
+import urllib.request
+import urllib.error
 from typing import Callable
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,9 @@ class TelegramBot:
         self._start_time = time.time()
         self.configure_commands()
         self.enqueue_config("setWebhook", {"url": os.getenv("TELEGRAM_WEBHOOK_URL", os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space") + "/webhook/telegram"), "allowed_updates": ["message", "edited_message", "callback_query"]})
+        # Start direct-send fallback background task
+        t = asyncio.create_task(self._flush_outbox_direct_worker())
+        self._direct_flush_task = t
         return True
 
     def enqueue_config(self, method: str, payload: dict) -> None:
@@ -194,6 +199,54 @@ class TelegramBot:
     def _send_callback_answer(self, callback_query_id: str, text: str = "") -> None:
         with self._outbox_lock:
             self.outbox.append({"_method": "answerCallbackQuery", "callback_query_id": callback_query_id, "text": text})
+
+    # -- Direct-send fallback (supplements relay) -----------------------------
+
+    _TELEGRAM_PATHS = {
+        "sendMessage": "/sendMessage",
+        "editMessageText": "/editMessageText",
+        "answerCallbackQuery": "/answerCallbackQuery",
+        "setWebhook": "/setWebhook",
+        "setMyCommands": "/setMyCommands",
+        "setChatMenuButton": "/setChatMenuButton",
+    }
+
+    def _send_direct(self, msg: dict) -> bool:
+        """Try calling api.telegram.org directly. Returns True if sent.
+        Non-blocking -- call via asyncio.to_thread.
+        """
+        msg = dict(msg)
+        method = msg.pop("_method", "sendMessage")
+        path = self._TELEGRAM_PATHS.get(method, "/sendMessage")
+        try:
+            req = urllib.request.Request(
+                "https://api.telegram.org/bot" + self.token + path,
+                data=json.dumps(msg).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read().decode()).get("ok", False)
+        except Exception:
+            return False
+
+    async def _flush_outbox_direct_worker(self) -> None:
+        """Background: try to send outbox messages directly every 30s.
+        Supplements the relay -- if relay is down, this keeps the bot alive.
+        If relay is running, it finds an empty outbox and is a no-op.
+        Failed items stay in outbox for the relay to handle.
+        """
+        while self._initialized:
+            await asyncio.sleep(30)
+            items = await self.drain_outbox()
+            if not items:
+                continue
+            for msg in items:
+                ok = await asyncio.to_thread(self._send_direct, msg)
+                if not ok:
+                    with self._outbox_lock:
+                        self.outbox.append(msg)
+                    logger.debug("Direct send failed, re-enqueued for relay: %s", msg.get("_method", "sendMessage"))
 
     async def drain_outbox(self) -> list[dict]:
         with self._outbox_lock:
