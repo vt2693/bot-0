@@ -26,24 +26,33 @@ echo "=== Hermes Relay Tokens ==="
 echo "(press Enter to keep existing value, or skip if blank)"
 echo ""
 
-# Load existing values if any
+# Hardcoded defaults (script values always win over stale env file)
+DEFAULT_SPACE_URL="https://vt2693-bot-0.hf.space"
+DEFAULT_WORK_DIR="/sdcard/Download"
+DEFAULT_POLL="3"
+
+# Load existing values only for previously-entered secrets
+EXISTING_TG=""; EXISTING_GROQ=""; EXISTING_NVIDIA=""
 if [ -f "$HOME/.hermes-tokens.env" ]; then
   . "$HOME/.hermes-tokens.env"
+  EXISTING_TG="$TELEGRAM_BOT_TOKEN"
+  EXISTING_GROQ="$GROQ_API_KEY"
+  EXISTING_NVIDIA="$NVIDIA_API_KEY"
 fi
 
-read -p "SPACE_URL [${SPACE_URL:-https://vt2693-bot-0.hf.space}]: " input
-SPACE_URL="${input:-${SPACE_URL:-https://vt2693-bot-0.hf.space}}"
+read -p "SPACE_URL [$DEFAULT_SPACE_URL]: " input
+SPACE_URL="${input:-$DEFAULT_SPACE_URL}"
 
-read -p "TELEGRAM_BOT_TOKEN [${TELEGRAM_BOT_TOKEN:-}]: " input
-TELEGRAM_BOT_TOKEN="${input:-$TELEGRAM_BOT_TOKEN}"
+read -p "TELEGRAM_BOT_TOKEN [${EXISTING_TG:-}]: " input
+TELEGRAM_BOT_TOKEN="${input:-$EXISTING_TG}"
 
 BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
 
-read -p "GROQ_API_KEY [${GROQ_API_KEY:-}]: " input
-GROQ_API_KEY="${input:-$GROQ_API_KEY}"
+read -p "GROQ_API_KEY [${EXISTING_GROQ:-}]: " input
+GROQ_API_KEY="${input:-$EXISTING_GROQ}"
 
-read -p "NVIDIA_API_KEY [${NVIDIA_API_KEY:-}]: " input
-NVIDIA_API_KEY="${input:-$NVIDIA_API_KEY}"
+read -p "NVIDIA_API_KEY [${EXISTING_NVIDIA:-}]: " input
+NVIDIA_API_KEY="${input:-$EXISTING_NVIDIA}"
 
 cat > "$HOME/.hermes-tokens.env" <<EOF
 export SPACE_URL="${SPACE_URL}"
