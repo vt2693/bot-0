@@ -27,6 +27,7 @@ class Settings:
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     HF_TOKEN: Optional[str] = os.getenv("HF_TOKEN")
+    ROUTER_0_API_KEY: Optional[str] = os.getenv("ROUTER_0_API_KEY")
 
     OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
     OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
@@ -43,6 +44,8 @@ class Settings:
     ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
     HF_MODEL = os.getenv("HF_MODEL", "NousResearch/Hermes-3-Llama-3.1-8B")
     HF_BASE_URL = os.getenv("HF_BASE_URL", "https://api-inference.huggingface.co")
+    ROUTER_0_MODEL = os.getenv("ROUTER_0_MODEL", "deepseek-v4-flash-free")
+    ROUTER_0_BASE_URL = os.getenv("ROUTER_0_BASE_URL", "https://vt2693-router-0.hf.space/v1")
 
     COMPOSIO_CONSUMER_API_KEY: Optional[str] = os.getenv("COMPOSIO_CONSUMER_API_KEY")
     COMPOSIO_APPS = os.getenv("COMPOSIO_APPS", "")
@@ -65,7 +68,7 @@ class Settings:
     @property
     def provider_name(self) -> Optional[str]:
         override = os.getenv("PROVIDER", "").strip().lower()
-        valid = ("opencode_zen", "openrouter", "google", "nvidia", "groq", "openai", "anthropic", "huggingface")
+        valid = ("opencode_zen", "openrouter", "google", "nvidia", "groq", "openai", "anthropic", "huggingface", "router_0")
         if override in valid:
             return override
         if override:
@@ -86,6 +89,8 @@ class Settings:
             return "anthropic"
         if self.HF_TOKEN:
             return "huggingface"
+        if self.ROUTER_0_API_KEY:
+            return "router_0"
         return None
 
     @property

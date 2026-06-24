@@ -68,6 +68,7 @@ class BrowserTool:
             "nvidia": (self.settings.NVIDIA_MODEL, self.settings.NVIDIA_API_KEY, self.settings.NVIDIA_BASE_URL),
             "openai": (self.settings.OPENAI_MODEL, self.settings.OPENAI_API_KEY, self.settings.OPENAI_BASE_URL),
             "google": (self.settings.GOOGLE_MODEL, self.settings.GOOGLE_API_KEY, self.settings.GOOGLE_BASE_URL),
+            "router_0": (self.settings.ROUTER_0_MODEL, self.settings.ROUTER_0_API_KEY, self.settings.ROUTER_0_BASE_URL),
         }.get(p)
         if not cfg:
             raise RuntimeError(f"Browser LLM unsupported for {p}")
