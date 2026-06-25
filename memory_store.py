@@ -30,7 +30,7 @@ class MemoryStore:
         except ImportError:
             return
         token = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
-        space = os.getenv("SPACE_ID", "")
+        space = os.getenv("MEMORY_SPACE_ID", "") or os.getenv("SPACE_ID", "")
         if not token or "/" not in space:
             return
         try:
@@ -49,7 +49,7 @@ class MemoryStore:
         except ImportError:
             return
         token = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
-        space = os.getenv("SPACE_ID", "")
+        space = os.getenv("MEMORY_SPACE_ID", "") or os.getenv("SPACE_ID", "")
         if not token or "/" not in space:
             return
         import tempfile
