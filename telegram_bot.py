@@ -30,6 +30,8 @@ class TelegramBot:
         self._voice_queue: list[dict] = []
         self._voice_lock = threading.Lock()
         self._menu_msg_id: dict[int, int] = {}  # chat_id -> last menu message_id
+        self._sent_count = 0  # messages drained by outbox
+        self._sent_error = ""
 
     @property
     def configured(self) -> bool:
@@ -238,7 +240,9 @@ class TelegramBot:
         with self._outbox_lock:
             out = list(self.outbox)
             self.outbox.clear()
-            return out
+        if out:
+            self._sent_count += len(out)
+        return out
 
     def drain_voice_queue(self) -> list[dict]:
         with self._voice_lock:
@@ -256,7 +260,7 @@ class TelegramBot:
             o = len(self.outbox)
         with self._voice_lock:
             v = len(self._voice_queue)
-        return {"configured": self.configured, "initialized": self._initialized, "uptime_seconds": round(time.time() - self._start_time, 2) if self._start_time else 0, "queue_size": q, "outbox_size": o, "voice_queue": v, "queue_processed": self._queue_processed, "queue_error": self._queue_error, "active_chats": len(self._chat_history)}
+        return {"configured": self.configured, "initialized": self._initialized, "uptime_seconds": round(time.time() - self._start_time, 2) if self._start_time else 0, "queue_size": q, "outbox_size": o, "voice_queue": v, "queue_processed": self._queue_processed, "queue_error": self._queue_error, "active_chats": len(self._chat_history), "sent_count": self._sent_count, "sent_error": self._sent_error}
 
 
 # -- Inline Menu Definition ------------------------------------------------

@@ -10,6 +10,7 @@ SPACE_URL = os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space").rstrip("/")
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", "")
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "3"))
 MAX_RETRIES = 3
+POLL_TIMEOUT = int(os.getenv("POLL_TIMEOUT", "25"))  # must cover HF cold-boot
 
 TELEGRAM_METHODS = {
     "sendMessage": "/sendMessage",
@@ -58,12 +59,27 @@ def send_telegram(msg: dict, retry: int = 0) -> bool:
 
 
 def poll_outbox() -> list[dict]:
-    try:
-        with urllib.request.urlopen(f"{SPACE_URL}/api/tg_outbox", timeout=30) as resp:
-            return json.loads(resp.read().decode()).get("messages", [])
-    except Exception as e:
-        print(f"poll failed: {e}")
-        return []
+    """Poll with backoff for transient errors (HF cold-boot 503, etc.).
+
+    HF Space free tier cold-boots after ~15 min idle and takes 15-60s.
+    We retry up to ~90s before giving up.
+    """
+    for attempt in range(6):
+        try:
+            with urllib.request.urlopen(f"{SPACE_URL}/api/tg_outbox", timeout=POLL_TIMEOUT) as resp:
+                return json.loads(resp.read().decode()).get("messages", [])
+        except urllib.error.HTTPError as e:
+            if e.code == 503 and attempt < 5:
+                wait = (2 ** attempt) * 3
+                print(f"poll 503 (cold boot?) attempt {attempt+1}, retry in {wait}s...")
+                time.sleep(wait)
+                continue
+            print(f"poll HTTP {e.code}: {e.read().decode(errors='replace')[:200]}")
+            return []
+        except Exception as e:
+            print(f"poll failed: {e}")
+            return []
+    return []
 
 
 def main() -> None:
