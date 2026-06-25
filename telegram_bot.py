@@ -121,6 +121,7 @@ class TelegramBot:
             self._chat_history.pop(str(chat_id), None)
             self._send_message(chat_id, "Hello -- Hermes Agent online. Send text or voice. Use /menu for the interactive menu.")
         elif cmd == "/menu":
+            self._menu_msg_id.pop(chat_id, None)  # fresh send, never edit
             await self._show_menu(chat_id, "main")
         elif cmd == "/help":
             self._send_message(chat_id, "/start /menu /model /secrets /restart. Ask normally to chat.")
