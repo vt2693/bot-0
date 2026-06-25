@@ -242,7 +242,13 @@ class TelegramBot:
             self.outbox.clear()
         if out:
             self._sent_count += len(out)
+            logger.info("Outbox drained %d items: %s", len(out), [m.get("_method") for m in out[:5]])
         return out
+
+    async def peek_outbox(self) -> list[dict]:
+        """Return outbox items without draining (for diagnostics)."""
+        with self._outbox_lock:
+            return list(self.outbox)
 
     def drain_voice_queue(self) -> list[dict]:
         with self._voice_lock:

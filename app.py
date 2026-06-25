@@ -183,6 +183,10 @@ def create_app() -> FastAPI:
     async def tg_outbox():
         return {"messages": await get_telegram_bot().drain_outbox()}
 
+    @app.get("/api/tg_peek")
+    async def tg_peek():
+        return {"messages": await get_telegram_bot().peek_outbox()}
+
     @app.post("/api/tg_reconfigure")
     async def tg_reconfigure():
         tg = get_telegram_bot()
