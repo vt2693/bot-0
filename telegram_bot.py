@@ -41,8 +41,12 @@ class TelegramBot:
         self._initialized = True
         self._start_time = time.time()
         self.configure_commands()
-        self.enqueue_config("setWebhook", {"url": os.getenv("TELEGRAM_WEBHOOK_URL", os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space") + "/webhook/telegram"), "allowed_updates": ["message", "edited_message", "callback_query"]})
+        self.enqueue_webhook()
         return True
+
+    def enqueue_webhook(self) -> None:
+        """Re-enqueue webhook config (callable from /reconfigure)."""
+        self.enqueue_config("setWebhook", {"url": os.getenv("TELEGRAM_WEBHOOK_URL", os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space") + "/webhook/telegram"), "allowed_updates": ["message", "edited_message", "callback_query"]})
 
     def enqueue_config(self, method: str, payload: dict) -> None:
         item = {"_method": method, **payload}
@@ -58,6 +62,7 @@ class TelegramBot:
             {"command": "improve", "description": "Extract skills from conversation"},
             {"command": "secrets", "description": "Configured providers"},
             {"command": "restart", "description": "Restart instructions"},
+            {"command": "reconfigure", "description": "Re-enqueue webhook"},
         ]
         self.enqueue_config("setMyCommands", {"commands": cmds})
         self.enqueue_config("setChatMenuButton", {"menu_button": {"type": "commands"}})
@@ -132,6 +137,10 @@ class TelegramBot:
             self._send_message(chat_id, "Provider: " + s.get("provider", "?") + "\nComposio: " + str(bool(getattr(self.bridge, "_composio", None))) + "\nBrowser: " + str(s.get("browser")))
         elif cmd == "/restart":
             self._send_message(chat_id, "Restart Space from Hugging Face UI -> Settings -> Restart Space.")
+        elif cmd in ("/reconfigure", "/reconfig"):
+            self.enqueue_webhook()
+            self.configure_commands()
+            self._send_message(chat_id, "Webhook + commands re-enqueued for relay.")
 
     async def _handle_message(self, chat_id: int, text: str) -> None:
         key = str(chat_id)
