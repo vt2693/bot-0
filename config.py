@@ -15,6 +15,7 @@ class Settings:
     PORT = int(os.getenv("PORT", "7860"))
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     SPACE_URL = os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space")
+    SPACE_ID = os.getenv("SPACE_ID", "")
 
     TELEGRAM_BOT_TOKEN: Optional[str] = os.getenv("TELEGRAM_BOT_TOKEN")
     TELEGRAM_ALLOWED_USERS = os.getenv("TELEGRAM_ALLOWED_USERS", "")

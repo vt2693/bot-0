@@ -132,6 +132,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await tg.initialize_async()
         t = asyncio.create_task(tg.process_queue_worker())
         t.add_done_callback(_task_done); _background_tasks.add(t)
+
+    # Periodic memory backup to HF Hub (survives restarts)
+    async def _periodic_memory_backup():
+        while True:
+            await asyncio.sleep(120)
+            try:
+                store = get_memory_store()
+                if store.status()["fact_count"] > 0:
+                    store.sync()
+            except Exception as e:
+                logger.error("Memory backup periodic: %s", e)
+    bt = asyncio.create_task(_periodic_memory_backup())
+    bt.add_done_callback(_task_done); _background_tasks.add(bt)
     yield
     await get_composio().close()
     await tg.stop()

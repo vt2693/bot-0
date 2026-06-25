@@ -1,8 +1,13 @@
 import json
 import time
+import os
 import sqlite3
+import logging
 import threading
 from typing import Optional
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryStore:
@@ -11,11 +16,63 @@ class MemoryStore:
         self._lock = threading.Lock()
         self._ready = False
         self._conn: Optional[sqlite3.Connection] = None
+        self._restore_backup()
         self._init_db()
 
     @property
     def ready(self) -> bool:
         return self._ready
+
+    def _restore_backup(self) -> None:
+        """Download backup from HF Hub before opening DB."""
+        try:
+            from huggingface_hub import hf_hub_download
+        except ImportError:
+            return
+        token = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
+        space = os.getenv("SPACE_ID", "")
+        if not token or "/" not in space:
+            return
+        try:
+            path = hf_hub_download(repo_id=space, repo_type="space", filename="data/memory.db", token=token)
+            if path and Path(path).stat().st_size > 0:
+                import shutil
+                shutil.copy2(path, self.db_path)
+                logger.info("Memory: restored %d bytes from %s/data/memory.db", Path(path).stat().st_size, space)
+        except Exception:
+            logger.info("Memory: no backup found at %s/data/memory.db", space)
+
+    def _backup_to_hub(self) -> None:
+        """VACUUM INTO temp file, upload to HF Hub."""
+        try:
+            from huggingface_hub import HfApi
+        except ImportError:
+            return
+        token = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
+        space = os.getenv("SPACE_ID", "")
+        if not token or "/" not in space:
+            return
+        import tempfile
+        tmpname = tempfile.mktemp(suffix=".db")
+        try:
+            with self._lock:
+                self._conn.execute(f"VACUUM INTO '{tmpname}'")
+            api = HfApi()
+            api.upload_file(
+                path_or_fileobj=tmpname,
+                path_in_repo="data/memory.db",
+                repo_id=space,
+                repo_type="space",
+                token=token,
+            )
+            logger.info("Memory: backed up %d bytes to %s/data/memory.db", Path(tmpname).stat().st_size, space)
+        except Exception as e:
+            logger.error("Memory backup failed: %s", e)
+        finally:
+            try:
+                os.unlink(tmpname)
+            except Exception:
+                pass
 
     def _init_db(self) -> None:
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -142,6 +199,11 @@ class MemoryStore:
 
     def close(self) -> None:
         if self._conn:
+            self._backup_to_hub()
             self._conn.close()
             self._conn = None
             self._ready = False
+
+    def sync(self) -> None:
+        """Explicit backup call (e.g. from a periodic timer)."""
+        self._backup_to_hub()
