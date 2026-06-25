@@ -54,6 +54,7 @@ class TelegramBot:
         item = {"_method": method, **payload}
         with self._outbox_lock:
             self.outbox.append(item)
+        self._flush_event.set()
 
     def configure_commands(self) -> None:
         cmds = [
