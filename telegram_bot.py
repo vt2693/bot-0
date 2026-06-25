@@ -30,9 +30,6 @@ class TelegramBot:
         self._voice_queue: list[dict] = []
         self._voice_lock = threading.Lock()
         self._menu_msg_id: dict[int, int] = {}  # chat_id -> last menu message_id
-        self._direct_sent = 0
-        self._direct_failed = 0
-        self._flush_event = asyncio.Event()
 
     @property
     def configured(self) -> bool:
@@ -45,16 +42,12 @@ class TelegramBot:
         self._start_time = time.time()
         self.configure_commands()
         self.enqueue_config("setWebhook", {"url": os.getenv("TELEGRAM_WEBHOOK_URL", os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space") + "/webhook/telegram"), "allowed_updates": ["message", "edited_message", "callback_query"]})
-        # Start direct-send fallback background task
-        t = asyncio.create_task(self._flush_outbox_direct_worker())
-        self._direct_flush_task = t
         return True
 
     def enqueue_config(self, method: str, payload: dict) -> None:
         item = {"_method": method, **payload}
         with self._outbox_lock:
             self.outbox.append(item)
-        self._flush_event.set()
 
     def configure_commands(self) -> None:
         cmds = [
@@ -158,7 +151,6 @@ class TelegramBot:
             entry["reply_markup"] = reply_markup
         with self._outbox_lock:
             self.outbox.append(entry)
-        self._flush_event.set()
 
     async def _show_menu(self, chat_id: int, menu_name: str) -> None:
         """Send or edit a menu message. Edits existing menu if one was sent before."""
@@ -200,14 +192,12 @@ class TelegramBot:
     def _send_message(self, chat_id: int, text: str, **extra) -> None:
         with self._outbox_lock:
             self.outbox.append({"_method": "sendMessage", "chat_id": chat_id, "text": (text or "")[:4096], **extra})
-        self._flush_event.set()
 
     def _send_callback_answer(self, callback_query_id: str, text: str = "") -> None:
         with self._outbox_lock:
             self.outbox.append({"_method": "answerCallbackQuery", "callback_query_id": callback_query_id, "text": text})
-        self._flush_event.set()
 
-    # -- Direct-send fallback (supplements relay) -----------------------------
+    # -- Direct-send emergency fallback (manual only, not auto-started) ----
 
     _TELEGRAM_PATHS = {
         "sendMessage": "/sendMessage",
@@ -219,9 +209,7 @@ class TelegramBot:
     }
 
     def _send_direct(self, msg: dict) -> bool:
-        """Try calling api.telegram.org directly. Returns True if sent.
-        Non-blocking -- call via asyncio.to_thread.
-        """
+        """Try calling api.telegram.org directly. Returns True if sent."""
         msg = dict(msg)
         method = msg.pop("_method", "sendMessage")
         path = self._TELEGRAM_PATHS.get(method, "/sendMessage")
@@ -236,27 +224,6 @@ class TelegramBot:
                 return json.loads(resp.read().decode()).get("ok", False)
         except Exception:
             return False
-
-    async def _flush_outbox_direct_worker(self) -> None:
-        """Background: flush outbox immediately when signalled, with periodic retry."""
-        while self._initialized:
-            try:
-                await asyncio.wait_for(self._flush_event.wait(), timeout=120)
-            except asyncio.TimeoutError:
-                pass
-            self._flush_event.clear()
-            items = await self.drain_outbox()
-            if not items:
-                continue
-            for msg in items:
-                ok = await asyncio.to_thread(self._send_direct, msg)
-                if ok:
-                    self._direct_sent += 1
-                else:
-                    self._direct_failed += 1
-                    logger.warning("Direct send FAILED: %s — relay will retry", msg.get("_method", "sendMessage"))
-                    with self._outbox_lock:
-                        self.outbox.append(msg)
 
     async def drain_outbox(self) -> list[dict]:
         with self._outbox_lock:
@@ -280,7 +247,7 @@ class TelegramBot:
             o = len(self.outbox)
         with self._voice_lock:
             v = len(self._voice_queue)
-        return {"configured": self.configured, "initialized": self._initialized, "uptime_seconds": round(time.time() - self._start_time, 2) if self._start_time else 0, "queue_size": q, "outbox_size": o, "voice_queue": v, "queue_processed": self._queue_processed, "queue_error": self._queue_error, "active_chats": len(self._chat_history), "direct_sent": self._direct_sent, "direct_failed": self._direct_failed}
+        return {"configured": self.configured, "initialized": self._initialized, "uptime_seconds": round(time.time() - self._start_time, 2) if self._start_time else 0, "queue_size": q, "outbox_size": o, "voice_queue": v, "queue_processed": self._queue_processed, "queue_error": self._queue_error, "active_chats": len(self._chat_history)}
 
 
 # -- Inline Menu Definition ------------------------------------------------

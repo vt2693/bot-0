@@ -132,10 +132,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await tg.initialize_async()
         t = asyncio.create_task(tg.process_queue_worker())
         t.add_done_callback(_task_done); _background_tasks.add(t)
-        # Wire direct-send fallback task so it survives Gradio's lifespan GC
-        if hasattr(tg, "_direct_flush_task"):
-            _background_tasks.add(tg._direct_flush_task)
-            tg._direct_flush_task.add_done_callback(_task_done)
     yield
     await get_composio().close()
     await tg.stop()
