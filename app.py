@@ -14,7 +14,6 @@ from config import get_settings, Settings
 from healthcheck import run_healthcheck
 from memory_store import MemoryStore
 from composio_mcp import ComposioMCP
-from browser_tool import BrowserTool
 from hermes_bridge import HermesBridge
 from telegram_bot import TelegramBot
 
@@ -24,7 +23,6 @@ logger = logging.getLogger(__name__)
 _bridge = None
 _store = None
 _composio = None
-_browser = None
 _tg = None
 _background_tasks: set[asyncio.Task] = set()
 
@@ -66,17 +64,10 @@ def get_composio() -> ComposioMCP:
     return _composio
 
 
-def get_browser() -> BrowserTool:
-    global _browser
-    if _browser is None:
-        _browser = BrowserTool(get_settings())
-    return _browser
-
-
 def get_bridge() -> HermesBridge:
     global _bridge
     if _bridge is None:
-        _bridge = HermesBridge(get_settings(), composio=get_composio(), browser=get_browser())
+        _bridge = HermesBridge(get_settings(), composio=get_composio())
         _bridge.memory_store = get_memory_store()
     return _bridge
 
@@ -125,8 +116,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if get_composio().configured:
         t = asyncio.create_task(get_composio().initialize_async())
         t.add_done_callback(_task_done); _background_tasks.add(t)
-    t = asyncio.create_task(get_browser().initialize_async())
-    t.add_done_callback(_task_done); _background_tasks.add(t)
     tg = get_telegram_bot()
     if tg.configured:
         await tg.initialize_async()
@@ -166,7 +155,6 @@ def create_app() -> FastAPI:
         r["telegram"] = get_telegram_bot().status()
         r["memory"] = get_memory_store().status()
         r["composio"] = get_composio().status()
-        r["browser"] = get_browser().status()
         return r
 
     @app.post("/webhook/telegram")
@@ -189,20 +177,6 @@ def create_app() -> FastAPI:
     @app.get("/api/tg_peek")
     async def tg_peek():
         return {"messages": await get_telegram_bot().peek_outbox()}
-
-    @app.get("/api/debug")
-    async def debug():
-        import subprocess
-        r = subprocess.run(["git", "log", "--oneline", "-5"], cwd="/app", capture_output=True, timeout=10, text=True)
-        r2 = subprocess.run(["git", "status", "--short", "data/"], cwd="/app", capture_output=True, timeout=10, text=True)
-        db = Path("/app/data/memory.db")
-        return {
-            "git_log": r.stdout.strip(),
-            "git_status": r2.stdout.strip(),
-            "db_exists": db.exists(),
-            "db_bytes": db.stat().st_size if db.exists() else 0,
-            "facts": get_memory_store().stats()["total_facts"],
-        }
 
     @app.post("/api/tg_reconfigure")
     async def tg_reconfigure():

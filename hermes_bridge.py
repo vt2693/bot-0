@@ -10,10 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class HermesBridge:
-    def __init__(self, settings: Settings, composio=None, browser=None):
+    def __init__(self, settings: Settings, composio=None):
         self.settings = settings
         self._composio = composio
-        self._browser = browser
         self._ready = False
         self._error = ""
         self._provider = settings.provider_name or "none"
@@ -89,12 +88,9 @@ class HermesBridge:
         return msgs
 
     def _get_tools(self) -> list[dict]:
-        tools = []
         if self._composio and self._composio.status().get("ready"):
-            tools.extend(self._composio.get_openai_tools())
-        if self._browser and self._browser.ready:
-            tools.extend(self._browser.get_openai_tools())
-        return tools
+            return self._composio.get_openai_tools()
+        return []
 
     def chat(self, message: str, history: list | None = None, memory_context: str | None = None) -> str:
         if not self._ready:
@@ -132,12 +128,6 @@ class HermesBridge:
     def _execute_tool(self, name: str, args: dict) -> str:
         import asyncio
         try:
-            if self._browser and name == "browse_web":
-                loop = asyncio.new_event_loop()
-                try:
-                    return loop.run_until_complete(self._browser.execute_tool(name, args))
-                finally:
-                    loop.close()
             if self._composio:
                 loop = asyncio.new_event_loop()
                 try:
@@ -195,4 +185,4 @@ class HermesBridge:
         return self.chat(prompt, [])
 
     def status(self) -> dict:
-        return {"ready": self._ready, "error": self._error, "provider": self._provider, "model": self._model, "memory": self.memory_stats, "browser": self._browser.status() if self._browser else {}, "providers": self.available_providers()}
+        return {"ready": self._ready, "error": self._error, "provider": self._provider, "model": self._model, "memory": self.memory_stats, "providers": self.available_providers()}

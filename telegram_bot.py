@@ -137,7 +137,7 @@ class TelegramBot:
             self._send_message(chat_id, "Skills improvement not yet implemented for this deployment.")
         elif cmd == "/secrets":
             s = self.bridge.status() if self.bridge else {}
-            self._send_message(chat_id, "Provider: " + s.get("provider", "?") + "\nComposio: " + str(bool(getattr(self.bridge, "_composio", None))) + "\nBrowser: " + str(s.get("browser")))
+            self._send_message(chat_id, "Provider: " + s.get("provider", "?") + "\nComposio: " + str(bool(getattr(self.bridge, "_composio", None))) + "\nFirecrawl: via Composio")
         elif cmd == "/restart":
             self._send_message(chat_id, "Restart Space from Hugging Face UI -> Settings -> Restart Space.")
         elif cmd in ("/reconfigure", "/reconfig"):
@@ -284,9 +284,9 @@ MENUS = {
         ],
     },
     "web": {
-        "text": "Web Tools\n\nBrowse URLs or check browser status.",
+        "text": "Web Tools\n\nScrape, crawl, and search via Firecrawl (Composio).",
         "buttons": [
-            [{"text": "Browser Status", "callback_data": "ac:web_status"}],
+            [{"text": "Web Status", "callback_data": "ac:web_status"}],
             [{"text": "Back", "callback_data": "mn:main"}],
         ],
     },
@@ -331,12 +331,12 @@ MENUS = {
 # -- Action Handlers -------------------------------------------------------
 
 async def _action_web_status(bot: TelegramBot, chat_id: int) -> None:
-    browser = getattr(bot.bridge, "_browser", None) if bot.bridge else None
-    if not browser:
-        bot._send_message(chat_id, "Browser not available (no cpu-upgrade tier).")
+    composio = getattr(bot.bridge, "_composio", None) if bot.bridge else None
+    if not composio:
+        bot._send_message(chat_id, "Web tools (Firecrawl) not available — Composio not configured.")
         return
-    s = browser.status()
-    bot._send_message(chat_id, "Browser Status\n\nReady: " + str(s.get("ready", False)) + "\nError: " + str(s.get("error", "none")))
+    s = composio.status()
+    bot._send_message(chat_id, "Web Tools (Firecrawl via Composio)\n\nReady: " + str(s.get("ready", False)) + "\nTools: " + str(s.get("tool_count", 0)) + "\nError: " + str(s.get("error", "none")))
 
 
 async def _action_memory_view(bot: TelegramBot, chat_id: int) -> None:
