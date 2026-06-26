@@ -34,11 +34,20 @@ class MemoryStore:
         return t
 
     def _restore_backup(self) -> None:
-        """Download backup from HF Hub before opening DB."""
+        """Restore memory.db from repo (checked-out or fetched from Hub)."""
+        # First check if data/memory.db is already in the repo checkout
+        repo_root = Path(os.getenv("APP_DIR", "/app"))
+        local_backup = repo_root / "data" / "memory.db"
+        if local_backup.exists() and local_backup.stat().st_size > 0:
+            import shutil
+            shutil.copy2(str(local_backup), self.db_path)
+            logger.info("Memory: restored %d bytes from local git checkout", local_backup.stat().st_size)
+            return
+        # Fallback: try pulling from HF Hub
         token = self._hf_token()
         space = self._space_id()
         if not token or "/" not in space:
-            logger.info("Memory: no HF_TOKEN or MEMORY_SPACE_ID, skipping restore")
+            logger.info("Memory: no token/space for remote restore")
             return
         try:
             from huggingface_hub import hf_hub_download
@@ -46,43 +55,49 @@ class MemoryStore:
             if path and Path(path).stat().st_size > 0:
                 import shutil
                 shutil.copy2(path, self.db_path)
-                logger.info("Memory: restored %d bytes from %s/data/memory.db", Path(path).stat().st_size, space)
+                logger.info("Memory: restored %d bytes from HF Hub", Path(path).stat().st_size)
         except Exception:
-            logger.info("Memory: no backup found at %s/data/memory.db", space)
+            logger.info("Memory: no remote backup found")
 
     def _backup_to_hub(self) -> None:
-        """VACUUM INTO temp file, upload to HF Hub."""
+        """Commit memory.db to repo via git (more reliable than HfApi)."""
         token = self._hf_token()
         space = self._space_id()
         if not token or "/" not in space:
             logger.info("Memory: no HF_TOKEN or MEMORY_SPACE_ID, skipping backup")
             return
         try:
-            from huggingface_hub import HfApi
-        except ImportError:
-            logger.warning("Memory: huggingface_hub not installed, skipping backup")
-            return
-        import tempfile
-        tmpname = tempfile.mktemp(suffix=".db")
-        try:
-            with self._lock:
-                self._conn.execute(f"VACUUM INTO '{tmpname}'")
-            api = HfApi()
-            api.upload_file(
-                path_or_fileobj=tmpname,
-                path_in_repo="data/memory.db",
-                repo_id=space,
-                repo_type="space",
-                token=token,
-            )
-            logger.info("Memory: backed up %d bytes to %s/data/memory.db", Path(tmpname).stat().st_size, space)
+            db = Path(self.db_path)
+            if not db.exists() or db.stat().st_size == 0:
+                return
+            repo_root = Path(os.getenv("APP_DIR", "/app"))
+            dest = repo_root / "data" / "memory.db"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            import shutil, subprocess
+            # VACUUM INTO temp file first, then copy to repo
+            import tempfile
+            tmpname = tempfile.mktemp(suffix=".db")
+            try:
+                with self._lock:
+                    self._conn.execute(f"VACUUM INTO '{tmpname}'")
+                shutil.copy2(tmpname, str(dest))
+            finally:
+                try:
+                    os.unlink(tmpname)
+                except Exception:
+                    pass
+            subprocess.run(["git", "config", "user.email", "bot@hf.space"], cwd=str(repo_root), capture_output=True, timeout=10)
+            subprocess.run(["git", "config", "user.name", "Hermes Bot"], cwd=str(repo_root), capture_output=True, timeout=10)
+            subprocess.run(["git", "add", "data/memory.db"], cwd=str(repo_root), capture_output=True, timeout=15)
+            r = subprocess.run(["git", "commit", "-m", "memory backup"], cwd=str(repo_root), capture_output=True, timeout=15, text=True)
+            if r.returncode == 0 and "nothing to commit" not in r.stdout and "no changes" not in r.stderr:
+                remote = f"https://user:{token}@huggingface.co/spaces/{space}"
+                subprocess.run(["git", "push", remote, "main"], cwd=str(repo_root), capture_output=True, timeout=30)
+                logger.info("Memory: backed up %d bytes via git", db.stat().st_size)
+            else:
+                logger.info("Memory: backup skipped (%s)", r.stdout.strip()[:80] if r.stdout else "no changes")
         except Exception as e:
             logger.error("Memory backup failed: %s", e)
-        finally:
-            try:
-                os.unlink(tmpname)
-            except Exception:
-                pass
 
     def _init_db(self) -> None:
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -126,10 +141,7 @@ class MemoryStore:
             self._conn.commit()
             rowid = int(cur.lastrowid)
         # Backup immediately so facts survive crash/git push restarts
-        try:
-            self._backup_to_hub()
-        except Exception:
-            pass
+        self._backup_to_hub()
         return rowid
 
     def search(self, query: str, scope: str | None = "global", limit: int = 5) -> list[dict]:
