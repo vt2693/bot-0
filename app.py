@@ -164,11 +164,6 @@ def create_app() -> FastAPI:
         r["memory"] = get_memory_store().status()
         r["composio"] = get_composio().status()
         r["browser"] = get_browser().status()
-        r["env_debug"] = {
-            "PROVIDER": os.getenv("PROVIDER", "(unset)"),
-            "ROUTER_0_API_KEY_SET": "yes" if os.getenv("ROUTER_0_API_KEY") else "no",
-            "OPENCODE_ZEN_API_KEY_SET": "yes" if os.getenv("OPENCODE_ZEN_API_KEY") else "no",
-        }
         return r
 
     @app.post("/webhook/telegram")
