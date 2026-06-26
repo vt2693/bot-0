@@ -32,37 +32,43 @@ class MemoryStore:
         return os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
 
     def _restore_backup(self) -> None:
-        """Restore memory.db from local checkout (DATA_DIR=/app/data is inside git repo)."""
-        dbp = Path(self.db_path)
-        if dbp.exists() and dbp.stat().st_size > 0:
-            logger.info("Memory: existing db %s (%d bytes)", dbp, dbp.stat().st_size)
-            return
-        # Backup committed by git will be in the checkout after clone
-        try:
-            data_path = Path("/app/data/memory.db")
-            if data_path.exists() and data_path.stat().st_size > 0:
-                import shutil
-                shutil.copy2(str(data_path), str(dbp))
-                logger.info("Memory: restored %d bytes from /app/data/memory.db", data_path.stat().st_size)
-        except Exception:
-            logger.info("Memory: no backup to restore")
+        """Restore memory.db — try /app/data/memory.db (git-tracked) first, then live path."""
+        import shutil
+        for src in [Path("/app/data/memory.db"), Path(self.db_path)]:
+            try:
+                if src.exists() and src.stat().st_size > 0:
+                    if str(src) != self.db_path:
+                        shutil.copy2(str(src), self.db_path)
+                    logger.info("Memory: restored %d bytes from %s", src.stat().st_size, src)
+                    return
+            except Exception:
+                pass
+        logger.info("Memory: no backup to restore")
 
     def _backup_to_hub(self) -> None:
-        """Git commit+push memory.db (DATA_DIR=/app/data is in repo, so git tracks it)."""
+        """Git commit+push memory.db — saves to /app/data/ so git tracks it."""
         try:
             db = Path(self.db_path)
             if not db.exists() or db.stat().st_size == 0:
                 return
-            # VACUUM INTO temp, then write to the git-tracked path
             import tempfile, subprocess, shutil
+            # VACUUM INTO temp
             tmpname = tempfile.mktemp(suffix=".db")
             try:
                 with self._lock:
                     self._conn.execute(f"VACUUM INTO '{tmpname}'")
-                shutil.copy2(tmpname, str(db))
-            finally:
-                try: os.unlink(tmpname)
-                except: pass
+            except: pass
+            # Copy to live path
+            try: shutil.copy2(tmpname, str(db))
+            except: pass
+            # Copy to git-tracked path (app repo)
+            git_path = Path("/app/data/memory.db")
+            git_path.parent.mkdir(parents=True, exist_ok=True)
+            try: shutil.copy2(tmpname, str(git_path))
+            except: pass
+            try: os.unlink(tmpname)
+            except: pass
+            # Git add + commit + push
             repo = Path("/app")
             subprocess.run(["git", "config", "user.email", "bot@hf.space"], cwd=str(repo), capture_output=True, timeout=10)
             subprocess.run(["git", "config", "user.name", "Hermes Bot"], cwd=str(repo), capture_output=True, timeout=10)
