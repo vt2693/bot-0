@@ -29,75 +29,54 @@ class MemoryStore:
 
     @staticmethod
     def _hf_token() -> str:
-        t = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
-        logger.info("Memory: HF_TOKEN %s", "SET" if t else "NOT SET")
-        return t
+        return os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
 
     def _restore_backup(self) -> None:
-        """Restore memory.db from HF Hub (raw download — no huggingface_hub dependency)."""
-        token = self._hf_token()
-        space = self._space_id()
-        if not token or "/" not in space:
-            logger.info("Memory: no HF_TOKEN/space, skipping restore")
+        """Restore memory.db from local checkout (DATA_DIR=/app/data is inside git repo)."""
+        dbp = Path(self.db_path)
+        if dbp.exists() and dbp.stat().st_size > 0:
+            logger.info("Memory: existing db %s (%d bytes)", dbp, dbp.stat().st_size)
             return
-        # Try raw URL download — works for any space regardless of huggingface_hub version
+        # Backup committed by git will be in the checkout after clone
         try:
-            import urllib.request
-            url = f"https://huggingface.co/spaces/{space}/raw/main/data/memory.db"
-            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                data = resp.read()
-            if len(data) > 0:
-                with open(self.db_path, "wb") as f:
-                    f.write(data)
-                logger.info("Memory: restored %d bytes from %s/data/memory.db", len(data), space)
-                return
-        except Exception as e:
-            logger.info("Memory: remote restore failed: %s", e)
-        # Fallback: check local git checkout
-        try:
-            repo_root = Path(os.getenv("APP_DIR", "/app"))
-            local_backup = repo_root / "data" / "memory.db"
-            if local_backup.exists() and local_backup.stat().st_size > 0:
+            data_path = Path("/app/data/memory.db")
+            if data_path.exists() and data_path.stat().st_size > 0:
                 import shutil
-                shutil.copy2(str(local_backup), self.db_path)
-                logger.info("Memory: restored %d bytes from local git checkout", local_backup.stat().st_size)
+                shutil.copy2(str(data_path), str(dbp))
+                logger.info("Memory: restored %d bytes from /app/data/memory.db", data_path.stat().st_size)
         except Exception:
-            logger.info("Memory: no local backup found")
+            logger.info("Memory: no backup to restore")
 
     def _backup_to_hub(self) -> None:
-        """Push memory.db to HF Hub repo via raw HTTP PUT."""
-        token = self._hf_token()
-        space = self._space_id()
-        if not token or "/" not in space:
-            logger.info("Memory: no HF_TOKEN/space, skipping backup")
-            return
+        """Git commit+push memory.db (DATA_DIR=/app/data is in repo, so git tracks it)."""
         try:
             db = Path(self.db_path)
             if not db.exists() or db.stat().st_size == 0:
                 return
-            # VACUUM INTO temp for a consistent snapshot
-            import tempfile, urllib.request
+            # VACUUM INTO temp, then write to the git-tracked path
+            import tempfile, subprocess, shutil
             tmpname = tempfile.mktemp(suffix=".db")
             try:
                 with self._lock:
                     self._conn.execute(f"VACUUM INTO '{tmpname}'")
-                # Read the temp file
-                with open(tmpname, "rb") as f:
-                    data = f.read()
+                shutil.copy2(tmpname, str(db))
             finally:
-                try:
-                    os.unlink(tmpname)
-                except Exception:
-                    pass
-            if len(data) == 0:
-                return
-            # Upload via raw API
-            url = f"https://huggingface.co/spaces/{space}/raw/main/data/memory.db"
-            import urllib.request
-            req = urllib.request.Request(url, data=data, headers={"Authorization": f"Bearer {token}", "Content-Type": "application/octet-stream"}, method="PUT")
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                logger.info("Memory: backed up %d bytes to %s/data/memory.db (HTTP %d)", len(data), space, resp.status)
+                try: os.unlink(tmpname)
+                except: pass
+            repo = Path("/app")
+            subprocess.run(["git", "config", "user.email", "bot@hf.space"], cwd=str(repo), capture_output=True, timeout=10)
+            subprocess.run(["git", "config", "user.name", "Hermes Bot"], cwd=str(repo), capture_output=True, timeout=10)
+            subprocess.run(["git", "add", "data/memory.db"], cwd=str(repo), capture_output=True, timeout=15)
+            r = subprocess.run(["git", "commit", "-m", "memory backup"], cwd=str(repo), capture_output=True, timeout=15, text=True)
+            if r.returncode == 0 and "nothing to commit" not in r.stdout and "no changes" not in r.stderr:
+                token = self._hf_token()
+                space = self._space_id()
+                if token and "/" in space:
+                    remote = f"https://user:{token}@huggingface.co/spaces/{space}"
+                    subprocess.run(["git", "push", remote, "main"], cwd=str(repo), capture_output=True, timeout=30)
+                logger.info("Memory: backed up %d bytes via git", db.stat().st_size)
+            else:
+                logger.info("Memory: backup skipped (%s)", (r.stdout or "").strip()[:80])
         except Exception as e:
             logger.error("Memory backup failed: %s", e)
 

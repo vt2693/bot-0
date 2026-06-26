@@ -57,7 +57,7 @@ class Settings:
 
     APP_DIR = Path("/app")
     LOG_DIR = APP_DIR / "logs"
-    DATA_DIR = Path(os.getenv("DATA_DIR", "/data/hermes"))
+    DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
     ASSETS_DIR = APP_DIR / "assets"
     HERMES_HOME = Path(os.getenv("HERMES_HOME", "/app/.hermes"))
     TEMP_DIR = Path(os.getenv("TEMP_DIR", "/tmp/app"))
