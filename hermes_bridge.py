@@ -148,12 +148,22 @@ class HermesBridge:
             return f"Tool {name} failed: {e}"
         return f"Unknown tool: {name}"
 
-    def _extract_facts(self, message: str, scope: str) -> None:
+    def _extract_facts(self, message: str, response: str, scope: str) -> None:
         if not self.memory_store or not self.settings.MEMORY_AUTO_EXTRACT:
             return
-        patterns = [r"(?:remember|save|store|note)\s+that\s+(.+?)(?:\.|$)", r"\bmy name is\s+(.+?)(?:\.|$)", r"\bi like\s+(.+?)(?:\.|$)", r"\bi work (?:at|for|as)\s+(.+?)(?:\.|$)"]
+        # Scan both user message and LLM response
+        text = message + "\n" + response
+        patterns = [
+            r"(?:remember|save|store|note)\s+(?:that\s+)?(.+?)(?:\.|$)",
+            r"\bmy name(?:\s+is)?\s+(.+?)(?:\.|$)",
+            r"\bi (?:like|love|enjoy|hate|dislike)\s+(.+?)(?:\.|$)",
+            r"\bi (?:work|study)(?:\s+at|\s+for|\s+as)?\s+(.+?)(?:\.|$)",
+            r"\bi live\s+(?:in|at|near)\s+(.+?)(?:\.|$)",
+            r"\bi (?:am|was)\s+(?:a\s+|an\s+)?(.+?)(?:\.|$)",
+            r"\bmy (?:email|phone|address|website)\s+(?:is\s+)?(.+?)(?:\.|$)",
+        ]
         for pat in patterns:
-            for m in re.findall(pat, message, re.I):
+            for m in re.findall(pat, text, re.I):
                 fact = m.strip()
                 if len(fact) > 2:
                     if not re.search(r"^(user|my|i )", fact, re.I):
@@ -174,7 +184,7 @@ class HermesBridge:
             else:
                 self._memory_stats["misses"] += 1
         response = self.chat(message, history or [], mem_block)
-        self._extract_facts(message, scope)
+        self._extract_facts(message, response, scope)
         return response
 
     def generate_minutes(self, transcript: str) -> str:
