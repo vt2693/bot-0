@@ -29,7 +29,9 @@ class MemoryStore:
 
     @staticmethod
     def _hf_token() -> str:
-        return os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
+        t = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
+        logger.info("Memory: HF_TOKEN %s", "SET" if t else "NOT SET")
+        return t
 
     def _restore_backup(self) -> None:
         """Download backup from HF Hub before opening DB."""
