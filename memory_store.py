@@ -54,21 +54,23 @@ class MemoryStore:
             except: pass
             try: os.unlink(tmpname)
             except: pass
-            # Git add + commit + push (db is /app/data/memory.db — git tracks it)
+            # Git add + commit + push
             repo = Path("/app")
             subprocess.run(["git", "config", "user.email", "bot@hf.space"], cwd=str(repo), capture_output=True, timeout=10)
             subprocess.run(["git", "config", "user.name", "Hermes Bot"], cwd=str(repo), capture_output=True, timeout=10)
             subprocess.run(["git", "add", "data/memory.db"], cwd=str(repo), capture_output=True, timeout=15)
             r = subprocess.run(["git", "commit", "-m", "memory backup"], cwd=str(repo), capture_output=True, timeout=15, text=True)
-            if r.returncode == 0 and "nothing to commit" not in r.stdout and "no changes" not in r.stderr:
+            out = (r.stdout or "") + (r.stderr or "")
+            if r.returncode == 0 and "nothing to commit" not in out and "no changes" not in out:
                 token = self._hf_token()
                 space = self._space_id()
                 if token and "/" in space:
                     remote = f"https://user:{token}@huggingface.co/spaces/{space}"
-                    subprocess.run(["git", "push", remote, "main"], cwd=str(repo), capture_output=True, timeout=30)
+                    p2 = subprocess.run(["git", "push", remote, "main"], cwd=str(repo), capture_output=True, timeout=30, text=True)
+                    logger.info("Memory: git push: %s", (p2.stdout + p2.stderr).strip()[:200])
                 logger.info("Memory: backed up %d bytes via git", db.stat().st_size)
             else:
-                logger.info("Memory: backup skipped (%s)", (r.stdout or "").strip()[:80])
+                logger.info("Memory: backup (%s)", out.strip()[:200])
         except Exception as e:
             logger.error("Memory backup failed: %s", e)
 
