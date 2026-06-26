@@ -27,7 +27,7 @@ USER appuser
 EXPOSE 7860
 ENV PYTHONUNBUFFERED=1
 ENV OMP_NUM_THREADS=1
-ENV DATA_DIR=/data/hermes
+ENV DATA_DIR=/app/data
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl --fail http://localhost:7860/health || exit 1
