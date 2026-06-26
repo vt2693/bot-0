@@ -148,7 +148,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
     await get_composio().close()
     await tg.stop()
-    get_memory_store().close()
+    store = get_memory_store()
+    if store.status()["fact_count"] > 0:
+        store.sync()
+    store.close()
 
 
 def create_app() -> FastAPI:

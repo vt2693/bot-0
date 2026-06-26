@@ -23,17 +23,23 @@ class MemoryStore:
     def ready(self) -> bool:
         return self._ready
 
+    @staticmethod
+    def _space_id() -> str:
+        return os.getenv("MEMORY_SPACE_ID", "") or os.getenv("SPACE_ID", "") or "vt2693/bot-0"
+
+    @staticmethod
+    def _hf_token() -> str:
+        return os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
+
     def _restore_backup(self) -> None:
         """Download backup from HF Hub before opening DB."""
+        token = self._hf_token()
+        space = self._space_id()
+        if not token or "/" not in space:
+            logger.info("Memory: no HF_TOKEN or MEMORY_SPACE_ID, skipping restore")
+            return
         try:
             from huggingface_hub import hf_hub_download
-        except ImportError:
-            return
-        token = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
-        space = os.getenv("MEMORY_SPACE_ID", "") or os.getenv("SPACE_ID", "")
-        if not token or "/" not in space:
-            return
-        try:
             path = hf_hub_download(repo_id=space, repo_type="space", filename="data/memory.db", token=token)
             if path and Path(path).stat().st_size > 0:
                 import shutil
@@ -44,13 +50,15 @@ class MemoryStore:
 
     def _backup_to_hub(self) -> None:
         """VACUUM INTO temp file, upload to HF Hub."""
+        token = self._hf_token()
+        space = self._space_id()
+        if not token or "/" not in space:
+            logger.info("Memory: no HF_TOKEN or MEMORY_SPACE_ID, skipping backup")
+            return
         try:
             from huggingface_hub import HfApi
         except ImportError:
-            return
-        token = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
-        space = os.getenv("MEMORY_SPACE_ID", "") or os.getenv("SPACE_ID", "")
-        if not token or "/" not in space:
+            logger.warning("Memory: huggingface_hub not installed, skipping backup")
             return
         import tempfile
         tmpname = tempfile.mktemp(suffix=".db")
@@ -114,7 +122,13 @@ class MemoryStore:
                 (scope or "global", content, json.dumps(metadata or {}), now, now),
             )
             self._conn.commit()
-            return int(cur.lastrowid)
+            rowid = int(cur.lastrowid)
+        # Backup immediately so facts survive crash/git push restarts
+        try:
+            self._backup_to_hub()
+        except Exception:
+            pass
+        return rowid
 
     def search(self, query: str, scope: str | None = "global", limit: int = 5) -> list[dict]:
         q = f"%{(query or '').strip()}%"
