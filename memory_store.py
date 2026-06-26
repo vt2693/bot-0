@@ -34,23 +34,26 @@ class MemoryStore:
         return t
 
     def _restore_backup(self) -> None:
-        """Restore memory.db from HF Hub."""
+        """Restore memory.db from HF Hub (raw download — no huggingface_hub dependency)."""
         token = self._hf_token()
         space = self._space_id()
         if not token or "/" not in space:
             logger.info("Memory: no HF_TOKEN/space, skipping restore")
             return
+        # Try raw URL download — works for any space regardless of huggingface_hub version
         try:
-            # Try pulling from Hub first — most reliable across rebuilds
-            from huggingface_hub import hf_hub_download
-            path = hf_hub_download(repo_id=space, repo_type="space", filename="data/memory.db", token=token)
-            if path and Path(path).stat().st_size > 0:
-                import shutil
-                shutil.copy2(path, self.db_path)
-                logger.info("Memory: restored %d bytes from HF Hub", Path(path).stat().st_size)
+            import urllib.request
+            url = f"https://huggingface.co/spaces/{space}/raw/main/data/memory.db"
+            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = resp.read()
+            if len(data) > 0:
+                with open(self.db_path, "wb") as f:
+                    f.write(data)
+                logger.info("Memory: restored %d bytes from %s/data/memory.db", len(data), space)
                 return
-        except Exception:
-            logger.info("Memory: HF Hub download failed")
+        except Exception as e:
+            logger.info("Memory: remote restore failed: %s", e)
         # Fallback: check local git checkout
         try:
             repo_root = Path(os.getenv("APP_DIR", "/app"))
@@ -61,46 +64,40 @@ class MemoryStore:
                 logger.info("Memory: restored %d bytes from local git checkout", local_backup.stat().st_size)
         except Exception:
             logger.info("Memory: no local backup found")
-        except Exception:
-            logger.info("Memory: no remote backup found")
 
     def _backup_to_hub(self) -> None:
-        """Commit memory.db to repo via git (more reliable than HfApi)."""
+        """Push memory.db to HF Hub repo via raw HTTP PUT."""
         token = self._hf_token()
         space = self._space_id()
         if not token or "/" not in space:
-            logger.info("Memory: no HF_TOKEN or MEMORY_SPACE_ID, skipping backup")
+            logger.info("Memory: no HF_TOKEN/space, skipping backup")
             return
         try:
             db = Path(self.db_path)
             if not db.exists() or db.stat().st_size == 0:
                 return
-            repo_root = Path(os.getenv("APP_DIR", "/app"))
-            dest = repo_root / "data" / "memory.db"
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            import shutil, subprocess
-            # VACUUM INTO temp file first, then copy to repo
-            import tempfile
+            # VACUUM INTO temp for a consistent snapshot
+            import tempfile, urllib.request
             tmpname = tempfile.mktemp(suffix=".db")
             try:
                 with self._lock:
                     self._conn.execute(f"VACUUM INTO '{tmpname}'")
-                shutil.copy2(tmpname, str(dest))
+                # Read the temp file
+                with open(tmpname, "rb") as f:
+                    data = f.read()
             finally:
                 try:
                     os.unlink(tmpname)
                 except Exception:
                     pass
-            subprocess.run(["git", "config", "user.email", "bot@hf.space"], cwd=str(repo_root), capture_output=True, timeout=10)
-            subprocess.run(["git", "config", "user.name", "Hermes Bot"], cwd=str(repo_root), capture_output=True, timeout=10)
-            subprocess.run(["git", "add", "data/memory.db"], cwd=str(repo_root), capture_output=True, timeout=15)
-            r = subprocess.run(["git", "commit", "-m", "memory backup"], cwd=str(repo_root), capture_output=True, timeout=15, text=True)
-            if r.returncode == 0 and "nothing to commit" not in r.stdout and "no changes" not in r.stderr:
-                remote = f"https://user:{token}@huggingface.co/spaces/{space}"
-                subprocess.run(["git", "push", remote, "main"], cwd=str(repo_root), capture_output=True, timeout=30)
-                logger.info("Memory: backed up %d bytes via git", db.stat().st_size)
-            else:
-                logger.info("Memory: backup skipped (%s)", r.stdout.strip()[:80] if r.stdout else "no changes")
+            if len(data) == 0:
+                return
+            # Upload via raw API
+            url = f"https://huggingface.co/spaces/{space}/raw/main/data/memory.db"
+            import urllib.request
+            req = urllib.request.Request(url, data=data, headers={"Authorization": f"Bearer {token}", "Content-Type": "application/octet-stream"}, method="PUT")
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                logger.info("Memory: backed up %d bytes to %s/data/memory.db (HTTP %d)", len(data), space, resp.status)
         except Exception as e:
             logger.error("Memory backup failed: %s", e)
 
