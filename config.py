@@ -45,7 +45,7 @@ class Settings:
     ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
     HF_MODEL = os.getenv("HF_MODEL", "NousResearch/Hermes-3-Llama-3.1-8B")
     HF_BASE_URL = os.getenv("HF_BASE_URL", "https://api-inference.huggingface.co")
-    ROUTER_0_MODEL = os.getenv("ROUTER_0_MODEL", "deepseek/deepseek-v4-flash")
+    ROUTER_0_MODEL = os.getenv("ROUTER_0_MODEL", "oc/deepseek-v4-flash-free")
     ROUTER_0_BASE_URL = os.getenv("ROUTER_0_BASE_URL", "https://vt2693-router-0.hf.space/v1")
 
     COMPOSIO_CONSUMER_API_KEY: Optional[str] = os.getenv("COMPOSIO_CONSUMER_API_KEY")
