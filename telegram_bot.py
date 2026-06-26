@@ -145,10 +145,31 @@ class TelegramBot:
             self.configure_commands()
             self._send_message(chat_id, "Webhook + commands re-enqueued for relay.")
 
+    def _enqueue_typing(self, chat_id: int) -> None:
+        with self._outbox_lock:
+            self.outbox.append({"_method": "sendChatAction", "chat_id": chat_id, "action": "typing"})
+
+    async def _typing_refresher(self, chat_id: int) -> None:
+        try:
+            while True:
+                await asyncio.sleep(3)
+                self._enqueue_typing(chat_id)
+        except asyncio.CancelledError:
+            pass
+
     async def _handle_message(self, chat_id: int, text: str) -> None:
         key = str(chat_id)
         hist = self._chat_history.get(key, [])
-        response = await asyncio.to_thread(self.bridge_chat, text, hist, key)
+        self._enqueue_typing(chat_id)
+        refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
+        try:
+            response = await asyncio.to_thread(self.bridge_chat, text, hist, key)
+        finally:
+            refresh_task.cancel()
+            try:
+                await refresh_task
+            except asyncio.CancelledError:
+                pass
         self._chat_history.setdefault(key, [])
         self._chat_history[key].extend([{"role": "user", "content": text}, {"role": "assistant", "content": response}])
         self._chat_history[key] = self._chat_history[key][-self._history_max:]

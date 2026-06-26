@@ -14,6 +14,7 @@ POLL_TIMEOUT = int(os.getenv("POLL_TIMEOUT", "25"))  # must cover HF cold-boot
 
 TELEGRAM_METHODS = {
     "sendMessage": "/sendMessage",
+    "sendChatAction": "/sendChatAction",
     "answerCallbackQuery": "/answerCallbackQuery",
     "editMessageText": "/editMessageText",
     "setMyCommands": "/setMyCommands",
