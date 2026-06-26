@@ -151,16 +151,19 @@ class HermesBridge:
     def _extract_facts(self, message: str, response: str, scope: str) -> None:
         if not self.memory_store or not self.settings.MEMORY_AUTO_EXTRACT:
             return
-        # Scan both user message and LLM response
-        text = message + "\n" + response
+        # Scan message and response separately so \n boundaries work correctly
+        for text in (message, response):
+            self._scan_for_facts(text, scope)
+
+    def _scan_for_facts(self, text: str, scope: str) -> None:
         patterns = [
-            r"(?:remember|save|store|note)\s+(?:that\s+)?(.+?)(?:\.|$)",
-            r"\bmy name(?:\s+is)?\s+(.+?)(?:\.|$)",
-            r"\bi (?:like|love|enjoy|hate|dislike)\s+(.+?)(?:\.|$)",
-            r"\bi (?:work|study)(?:\s+at|\s+for|\s+as)?\s+(.+?)(?:\.|$)",
-            r"\bi live\s+(?:in|at|near)\s+(.+?)(?:\.|$)",
-            r"\bi (?:am|was)\s+(?:a\s+|an\s+)?(.+?)(?:\.|$)",
-            r"\bmy (?:email|phone|address|website)\s+(?:is\s+)?(.+?)(?:\.|$)",
+            r"(?:remember|save|store|note)\s+(?:that\s+)?(.+?)(?:\.|$|\n)",
+            r"\bmy name(?:\s+is)?\s+(.+?)(?:\.|$|\n)",
+            r"\bi (?:like|love|enjoy|hate|dislike)\s+(.+?)(?:\.|$|\n)",
+            r"\bi (?:work|study)(?:\s+at|\s+for|\s+as)?\s+(.+?)(?:\.|$|\n)",
+            r"\bi live\s+(?:in|at|near)\s+(.+?)(?:\.|$|\n)",
+            r"\bi (?:am|was)\s+(?:a\s+|an\s+)?(.+?)(?:\.|$|\n)",
+            r"\bmy (?:email|phone|address|website)\s+(?:is\s+)?(.+?)(?:\.|$|\n)",
         ]
         for pat in patterns:
             for m in re.findall(pat, text, re.I):
