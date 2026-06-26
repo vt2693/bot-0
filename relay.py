@@ -8,7 +8,7 @@ import urllib.error
 
 SPACE_URL = os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space").rstrip("/")
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", "")
-POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "3"))
+POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1"))
 MAX_RETRIES = 3
 POLL_TIMEOUT = int(os.getenv("POLL_TIMEOUT", "25"))  # must cover HF cold-boot
 

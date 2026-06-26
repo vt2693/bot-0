@@ -18,7 +18,7 @@ Docker HF Space wrapper for `hermes-agent` with:
 - Android Termux relay scripts
 - SQLite memory in `/data/hermes`
 - Composio MCP client
-- browser-use/Chromium web tool
+- Firecrawl scrape/search/crawl via Composio MCP
 - voice memo → transcription relay → LLM minutes
 
 ## Required Space secrets
