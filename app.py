@@ -2,6 +2,7 @@ import os
 import sys
 import asyncio
 import logging
+from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -189,6 +190,20 @@ def create_app() -> FastAPI:
     @app.get("/api/tg_peek")
     async def tg_peek():
         return {"messages": await get_telegram_bot().peek_outbox()}
+
+    @app.get("/api/debug")
+    async def debug():
+        import subprocess
+        r = subprocess.run(["git", "log", "--oneline", "-5"], cwd="/app", capture_output=True, timeout=10, text=True)
+        r2 = subprocess.run(["git", "status", "--short", "data/"], cwd="/app", capture_output=True, timeout=10, text=True)
+        db = Path("/app/data/memory.db")
+        return {
+            "git_log": r.stdout.strip(),
+            "git_status": r2.stdout.strip(),
+            "db_exists": db.exists(),
+            "db_bytes": db.stat().st_size if db.exists() else 0,
+            "facts": get_memory_store().stats()["total_facts"],
+        }
 
     @app.post("/api/tg_reconfigure")
     async def tg_reconfigure():
