@@ -167,6 +167,7 @@ def create_app() -> FastAPI:
         r["memory"] = get_memory_store().status()
         r["composio"] = get_composio().status()
         r["browser"] = get_browser().status()
+        r["_debug"] = {"HF_TOKEN": "SET" if os.getenv("HF_TOKEN") else "NOT_SET", "MEMORY_SPACE_ID": os.getenv("MEMORY_SPACE_ID", "not_set"), "SPACE_ID": os.getenv("SPACE_ID", "not_set")}
         return r
 
     @app.post("/webhook/telegram")
