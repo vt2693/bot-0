@@ -28,49 +28,59 @@ class MemoryStore:
         return os.getenv("MEMORY_SPACE_ID", "") or os.getenv("SPACE_ID", "") or "vt2693/bot-0"
 
     @staticmethod
-    def _hf_token() -> str:
+    def _token() -> str:
         return os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
 
     def _restore_backup(self) -> None:
-        """Restore memory.db — try /app/data/memory.db (git-tracked) first, then live path."""
+        """Download memory.db from HF Hub via huggingface_hub."""
         dbp = Path(self.db_path)
         if dbp.exists() and dbp.stat().st_size > 0:
-            logger.info("Memory: found existing db %s (%d bytes)", dbp, dbp.stat().st_size)
-        else:
-            logger.info("Memory: no backup to restore")
+            logger.info("Memory: existing db %s (%d bytes)", dbp, dbp.stat().st_size)
+            return
+        space = self._space_id()
+        token = self._token()
+        if not token or "/" not in space:
+            return
+        try:
+            from huggingface_hub import hf_hub_download
+            path = hf_hub_download(repo_id=space, repo_type="space", filename="data/memory.db", token=token)
+            if path and Path(path).stat().st_size > 0:
+                import shutil
+                shutil.copy2(path, str(dbp))
+                logger.info("Memory: restored %d bytes from HF Hub", Path(path).stat().st_size)
+        except Exception:
+            logger.info("Memory: no backup on HF Hub yet")
 
     def _backup_to_hub(self) -> None:
-        """Git commit+push memory.db — saves to /app/data/ so git tracks it."""
+        """Upload memory.db snapshot to HF Hub via huggingface_hub."""
         try:
             db = Path(self.db_path)
             if not db.exists() or db.stat().st_size == 0:
                 return
-            import tempfile, subprocess, shutil
+            space = self._space_id()
+            token = self._token()
+            if not token or "/" not in space:
+                return
+            # VACUUM INTO temp for consistent snapshot
+            import tempfile
             tmpname = tempfile.mktemp(suffix=".db")
             try:
                 with self._lock:
                     self._conn.execute(f"VACUUM INTO '{tmpname}'")
-                shutil.copy2(tmpname, str(db))
-            except: pass
-            try: os.unlink(tmpname)
-            except: pass
-            # Git add + commit + push
-            repo = Path("/app")
-            subprocess.run(["git", "config", "user.email", "bot@hf.space"], cwd=str(repo), capture_output=True, timeout=10)
-            subprocess.run(["git", "config", "user.name", "Hermes Bot"], cwd=str(repo), capture_output=True, timeout=10)
-            subprocess.run(["git", "add", "data/memory.db"], cwd=str(repo), capture_output=True, timeout=15)
-            r = subprocess.run(["git", "commit", "-m", "memory backup"], cwd=str(repo), capture_output=True, timeout=15, text=True)
-            out = (r.stdout or "") + (r.stderr or "")
-            if r.returncode == 0 and "nothing to commit" not in out and "no changes" not in out:
-                token = self._hf_token()
-                space = self._space_id()
-                if token and "/" in space:
-                    remote = f"https://user:{token}@huggingface.co/spaces/{space}"
-                    p2 = subprocess.run(["git", "push", remote, "main"], cwd=str(repo), capture_output=True, timeout=30, text=True)
-                    logger.info("Memory: git push: %s", (p2.stdout + p2.stderr).strip()[:200])
-                logger.info("Memory: backed up %d bytes via git", db.stat().st_size)
-            else:
-                logger.info("Memory: backup (%s)", out.strip()[:200])
+                # Upload via huggingface_hub
+                from huggingface_hub import HfApi
+                api = HfApi()
+                api.upload_file(
+                    path_or_fileobj=tmpname,
+                    path_in_repo="data/memory.db",
+                    repo_id=space,
+                    repo_type="space",
+                    token=token,
+                )
+                logger.info("Memory: backed up %d bytes to HF Hub", db.stat().st_size)
+            finally:
+                try: os.unlink(tmpname)
+                except: pass
         except Exception as e:
             logger.error("Memory backup failed: %s", e)
 
