@@ -34,28 +34,33 @@ class MemoryStore:
         return t
 
     def _restore_backup(self) -> None:
-        """Restore memory.db from repo (checked-out or fetched from Hub)."""
-        # First check if data/memory.db is already in the repo checkout
-        repo_root = Path(os.getenv("APP_DIR", "/app"))
-        local_backup = repo_root / "data" / "memory.db"
-        if local_backup.exists() and local_backup.stat().st_size > 0:
-            import shutil
-            shutil.copy2(str(local_backup), self.db_path)
-            logger.info("Memory: restored %d bytes from local git checkout", local_backup.stat().st_size)
-            return
-        # Fallback: try pulling from HF Hub
+        """Restore memory.db from HF Hub."""
         token = self._hf_token()
         space = self._space_id()
         if not token or "/" not in space:
-            logger.info("Memory: no token/space for remote restore")
+            logger.info("Memory: no HF_TOKEN/space, skipping restore")
             return
         try:
+            # Try pulling from Hub first — most reliable across rebuilds
             from huggingface_hub import hf_hub_download
             path = hf_hub_download(repo_id=space, repo_type="space", filename="data/memory.db", token=token)
             if path and Path(path).stat().st_size > 0:
                 import shutil
                 shutil.copy2(path, self.db_path)
                 logger.info("Memory: restored %d bytes from HF Hub", Path(path).stat().st_size)
+                return
+        except Exception:
+            logger.info("Memory: HF Hub download failed")
+        # Fallback: check local git checkout
+        try:
+            repo_root = Path(os.getenv("APP_DIR", "/app"))
+            local_backup = repo_root / "data" / "memory.db"
+            if local_backup.exists() and local_backup.stat().st_size > 0:
+                import shutil
+                shutil.copy2(str(local_backup), self.db_path)
+                logger.info("Memory: restored %d bytes from local git checkout", local_backup.stat().st_size)
+        except Exception:
+            logger.info("Memory: no local backup found")
         except Exception:
             logger.info("Memory: no remote backup found")
 
