@@ -165,11 +165,7 @@ def create_app() -> FastAPI:
         try:
             import json
             raw = (await request.body()).decode("utf-8")
-            update = json.loads(raw)
-            tg.enqueue_update(update)
-            # Process inline immediately (don't wait for queue worker)
-            t = asyncio.create_task(tg.process_update(update))
-            t.add_done_callback(_task_done); _background_tasks.add(t)
+            tg.enqueue_update(json.loads(raw))
             return JSONResponse({"ok": True})
         except Exception as e:
             return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
