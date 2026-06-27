@@ -20,7 +20,9 @@ ENV PYTHONUNBUFFERED=1
 ENV OMP_NUM_THREADS=1
 ENV DATA_DIR=/app/data
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl --fail http://localhost:7860/health || exit 1
+# HEALTHCHECK disabled — LLM calls overlap with health pings causing restart loops
+# on free tier. HF Spaces auto-restarts crashed containers without HEALTHCHECK.
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+#   CMD curl --fail http://localhost:7860/health || exit 1
 
 CMD ["uvicorn", "app:create_app", "--host", "0.0.0.0", "--port", "7860"]
