@@ -56,18 +56,10 @@ class TelegramBot:
             self.outbox.append(item)
 
     def configure_commands(self) -> None:
-        cmds = [
-            {"command": "start", "description": "Welcome"},
-            {"command": "menu", "description": "Interactive menu"},
-            {"command": "help", "description": "Help"},
-            {"command": "model", "description": "List/switch provider"},
-            {"command": "improve", "description": "Extract skills from conversation"},
-            {"command": "secrets", "description": "Configured providers"},
-            {"command": "restart", "description": "Restart instructions"},
-            {"command": "reconfigure", "description": "Re-enqueue webhook"},
-        ]
-        self.enqueue_config("setMyCommands", {"commands": cmds})
-        self.enqueue_config("setChatMenuButton", {"menu_button": {"type": "default"}})
+        # setChatMenuButton is NOT set — Telegram shows burger ☰ by default.
+        # setMyCommands is also NOT set so the burger stays (Telegram hides it
+        # when commands are registered). Commands still work via /menu.
+        pass
 
     def enqueue_update(self, update: dict) -> None:
         with self._queue_lock:
