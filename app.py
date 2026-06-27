@@ -121,8 +121,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await tg.initialize_async()
         t = asyncio.create_task(tg.process_queue_worker())
         t.add_done_callback(_task_done); _background_tasks.add(t)
-        t2 = asyncio.create_task(tg._flush_outbox_direct_worker())
-        t2.add_done_callback(_task_done); _background_tasks.add(t2)
 
     # Periodic memory backup to HF Hub (survives restarts)
     async def _periodic_memory_backup():

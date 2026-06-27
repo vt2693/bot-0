@@ -258,25 +258,6 @@ class TelegramBot:
         except Exception:
             return False
 
-    async def _flush_outbox_direct_worker(self) -> None:
-        """Background task: flush outbox directly to Telegram API every 3s.
-        Used as fallback when no external relay is available. HF Spaces cpu-basic
-        may block outbound HTTPS — in that case this silently fails and the
-        outbox relay pattern (Worker/relay.py) is still the primary path.
-        """
-        while self._initialized:
-            await asyncio.sleep(3)
-            items = []
-            with self._outbox_lock:
-                items = list(self.outbox)
-                self.outbox.clear()
-            for msg in items:
-                ok = await asyncio.to_thread(self._send_direct, msg)
-                if not ok:
-                    # Re-enqueue for relay
-                    with self._outbox_lock:
-                        self.outbox.append(msg)
-
     async def drain_outbox(self) -> list[dict]:
         with self._outbox_lock:
             out = list(self.outbox)
