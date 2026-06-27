@@ -67,7 +67,7 @@ class TelegramBot:
             {"command": "reconfigure", "description": "Re-enqueue webhook"},
         ]
         self.enqueue_config("setMyCommands", {"commands": cmds})
-        self.enqueue_config("setChatMenuButton", {"menu_button": {"type": "commands"}})
+        self.enqueue_config("setChatMenuButton", {"menu_button": {"type": "default"}})
 
     def enqueue_update(self, update: dict) -> None:
         with self._queue_lock:
