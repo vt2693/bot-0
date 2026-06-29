@@ -62,25 +62,22 @@ def send_telegram(msg: dict, retry: int = 0) -> bool:
 
 
 def poll_outbox() -> list[dict]:
-    """Poll with backoff for transient errors (HF cold-boot 503, etc.).
+    """Poll with backoff for transient errors (HF cold-boot 503, ECONNRESET, etc.).
 
     HF Space free tier cold-boots after ~15 min idle and takes 15-60s.
-    We retry up to ~90s before giving up.
+    Nginx reverse proxy may reset connections under load. Retry with backoff.
     """
     for attempt in range(6):
         try:
             with urllib.request.urlopen(f"{SPACE_URL}/api/tg_outbox", timeout=POLL_TIMEOUT) as resp:
                 return json.loads(resp.read().decode()).get("messages", [])
-        except urllib.error.HTTPError as e:
-            if e.code == 503 and attempt < 5:
-                wait = (2 ** attempt) * 3
-                print(f"poll 503 (cold boot?) attempt {attempt+1}, retry in {wait}s...")
+        except Exception as e:
+            wait = (2 ** attempt) * 3
+            print(f"poll failed (attempt {attempt+1}): {e}, retry in {wait}s...")
+            if attempt < 5:
                 time.sleep(wait)
                 continue
-            print(f"poll HTTP {e.code}: {e.read().decode(errors='replace')[:200]}")
-            return []
-        except Exception as e:
-            print(f"poll failed: {e}")
+            print(f"poll gave up after 6 attempts")
             return []
     return []
 

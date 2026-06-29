@@ -19,8 +19,18 @@ WORK_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def get_json(url: str) -> dict:
-    with urllib.request.urlopen(url, timeout=30) as resp:
-        return json.loads(resp.read().decode())
+    """GET with retries for transient failures (ECONNRESET, 503, etc.)."""
+    for attempt in range(6):
+        try:
+            with urllib.request.urlopen(url, timeout=30) as resp:
+                return json.loads(resp.read().decode())
+        except Exception as e:
+            if attempt < 5:
+                wait = (2 ** attempt) * 3
+                print(f"[{time.strftime('%H:%M:%S')}] get_json failed (attempt {attempt+1}): {e}, retry in {wait}s...")
+                time.sleep(wait)
+                continue
+            raise
 
 
 def post_json(url: str, payload: dict) -> dict:
