@@ -58,6 +58,12 @@ class HermesBridge:
         pairs = [("opencode_zen", s.OPENCODE_ZEN_API_KEY, s.OPENCODE_ZEN_MODEL), ("openrouter", s.OPENROUTER_API_KEY, s.OPENROUTER_MODEL), ("google", s.GOOGLE_API_KEY, s.GOOGLE_MODEL), ("nvidia", s.NVIDIA_API_KEY, s.NVIDIA_MODEL), ("groq", s.GROQ_API_KEY, s.GROQ_MODEL), ("openai", s.OPENAI_API_KEY, s.OPENAI_MODEL), ("anthropic", s.ANTHROPIC_API_KEY, s.ANTHROPIC_MODEL), ("router_0", s.ROUTER_0_API_KEY, s.ROUTER_0_MODEL)]
         return {k: f"{k} ({m})" for k, key, m in pairs if key}
 
+    def switch_model(self, model: str) -> dict:
+        if not model:
+            return {"success": False, "error": "Model name empty"}
+        self._model = model
+        return {"success": True, "provider": self._provider, "model": self._model}
+
     def switch_provider(self, name: str) -> dict:
         if name not in self.available_providers():
             return {"success": False, "error": f"Unknown provider: {name}"}

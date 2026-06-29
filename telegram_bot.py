@@ -213,6 +213,10 @@ class TelegramBot:
             self._menu_msg_id[chat_id] = msg_id
         if data.startswith("mn:"):
             await self._show_menu(chat_id, data[3:])
+        elif data.startswith("ac:model:"):
+            model = data[9:]
+            if model:
+                await _action_model_switch(self, chat_id, model)
         elif data.startswith("ac:"):
             handler = MENU_ACTIONS_ASYNC.get(data[3:])
             if handler:
@@ -342,10 +346,19 @@ MENUS = {
         "buttons": [
             [{"text": "Status", "callback_data": "ac:system_status"}],
             [{"text": "Provider Info", "callback_data": "ac:system_provider"}],
+            [{"text": "Switch Model", "callback_data": "mn:model"}],
             [{"text": "Uptime", "callback_data": "ac:system_uptime"}],
             [{"text": "Queue Stats", "callback_data": "ac:system_queue"}],
             [{"text": "Composio", "callback_data": "ac:system_composio"}],
             [{"text": "Back", "callback_data": "mn:main"}],
+        ],
+    },
+    "model": {
+        "text": "Switch Model (router_0)\n\nPick a model below. The new model loads immediately.",
+        "buttons": [
+            [{"text": "oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
+            [{"text": "mmf/mimo-auto", "callback_data": "ac:model:mmf/mimo-auto"}],
+            [{"text": "Back", "callback_data": "mn:system"}],
         ],
     },
 }
@@ -458,6 +471,17 @@ async def _action_system_uptime(bot: TelegramBot, chat_id: int) -> None:
 async def _action_system_queue(bot: TelegramBot, chat_id: int) -> None:
     tg = bot.status()
     bot._send_message(chat_id, "Queue Stats\n\nPending: " + str(tg["queue_size"]) + "\nProcessed: " + str(tg["queue_processed"]) + "\nError: " + (str(tg["queue_error"]) if tg["queue_error"] else "none"))
+
+
+async def _action_model_switch(bot: TelegramBot, chat_id: int, model: str) -> None:
+    if not bot.bridge:
+        bot._send_message(chat_id, "Bridge not available.")
+        return
+    r = bot.bridge.switch_model(model)
+    if r.get("success"):
+        bot._send_message(chat_id, "Model switched to: " + model)
+    else:
+        bot._send_message(chat_id, "Failed: " + r.get("error", "unknown"))
 
 
 async def _action_system_composio(bot: TelegramBot, chat_id: int) -> None:
