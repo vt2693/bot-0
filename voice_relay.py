@@ -7,6 +7,8 @@ import subprocess
 import urllib.request
 from pathlib import Path
 
+print = lambda *a, **kw: __builtins__.print(*a, **kw, flush=True)  # noqa
+
 SPACE_URL = os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space").rstrip("/")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
