@@ -391,7 +391,7 @@ async def _action_memory_view(bot: TelegramBot, chat_id: int) -> None:
         ts = f.get("created_at", 0)
         rel = str(int(time.time() - ts)) + "s ago" if ts else ""
         trust = f.get("trust_score", 0.5)
-        bar = "[G]" if trust >= 0.7 else ("[Y]" if trust >= 0.4 else "[R]")
+        bar = "🟢" if trust >= 0.7 else ("🟡" if trust >= 0.4 else "🔴")
         lines.append(bar + " " + f["content"][:150] + " (" + rel + ")")
     bot._send_message(chat_id, "Memory (" + str(count) + " facts)\n\n" + "\n".join(lines))
 
