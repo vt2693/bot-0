@@ -176,7 +176,7 @@ class HermesBridge:
         mem_block = None
         if self.memory_enabled and self.memory_store:
             self._memory_stats["injections"] += 1
-            mems = self.memory_store.get_relevant(message, scope, 5)
+            mems = self.memory_store.get_relevant(message, scope, 100)
             if mems:
                 self._memory_stats["hits"] += 1
                 mem_block = "\n".join("- " + m["content"] for m in mems)
