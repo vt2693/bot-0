@@ -91,11 +91,14 @@ def main() -> None:
         print("BOT_TOKEN or TELEGRAM_BOT_TOKEN required")
         sys.exit(1)
     while True:
-        for msg in poll_outbox():
+        msgs = poll_outbox()
+        for msg in msgs:
             method = msg.get("_method", "sendMessage")
             ok = send_telegram(msg)
             target = msg.get("chat_id") or method
             print(f"[{time.strftime('%H:%M:%S')}] {method} {target}: {'OK' if ok else 'FAIL'}")
+        if not msgs:
+            print(f"[{time.strftime('%H:%M:%S')}] poll: empty")
         if args.once:
             break
         time.sleep(POLL_INTERVAL)

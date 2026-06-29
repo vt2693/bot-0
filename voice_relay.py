@@ -94,10 +94,14 @@ def main() -> None:
     while True:
         try:
             items = get_json(f"{SPACE_URL}/api/tg_voice_pending").get("items", [])
+            if items:
+                print(f"[{time.strftime('%H:%M:%S')}] voice poll: {len(items)} pending")
+            else:
+                print(f"[{time.strftime('%H:%M:%S')}] voice poll: empty")
             for item in items:
                 process(item)
         except Exception as e:
-            print(f"poll voice failed: {e}")
+            print(f"[{time.strftime('%H:%M:%S')}] poll voice failed: {e}")
         time.sleep(POLL_INTERVAL)
 
 
