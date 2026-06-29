@@ -77,7 +77,7 @@ class HermesBridge:
         if memory_context:
             sys += "\n\nFacts I know about the user (use these to answer accurately):\n" + memory_context
         msgs = [{"role": "system", "content": sys}]
-        for item in history[-20:]:
+        for item in history[-100:]:
             if isinstance(item, dict):
                 role = item.get("role") or "user"
                 content = item.get("content") or ""
