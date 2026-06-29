@@ -61,7 +61,7 @@ export BOT_TOKEN="\${TELEGRAM_BOT_TOKEN}"
 export GROQ_API_KEY="${GROQ_API_KEY}"
 export NVIDIA_API_KEY="${NVIDIA_API_KEY}"
 export WORK_DIR="/sdcard/Download"
-export POLL_INTERVAL="3"
+export POLL_INTERVAL="1"
 EOF
 chmod 600 "$HOME/.hermes-tokens.env"
 echo "Saved $HOME/.hermes-tokens.env"

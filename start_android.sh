@@ -14,7 +14,7 @@ export BOT_TOKEN="${BOT_TOKEN:-$TELEGRAM_BOT_TOKEN}"
 export TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-$BOT_TOKEN}"
 export TEMP_DIR="${TEMP_DIR:-$HOME/.cache/hermes-tmp}"
 export WORK_DIR="${WORK_DIR:-/sdcard/Download}"
-export POLL_INTERVAL="${POLL_INTERVAL:-3}"
+export POLL_INTERVAL="${POLL_INTERVAL:-1}"
 mkdir -p "$TEMP_DIR" "$WORK_DIR" logs
 
 termux-wake-lock || true
