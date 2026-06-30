@@ -186,6 +186,31 @@ class HermesBridge:
         self._extract_facts(message, response, scope)
         return response
 
+    def parse_schedule(self, text: str) -> dict:
+        """Parse natural-language scheduling intent via constrained LLM call.
+
+        Returns {\"interval_minutes\": int, \"prompt\": str} or {\"error\": str}.
+        """
+        sys_prompt = (
+            "Extract scheduling intent from the user's text. "
+            "Return ONLY valid JSON (no other text) with one of these shapes:\n"
+            '{"interval_minutes": number, "prompt": string}\n'
+            '{"error": "reason"}\n\n'
+            "Examples:\n"
+            '- "check gmail every 15 minutes" -> {"interval_minutes": 15, "prompt": "check my gmail"}\n'
+            '- "every 2 hours, summarize news" -> {"interval_minutes": 120, "prompt": "summarize news"}\n'
+            '- "hello" -> {"error": "no scheduling intent found"}\n\n'
+            "Rules:\n"
+            '- interval_minutes is how often to run the task, in minutes\n'
+            '- prompt is the task description without timing words\n'
+            '- If no recurring schedule is described, return an error'
+        )
+        try:
+            body = self.chat(text, [], sys_prompt)
+            return json.loads(body)
+        except (json.JSONDecodeError, Exception) as e:
+            return {"error": f"Parse failed: {e}"}
+
     def generate_minutes(self, transcript: str) -> str:
         prompt = "Summarize this voice memo into concise meeting minutes with key points, decisions, action items, and next steps.\n\nTranscript:\n" + transcript[:12000]
         return self.chat(prompt, [])

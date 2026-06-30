@@ -16,6 +16,7 @@ from memory_store import MemoryStore
 from composio_mcp import ComposioMCP
 from hermes_bridge import HermesBridge
 from telegram_bot import TelegramBot
+from scheduler import SchedulerEngine
 
 logging.basicConfig(level=get_settings().LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s: %(message)s", handlers=[logging.StreamHandler(sys.stdout)])
 logger = logging.getLogger(__name__)
@@ -121,6 +122,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await tg.initialize_async()
         t = asyncio.create_task(tg.process_queue_worker())
         t.add_done_callback(_task_done); _background_tasks.add(t)
+        # Start scheduler
+        db_path = s.MEMORY_DB_PATH or str(s.DATA_DIR / "memory.db")
+        tg.scheduler = SchedulerEngine(db_path, bridge, tg, get_memory_store())
+        tg.scheduler.start()
 
     # Periodic memory backup disabled — every 120s it creates a git commit on
     # main, racing our pushes and preventing code deploys. Shutdown backup below
@@ -139,6 +144,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
     await get_composio().close()
     await tg.stop()
+    if tg.scheduler:
+        await tg.scheduler.stop()
     store = get_memory_store()
     if store.status()["fact_count"] > 0:
         store.sync()

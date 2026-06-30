@@ -102,8 +102,30 @@ class MemoryStore:
         """)
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_facts_scope ON facts(scope)")
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_facts_created ON facts(created_at)")
+        self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS scheduled_jobs (
+                id TEXT PRIMARY KEY,
+                chat_id INTEGER NOT NULL,
+                prompt TEXT NOT NULL,
+                interval_minutes REAL NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                created_at REAL NOT NULL,
+                last_run_at REAL,
+                next_run_at REAL NOT NULL,
+                last_result TEXT,
+                error_count INTEGER DEFAULT 0,
+                scope TEXT DEFAULT 'sched_global'
+            )
+        """)
         self._conn.commit()
         self._ready = True
+
+    def open_conn(self) -> sqlite3.Connection:
+        """Return a fresh connection to the same DB (for SchedulerEngine)."""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        return conn
 
     def _row(self, row: sqlite3.Row) -> dict:
         return {

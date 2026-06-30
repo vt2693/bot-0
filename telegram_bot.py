@@ -32,6 +32,8 @@ class TelegramBot:
         self._menu_msg_id: dict[int, int] = {}  # chat_id -> last menu message_id
         self._sent_count = 0  # messages drained by outbox
         self._sent_error = ""
+        self.scheduler = None
+        self._pending_schedule: dict[str, dict] = {}
 
     @property
     def configured(self) -> bool:
@@ -65,6 +67,7 @@ class TelegramBot:
             {"command": "secrets", "description": "Configured providers"},
             {"command": "restart", "description": "Restart instructions"},
             {"command": "reconfigure", "description": "Re-enqueue webhook"},
+            {"command": "schedule", "description": "Manage scheduled tasks"},
         ]
         self.enqueue_config("setMyCommands", {"commands": cmds})
         # Do NOT call setChatMenuButton — let Telegram use its own default
@@ -146,6 +149,26 @@ class TelegramBot:
             self.enqueue_webhook()
             self.configure_commands()
             self._send_message(chat_id, "Webhook + commands re-enqueued for relay.")
+        elif cmd == "/schedule":
+            if not arg:
+                self._menu_msg_id.pop(chat_id, None)
+                await self._show_menu(chat_id, "schedule")
+            else:
+                sub_parts = arg.split(maxsplit=1)
+                sub_cmd = sub_parts[0].lower()
+                sub_arg = sub_parts[1].strip() if len(sub_parts) > 1 else ""
+                if sub_cmd == "add":
+                    await self._handle_schedule_add(chat_id, sub_arg)
+                elif sub_cmd == "list":
+                    await _action_schedule_list(self, chat_id)
+                elif sub_cmd == "remove" and sub_arg:
+                    await _action_schedule_remove_by_id(self, chat_id, sub_arg)
+                elif sub_cmd == "pause" and sub_arg:
+                    await _action_schedule_pause_by_id(self, chat_id, sub_arg)
+                elif sub_cmd == "resume" and sub_arg:
+                    await _action_schedule_resume_by_id(self, chat_id, sub_arg)
+                else:
+                    self._send_message(chat_id, "Usage:\n/schedule add <description>\n/schedule list\n/schedule remove <id>\n/schedule pause <id>\n/schedule resume <id>")
 
     def _enqueue_typing(self, chat_id: int) -> None:
         with self._outbox_lock:
@@ -176,6 +199,63 @@ class TelegramBot:
         self._chat_history[key].extend([{"role": "user", "content": text}, {"role": "assistant", "content": response}])
         self._chat_history[key] = self._chat_history[key][-self._history_max:]
         self._send_message(chat_id, response)
+
+    async def _handle_schedule_add(self, chat_id: int, text: str) -> None:
+        """Parse /schedule add <text>, show confirmation with Yes/No inline."""
+        text = text.strip()
+        if not text:
+            self._send_message(chat_id, "Describe your task, e.g. /schedule add check gmail every 15 minutes")
+            return
+        # Sweep expired pending confirmations
+        now = time.time()
+        self._pending_schedule = {k: v for k, v in self._pending_schedule.items() if v.get("expires_at", 0) > now}
+        # Structured: text starts with a number
+        interval = None
+        prompt = text
+        parts = text.split(maxsplit=1)
+        if parts and parts[0].isdigit():
+            interval = float(parts[0])
+            prompt = parts[1].strip() if len(parts) > 1 else ""
+        if interval is None and self.bridge:
+            # NL parsing via LLM
+            parsed = self.bridge.parse_schedule(text)
+            if "error" in parsed:
+                self._send_message(
+                    chat_id,
+                    "Couldn't parse a schedule from that. Try:\n"
+                    "/schedule add N <description>\n"
+                    "Example: /schedule add 15 check my gmail",
+                )
+                return
+            interval = parsed.get("interval_minutes")
+            prompt = parsed.get("prompt", text)
+        if not interval or interval < 1 or not prompt:
+            self._send_message(chat_id, "Invalid schedule. Try: /schedule add 15 check my gmail")
+            return
+        # Store pending
+        import uuid as _uuid
+        token = _uuid.uuid4().hex[:8]
+        self._pending_schedule[token] = {
+            "chat_id": chat_id,
+            "prompt": prompt,
+            "interval_minutes": interval,
+            "expires_at": time.time() + 300,
+        }
+        # Show confirmation
+        kb = {
+            "inline_keyboard": [
+                [
+                    {"text": "✅ Confirm", "callback_data": "ac:schedule_cfm:" + token},
+                    {"text": "❌ Cancel", "callback_data": "ac:schedule_del:" + token},
+                ]
+            ]
+        }
+        interval_str = f"{interval:.0f} min" if interval >= 1 else f"{interval*60:.0f} sec"
+        self._send_message(
+            chat_id,
+            f"Confirm: run '{prompt}' every {interval_str}",
+            reply_markup=kb,
+        )
 
     # -- Inline Menu System -------------------------------------------------
 
@@ -217,6 +297,37 @@ class TelegramBot:
             model = data[9:]
             if model:
                 await _action_model_switch(self, chat_id, model)
+        elif data.startswith("ac:schedule_cfm:"):
+            token = data[17:]
+            pending = self._pending_schedule.pop(token, None)
+            if not pending or pending.get("chat_id") != chat_id:
+                self._send_message(chat_id, "Confirmation expired or invalid. Try /schedule add again.")
+                return
+            if pending.get("expires_at", 0) < time.time():
+                self._send_message(chat_id, "Confirmation expired. Try /schedule add again.")
+                return
+            if not self.scheduler:
+                self._send_message(chat_id, "Scheduler not available.")
+                return
+            r = self.scheduler.add_job(chat_id, pending["prompt"], pending["interval_minutes"])
+            if "error" in r:
+                self._send_message(chat_id, "Failed: " + r["error"])
+            else:
+                next_s = time.strftime("%H:%M", time.localtime(r["next_run_at"]))
+                self._send_message(chat_id, f"✅ Job created! ID: {r['id']}\nNext run at {next_s}, then every {pending['interval_minutes']:.0f} min.")
+        elif data.startswith("ac:schedule_del:"):
+            token = data[17:]
+            self._pending_schedule.pop(token, None)
+            self._send_callback_answer(cb_id, "Cancelled")
+        elif data.startswith("ac:schedule_rmv:"):
+            job_id = data[17:]
+            await _action_schedule_remove_by_id(self, chat_id, job_id)
+        elif data.startswith("ac:schedule_ps:"):
+            job_id = data[16:]
+            await _action_schedule_pause_by_id(self, chat_id, job_id)
+        elif data.startswith("ac:schedule_rs:"):
+            job_id = data[16:]
+            await _action_schedule_resume_by_id(self, chat_id, job_id)
         elif data.startswith("ac:"):
             handler = MENU_ACTIONS_ASYNC.get(data[3:])
             if handler:
@@ -308,6 +419,7 @@ MENUS = {
             [{"text": "💬 Chat", "callback_data": "mn:chat"}],
             [{"text": "🎤 Voice & Minutes", "callback_data": "mn:voice"}],
             [{"text": "⚙️ System", "callback_data": "mn:system"}],
+            [{"text": "⏰ Schedule", "callback_data": "mn:schedule"}],
         ],
     },
     "web": {
@@ -359,6 +471,14 @@ MENUS = {
             [{"text": "⚡ oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
             [{"text": "🌱 mmf/mimo-auto", "callback_data": "ac:model:mmf/mimo-auto"}],
             [{"text": "🔙 Back", "callback_data": "mn:system"}],
+        ],
+    },
+    "schedule": {
+        "text": "Scheduled Tasks\n\nPeriodic jobs run automatically.\n\nTo add: /schedule add <description>\nExample: /schedule add check my gmail every 15 minutes",
+        "buttons": [
+            [{"text": "➕ Add Task", "callback_data": "ac:schedule_add"}],
+            [{"text": "📋 List Tasks", "callback_data": "ac:schedule_list"}],
+            [{"text": "🔙 Back", "callback_data": "mn:main"}],
         ],
     },
 }
@@ -493,6 +613,82 @@ async def _action_system_composio(bot: TelegramBot, chat_id: int) -> None:
     bot._send_message(chat_id, "Composio\n\nReady: " + str(s.get("ready", False)) + "\nTools: " + str(s.get("tool_count", 0)) + "\nError: " + str(s.get("error", "none")))
 
 
+# -- Schedule action handlers ------------------------------------------------
+
+async def _action_schedule_add(bot: TelegramBot, chat_id: int) -> None:
+    bot._send_message(chat_id, "Describe your recurring task.\n\nExample: /schedule add check gmail every 15 minutes\n\nYou can also use: /schedule add N <description>\n(where N = interval in minutes)")
+
+
+async def _action_schedule_list(bot: TelegramBot, chat_id: int) -> None:
+    if not bot.scheduler:
+        bot._send_message(chat_id, "Scheduler not available.")
+        return
+    jobs = bot.scheduler.list_jobs(chat_id)
+    if not jobs:
+        bot._send_message(chat_id, "No scheduled tasks. Add one with /schedule add")
+        return
+    lines = []
+    kb_rows = []
+    active_count = sum(1 for j in jobs if j["status"] == "active")
+    lines.append(f"Scheduled Tasks ({active_count} active, {len(jobs)} total)\n")
+    for j in jobs:
+        sid = j["id"][:8]
+        interval_str = f"{j['interval_minutes']:.0f}m"
+        next_s = time.strftime("%H:%M", time.localtime(j["next_run_at"])) if j.get("next_run_at") else "—"
+        last_s = time.strftime("%H:%M", time.localtime(j["last_run_at"])) if j.get("last_run_at") else "—"
+        err = j.get("error_count", 0)
+        status_icon = "⏸️" if j["status"] == "paused" else ("⏱️" if j["status"] == "active" else "❌")
+        status_tag = " [PAUSED]" if j["status"] == "paused" else (" [ERRORED]" if j["status"] == "errored" else "")
+        lines.append(f"{status_icon} {sid}: {j['prompt'][:50]} every {interval_str}{status_tag}")
+        lines.append(f"   Next: {next_s} | Last: {last_s} | Errors: {err}")
+        # Inline buttons for this job
+        rm_btn = {"text": "❌", "callback_data": f"ac:schedule_rmv:{sid}"}
+        if j["status"] == "active":
+            toggle_btn = {"text": "⏸️", "callback_data": f"ac:schedule_ps:{sid}"}
+        elif j["status"] == "paused":
+            toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid}"}
+        else:
+            toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid}"}
+        kb_rows.append([rm_btn, toggle_btn])
+    text = "\n".join(lines)
+    kb = {"inline_keyboard": kb_rows} if kb_rows else None
+    bot._send_message(chat_id, text, reply_markup=kb)
+
+
+async def _action_schedule_remove_by_id(bot: TelegramBot, chat_id: int, job_id: str) -> None:
+    if not bot.scheduler:
+        bot._send_message(chat_id, "Scheduler not available.")
+        return
+    r = bot.scheduler.remove_job(job_id)
+    if "error" in r:
+        bot._send_message(chat_id, "Failed: " + r["error"])
+    else:
+        bot._send_message(chat_id, "✅ Job removed.")
+
+
+async def _action_schedule_pause_by_id(bot: TelegramBot, chat_id: int, job_id: str) -> None:
+    if not bot.scheduler:
+        bot._send_message(chat_id, "Scheduler not available.")
+        return
+    r = bot.scheduler.pause_job(job_id)
+    if "error" in r:
+        bot._send_message(chat_id, "Failed: " + r["error"])
+    else:
+        bot._send_message(chat_id, "⏸️ Job paused.")
+
+
+async def _action_schedule_resume_by_id(bot: TelegramBot, chat_id: int, job_id: str) -> None:
+    if not bot.scheduler:
+        bot._send_message(chat_id, "Scheduler not available.")
+        return
+    r = bot.scheduler.resume_job(job_id)
+    if "error" in r:
+        bot._send_message(chat_id, "Failed: " + r["error"])
+    else:
+        next_s = time.strftime("%H:%M", time.localtime(r["next_run_at"]))
+        bot._send_message(chat_id, f"▶️ Job resumed. Next run at {next_s}.")
+
+
 MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "web_status": _action_web_status,
     "memory_view": _action_memory_view,
@@ -506,4 +702,6 @@ MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "system_uptime": _action_system_uptime,
     "system_queue": _action_system_queue,
     "system_composio": _action_system_composio,
+    "schedule_add": _action_schedule_add,
+    "schedule_list": _action_schedule_list,
 }
