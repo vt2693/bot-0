@@ -298,7 +298,7 @@ class TelegramBot:
             if model:
                 await _action_model_switch(self, chat_id, model)
         elif data.startswith("ac:schedule_cfm:"):
-            token = data[17:]
+            token = data[16:]
             pending = self._pending_schedule.pop(token, None)
             if not pending or pending.get("chat_id") != chat_id:
                 self._send_message(chat_id, "Confirmation expired or invalid. Try /schedule add again.")
@@ -316,17 +316,17 @@ class TelegramBot:
                 next_s = time.strftime("%H:%M", time.localtime(r["next_run_at"]))
                 self._send_message(chat_id, f"✅ Job created! ID: {r['id']}\nNext run at {next_s}, then every {pending['interval_minutes']:.0f} min.")
         elif data.startswith("ac:schedule_del:"):
-            token = data[17:]
+            token = data[16:]
             self._pending_schedule.pop(token, None)
             self._send_callback_answer(cb_id, "Cancelled")
         elif data.startswith("ac:schedule_rmv:"):
-            job_id = data[17:]
+            job_id = data[16:]
             await _action_schedule_remove_by_id(self, chat_id, job_id)
         elif data.startswith("ac:schedule_ps:"):
-            job_id = data[16:]
+            job_id = data[15:]
             await _action_schedule_pause_by_id(self, chat_id, job_id)
         elif data.startswith("ac:schedule_rs:"):
-            job_id = data[16:]
+            job_id = data[15:]
             await _action_schedule_resume_by_id(self, chat_id, job_id)
         elif data.startswith("ac:"):
             handler = MENU_ACTIONS_ASYNC.get(data[3:])
@@ -632,23 +632,24 @@ async def _action_schedule_list(bot: TelegramBot, chat_id: int) -> None:
     active_count = sum(1 for j in jobs if j["status"] == "active")
     lines.append(f"Scheduled Tasks ({active_count} active, {len(jobs)} total)\n")
     for j in jobs:
-        sid = j["id"][:8]
+        sid = j["id"]
         interval_str = f"{j['interval_minutes']:.0f}m"
         next_s = time.strftime("%H:%M", time.localtime(j["next_run_at"])) if j.get("next_run_at") else "—"
         last_s = time.strftime("%H:%M", time.localtime(j["last_run_at"])) if j.get("last_run_at") else "—"
         err = j.get("error_count", 0)
         status_icon = "⏸️" if j["status"] == "paused" else ("⏱️" if j["status"] == "active" else "❌")
         status_tag = " [PAUSED]" if j["status"] == "paused" else (" [ERRORED]" if j["status"] == "errored" else "")
-        lines.append(f"{status_icon} {sid}: {j['prompt'][:50]} every {interval_str}{status_tag}")
+        lines.append(f"{status_icon} {sid[:8]}: {j['prompt'][:50]} every {interval_str}{status_tag}")
         lines.append(f"   Next: {next_s} | Last: {last_s} | Errors: {err}")
-        # Inline buttons for this job
-        rm_btn = {"text": "❌", "callback_data": f"ac:schedule_rmv:{sid}"}
+        # Inline buttons for this job (full 12-char ID in callback_data, well under 64-byte limit)
+        sid_full = sid
+        rm_btn = {"text": "❌", "callback_data": f"ac:schedule_rmv:{sid_full}"}
         if j["status"] == "active":
-            toggle_btn = {"text": "⏸️", "callback_data": f"ac:schedule_ps:{sid}"}
+            toggle_btn = {"text": "⏸️", "callback_data": f"ac:schedule_ps:{sid_full}"}
         elif j["status"] == "paused":
-            toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid}"}
+            toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid_full}"}
         else:
-            toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid}"}
+            toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid_full}"}
         kb_rows.append([rm_btn, toggle_btn])
     text = "\n".join(lines)
     kb = {"inline_keyboard": kb_rows} if kb_rows else None
