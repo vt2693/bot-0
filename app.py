@@ -122,8 +122,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await tg.initialize_async()
         t = asyncio.create_task(tg.process_queue_worker())
         t.add_done_callback(_task_done); _background_tasks.add(t)
-        o = asyncio.create_task(tg._drain_outbox_direct())
-        o.add_done_callback(_task_done); _background_tasks.add(o)
         # Start scheduler
         db_path = s.MEMORY_DB_PATH or str(s.DATA_DIR / "memory.db")
         tg.scheduler = SchedulerEngine(db_path, bridge, tg, get_memory_store())

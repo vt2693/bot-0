@@ -45,32 +45,12 @@ class TelegramBot:
         self._initialized = True
         self._start_time = time.time()
         self.configure_commands()
-        # Register webhook + commands directly (not via outbox — api.telegram.org
-        # must be reachable from the Space for inbound webhook delivery to work)
-        await self._register_webhook_direct()
+        # Webhook registration + outbound delivery go through the relay
+        # (HF Space free tier blocks api.telegram.org — SSL handshake times out).
+        # The relay polls /api/tg_outbox for outbound, and runs getUpdates
+        # polling for inbound delivery to /webhook/telegram.
+        self.enqueue_webhook()
         return True
-
-    async def _register_webhook_direct(self) -> None:
-        """Call Telegram setWebhook directly so inbox webhooks start flowing.
-
-        This also resets Telegram's error counter (webhook was disabled after
-        repeated cold-boot timeouts). Without this, Telegram won't deliver
-        even when the Space is warm.
-        """
-        try:
-            url = os.getenv("TELEGRAM_WEBHOOK_URL", os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space") + "/webhook/telegram")
-            payload = {"url": url, "allowed_updates": ["message", "edited_message", "callback_query"], "max_connections": 40, "drop_pending_updates": True}
-            req = urllib.request.Request(
-                f"https://api.telegram.org/bot{self.token}/setWebhook",
-                data=json.dumps(payload).encode(),
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            resp = await asyncio.to_thread(urllib.request.urlopen, req, timeout=15)
-            data = json.loads(resp.read().decode())
-            logger.info("setWebhook direct: %s — %s", data.get("description", "?"), data)
-        except Exception as e:
-            logger.warning("setWebhook direct failed: %s — webhook may not be registered", e)
 
     def enqueue_webhook(self) -> None:
         """Re-enqueue webhook config (callable from /reconfigure)."""
@@ -399,56 +379,6 @@ class TelegramBot:
         except Exception:
             return False
 
-    async def _drain_outbox_direct(self) -> None:
-        """Try sending outbox messages directly to api.telegram.org.
-
-        If direct send succeeds, the message is consumed (no relay needed).
-        If it fails, the message stays in the outbox for the external relay.
-        """
-        _PA = {
-            "sendMessage": "/sendMessage",
-            "editMessageText": "/editMessageText",
-            "answerCallbackQuery": "/answerCallbackQuery",
-            "setWebhook": "/setWebhook",
-            "deleteWebhook": "/deleteWebhook",
-            "setMyCommands": "/setMyCommands",
-            "setChatMenuButton": "/setChatMenuButton",
-        }
-        while self._initialized:
-            msg = None
-            with self._outbox_lock:
-                if self.outbox and self.outbox[0].get("_method") in _PA:
-                    msg = self.outbox.pop(0)
-            if not msg:
-                await asyncio.sleep(0.5)
-                continue
-            method = msg.pop("_method", "sendMessage")
-            path = _PA.get(method, "/sendMessage")
-            if method == "sendMessage":
-                msg["text"] = (msg.get("text") or "")[:4096]
-            try:
-                req = urllib.request.Request(
-                    f"https://api.telegram.org/bot{self.token}{path}",
-                    data=json.dumps(msg).encode(),
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-                resp = await asyncio.to_thread(urllib.request.urlopen, req, timeout=15)
-                ok = json.loads(resp.read().decode()).get("ok", False)
-                if ok:
-                    self._sent_count += 1
-                    self._sent_error = ""
-                else:
-                    logger.warning("direct %s: non-ok — leaving for relay", method)
-                    with self._outbox_lock:
-                        self.outbox.insert(0, {"_method": method, **msg})
-            except Exception as e:
-                logger.info("direct %s failed (%s) — leaving for relay", method, e)
-                with self._outbox_lock:
-                    self.outbox.insert(0, {"_method": method, **msg})
-                self._sent_error = str(e)[:200]
-                await asyncio.sleep(5)
-
     async def drain_outbox(self) -> list[dict]:
         with self._outbox_lock:
             out = list(self.outbox)
@@ -469,11 +399,10 @@ class TelegramBot:
             self._voice_queue.clear()
             return out
 
-    # -- Inbound getUpdates polling (removed — using webhook mode) ---------
-    # Webhook + setWebhook direct registration is simpler and more reliable.
-    # Polling was attempted to avoid HF cold-boot drops but the Space can't
-    # reach api.telegram.org for deleteWebhook/getUpdates, so webhook mode
-    # with direct registration is the working approach.
+    # -- Inbound via webhook only (relay registers webhook externally) -----
+    # HF Space cannot reach api.telegram.org at all (SSL handshake times out
+    # on HF free tier). The external relay handles both inbound getUpdates
+    # polling -> /webhook/telegram and outbox draining -> api.telegram.org.
 
     async def stop(self) -> None:
         self._initialized = False
