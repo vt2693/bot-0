@@ -51,9 +51,25 @@ class TelegramBot:
         if not self._use_polling:
             self.enqueue_webhook()
         else:
-            # Delete webhook so Telegram queues updates for getUpdates
-            self.enqueue_config("deleteWebhook", {"drop_pending_updates": True})
+            # Delete webhook directly (not via outbox — relay can't reach
+            # api.telegram.org for methods not in TELEGRAM_METHODS)
+            await self._delete_webhook_direct()
         return True
+
+    async def _delete_webhook_direct(self) -> None:
+        """Call Telegram deleteWebhook directly from inside the Space."""
+        try:
+            req = urllib.request.Request(
+                f"https://api.telegram.org/bot{self.token}/deleteWebhook",
+                data=json.dumps({"drop_pending_updates": True}).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            resp = await asyncio.to_thread(urllib.request.urlopen, req, timeout=10)
+            ok = json.loads(resp.read().decode()).get("ok", False)
+            logger.info("deleteWebhook direct: %s", "OK" if ok else "FAIL")
+        except Exception as e:
+            logger.warning("deleteWebhook direct failed: %s", e)
 
     def enqueue_webhook(self) -> None:
         """Re-enqueue webhook config (callable from /reconfigure)."""
