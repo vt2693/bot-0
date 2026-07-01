@@ -14,9 +14,9 @@ Docker HF Space wrapper for `hermes-agent` with:
 
 - FastAPI health/API
 - Gradio web chat
-- Telegram webhook inbox + outbox relay
+- Telegram getUpdates polling + outbox relay (external — HF Space can't reach api.telegram.org)
 - Android Termux relay scripts
-- SQLite memory in `/data/hermes`
+- SQLite memory with HF Hub backup
 - Composio MCP client
 - Firecrawl scrape/search/crawl via Composio MCP
 - voice memo → transcription relay → LLM minutes
