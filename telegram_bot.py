@@ -34,9 +34,6 @@ class TelegramBot:
         self._sent_error = ""
         self.scheduler = None
         self._pending_schedule: dict[str, dict] = {}
-        # Inbound polling (bypass webhook, avoid HF cold-boot issue)
-        self._use_polling = os.getenv("TELEGRAM_POLLING", "true").lower() in ("true", "1", "yes")
-        self._poll_offset = 0
 
     @property
     def configured(self) -> bool:
@@ -48,28 +45,32 @@ class TelegramBot:
         self._initialized = True
         self._start_time = time.time()
         self.configure_commands()
-        if not self._use_polling:
-            self.enqueue_webhook()
-        else:
-            # Delete webhook directly (not via outbox — relay can't reach
-            # api.telegram.org for methods not in TELEGRAM_METHODS)
-            await self._delete_webhook_direct()
+        # Register webhook + commands directly (not via outbox — api.telegram.org
+        # must be reachable from the Space for inbound webhook delivery to work)
+        await self._register_webhook_direct()
         return True
 
-    async def _delete_webhook_direct(self) -> None:
-        """Call Telegram deleteWebhook directly from inside the Space."""
+    async def _register_webhook_direct(self) -> None:
+        """Call Telegram setWebhook directly so inbox webhooks start flowing.
+
+        This also resets Telegram's error counter (webhook was disabled after
+        repeated cold-boot timeouts). Without this, Telegram won't deliver
+        even when the Space is warm.
+        """
         try:
+            url = os.getenv("TELEGRAM_WEBHOOK_URL", os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space") + "/webhook/telegram")
+            payload = {"url": url, "allowed_updates": ["message", "edited_message", "callback_query"], "max_connections": 40, "drop_pending_updates": True}
             req = urllib.request.Request(
-                f"https://api.telegram.org/bot{self.token}/deleteWebhook",
-                data=json.dumps({"drop_pending_updates": True}).encode(),
+                f"https://api.telegram.org/bot{self.token}/setWebhook",
+                data=json.dumps(payload).encode(),
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            resp = await asyncio.to_thread(urllib.request.urlopen, req, timeout=10)
-            ok = json.loads(resp.read().decode()).get("ok", False)
-            logger.info("deleteWebhook direct: %s", "OK" if ok else "FAIL")
+            resp = await asyncio.to_thread(urllib.request.urlopen, req, timeout=15)
+            data = json.loads(resp.read().decode())
+            logger.info("setWebhook direct: %s — %s", data.get("description", "?"), data)
         except Exception as e:
-            logger.warning("deleteWebhook direct failed: %s", e)
+            logger.warning("setWebhook direct failed: %s — webhook may not be registered", e)
 
     def enqueue_webhook(self) -> None:
         """Re-enqueue webhook config (callable from /reconfigure)."""
@@ -398,6 +399,56 @@ class TelegramBot:
         except Exception:
             return False
 
+    async def _drain_outbox_direct(self) -> None:
+        """Try sending outbox messages directly to api.telegram.org.
+
+        If direct send succeeds, the message is consumed (no relay needed).
+        If it fails, the message stays in the outbox for the external relay.
+        """
+        _PA = {
+            "sendMessage": "/sendMessage",
+            "editMessageText": "/editMessageText",
+            "answerCallbackQuery": "/answerCallbackQuery",
+            "setWebhook": "/setWebhook",
+            "deleteWebhook": "/deleteWebhook",
+            "setMyCommands": "/setMyCommands",
+            "setChatMenuButton": "/setChatMenuButton",
+        }
+        while self._initialized:
+            msg = None
+            with self._outbox_lock:
+                if self.outbox and self.outbox[0].get("_method") in _PA:
+                    msg = self.outbox.pop(0)
+            if not msg:
+                await asyncio.sleep(0.5)
+                continue
+            method = msg.pop("_method", "sendMessage")
+            path = _PA.get(method, "/sendMessage")
+            if method == "sendMessage":
+                msg["text"] = (msg.get("text") or "")[:4096]
+            try:
+                req = urllib.request.Request(
+                    f"https://api.telegram.org/bot{self.token}{path}",
+                    data=json.dumps(msg).encode(),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                resp = await asyncio.to_thread(urllib.request.urlopen, req, timeout=15)
+                ok = json.loads(resp.read().decode()).get("ok", False)
+                if ok:
+                    self._sent_count += 1
+                    self._sent_error = ""
+                else:
+                    logger.warning("direct %s: non-ok — leaving for relay", method)
+                    with self._outbox_lock:
+                        self.outbox.insert(0, {"_method": method, **msg})
+            except Exception as e:
+                logger.info("direct %s failed (%s) — leaving for relay", method, e)
+                with self._outbox_lock:
+                    self.outbox.insert(0, {"_method": method, **msg})
+                self._sent_error = str(e)[:200]
+                await asyncio.sleep(5)
+
     async def drain_outbox(self) -> list[dict]:
         with self._outbox_lock:
             out = list(self.outbox)
@@ -418,30 +469,11 @@ class TelegramBot:
             self._voice_queue.clear()
             return out
 
-    # -- Inbound getUpdates polling (bypass webhook cold-boot issue) --------
-
-    async def _polling_worker(self) -> None:
-        """Long-poll Telegram getUpdates, enqueue into processing queue."""
-        while self._initialized and self._use_polling:
-            try:
-                params = {"offset": self._poll_offset, "timeout": 30, "allowed_updates": ["message", "edited_message", "callback_query"]}
-                req = urllib.request.Request(
-                    f"https://api.telegram.org/bot{self.token}/getUpdates",
-                    data=json.dumps(params).encode(),
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-                resp = await asyncio.to_thread(urllib.request.urlopen, req, timeout=35)
-                data = json.loads(resp.read().decode())
-                results = data.get("result", [])
-                if results:
-                    self._poll_offset = results[-1]["update_id"] + 1
-                    for update in results:
-                        self.enqueue_update(update)
-            except asyncio.CancelledError:
-                break
-            except Exception:
-                await asyncio.sleep(5)  # transient error, retry without thrash
+    # -- Inbound getUpdates polling (removed — using webhook mode) ---------
+    # Webhook + setWebhook direct registration is simpler and more reliable.
+    # Polling was attempted to avoid HF cold-boot drops but the Space can't
+    # reach api.telegram.org for deleteWebhook/getUpdates, so webhook mode
+    # with direct registration is the working approach.
 
     async def stop(self) -> None:
         self._initialized = False
