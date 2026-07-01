@@ -76,6 +76,7 @@ class MemoryStore:
                     repo_id=space,
                     repo_type="space",
                     token=token,
+                    revision="memory-backups",
                 )
                 logger.info("Memory: backed up %d bytes to HF Hub", db.stat().st_size)
             finally:
