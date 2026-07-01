@@ -116,7 +116,7 @@ class HermesBridge:
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
-        for _ in range(25):
+        for _ in range(100):
             resp = client.chat.completions.create(**kwargs)
             msg = resp.choices[0].message
             calls = getattr(msg, "tool_calls", None) or []
@@ -129,7 +129,7 @@ class HermesBridge:
                 result = self._execute_tool(name, args)
                 messages.append({"role": "tool", "tool_call_id": c.id, "content": result[:12000]})
             kwargs["messages"] = messages
-        return f"Tool loop stopped after 25 rounds. The task may need more steps or the tools are failing. Try a simpler request."
+        return f"Tool loop stopped after 100 rounds. The task may need more steps or the tools are failing. Try a simpler request."
 
     def _execute_tool(self, name: str, args: dict) -> str:
         import asyncio
