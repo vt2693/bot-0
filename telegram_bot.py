@@ -34,6 +34,9 @@ class TelegramBot:
         self._sent_error = ""
         self.scheduler = None
         self._pending_schedule: dict[str, dict] = {}
+        # Inbound polling (bypass webhook, avoid HF cold-boot issue)
+        self._use_polling = os.getenv("TELEGRAM_POLLING", "true").lower() in ("true", "1", "yes")
+        self._poll_offset = 0
 
     @property
     def configured(self) -> bool:
@@ -45,7 +48,11 @@ class TelegramBot:
         self._initialized = True
         self._start_time = time.time()
         self.configure_commands()
-        self.enqueue_webhook()
+        if not self._use_polling:
+            self.enqueue_webhook()
+        else:
+            # Delete webhook so Telegram queues updates for getUpdates
+            self.enqueue_config("deleteWebhook", {"drop_pending_updates": True})
         return True
 
     def enqueue_webhook(self) -> None:
@@ -394,6 +401,31 @@ class TelegramBot:
             out = list(self._voice_queue)
             self._voice_queue.clear()
             return out
+
+    # -- Inbound getUpdates polling (bypass webhook cold-boot issue) --------
+
+    async def _polling_worker(self) -> None:
+        """Long-poll Telegram getUpdates, enqueue into processing queue."""
+        while self._initialized and self._use_polling:
+            try:
+                params = {"offset": self._poll_offset, "timeout": 30, "allowed_updates": ["message", "edited_message", "callback_query"]}
+                req = urllib.request.Request(
+                    f"https://api.telegram.org/bot{self.token}/getUpdates",
+                    data=json.dumps(params).encode(),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                resp = await asyncio.to_thread(urllib.request.urlopen, req, timeout=35)
+                data = json.loads(resp.read().decode())
+                results = data.get("result", [])
+                if results:
+                    self._poll_offset = results[-1]["update_id"] + 1
+                    for update in results:
+                        self.enqueue_update(update)
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                await asyncio.sleep(5)  # transient error, retry without thrash
 
     async def stop(self) -> None:
         self._initialized = False
