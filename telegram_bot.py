@@ -26,7 +26,7 @@ class TelegramBot:
         self.outbox: list[dict] = []
         self._outbox_lock = threading.Lock()
         self._chat_history: dict[str, list] = {}
-        self._history_max = 100
+        self._history_max = 1000
         self._voice_queue: list[dict] = []
         self._voice_lock = threading.Lock()
         self._menu_msg_id: dict[int, int] = {}  # chat_id -> last menu message_id
