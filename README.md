@@ -16,7 +16,7 @@ Docker HF Space wrapper for `hermes-agent` with:
 - Gradio web chat
 - Telegram getUpdates polling + outbox relay (external — HF Space can't reach api.telegram.org)
 - Android Termux relay scripts
-- SQLite memory with HF Hub backup
+- SQLite memory + learned skills with HF Hub backup
 - Composio MCP client
 - Firecrawl scrape/search/crawl via Composio MCP
 - voice memo → transcription relay → LLM minutes
@@ -31,6 +31,7 @@ Set in HF Space Settings → Secrets:
 - `COMPOSIO_CONSUMER_API_KEY`
 - Optional: `GROQ_API_KEY` for in-Space chat fallback. Voice relay reads Groq on Android.
 - Optional: `PROVIDER=opencode_zen`
+- Optional: `AUTO_LEARN=true` to detect reusable skills and ask before saving them
 
 ## Android relay
 

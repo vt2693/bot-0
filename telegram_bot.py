@@ -34,6 +34,7 @@ class TelegramBot:
         self._sent_error = ""
         self.scheduler = None
         self._pending_schedule: dict[str, dict] = {}
+        self._pending_skills: dict[str, dict] = {}
 
     @property
     def configured(self) -> bool:
@@ -143,7 +144,7 @@ class TelegramBot:
             else:
                 self._send_message(chat_id, "Providers:\n" + "\n".join(self.bridge.available_providers().keys()))
         elif cmd == "/improve":
-            self._send_message(chat_id, "Skills improvement not yet implemented for this deployment.")
+            await self._handle_improve(chat_id, arg)
         elif cmd == "/secrets":
             s = self.bridge.status() if self.bridge else {}
             self._send_message(chat_id, "Provider: " + s.get("provider", "?") + "\nComposio: " + str(bool(getattr(self.bridge, "_composio", None))) + "\nFirecrawl: via Composio")
@@ -188,6 +189,32 @@ class TelegramBot:
 
     async def _handle_message(self, chat_id: int, text: str) -> None:
         key = str(chat_id)
+        # Check for skill-edit continuation before sending text to LLM
+        edit_key = None
+        for k, v in list(self._pending_skills.items()):
+            if k.endswith("_editing") and v.get("chat_id") == chat_id:
+                edit_key = k
+                break
+        if edit_key:
+            edit_info = self._pending_skills.pop(edit_key, None)
+            if edit_info:
+                skill_id = edit_info.get("skill_id")
+                if skill_id and self.bridge and self.bridge.memory_store:
+                    if self.bridge.memory_store.skill_update(int(skill_id), procedure=text):
+                        self._send_message(chat_id, f"✅ Skill {skill_id} procedure updated.")
+                    else:
+                        self._send_message(chat_id, "Edit failed: skill not found.")
+                    return
+                orig_token = edit_info.get("orig_token")
+                pending = self._pending_skills.get(orig_token) if orig_token else None
+                if pending and pending.get("chat_id") == chat_id:
+                    skill = pending["skill"]
+                    skill["procedure"] = text
+                    self._send_message(chat_id, "✅ Procedure updated. Review and save:")
+                    self._show_skill_confirmation(chat_id, skill)
+                else:
+                    self._send_message(chat_id, "Edit session expired.")
+            return
         hist = self._chat_history.get(key, [])
         self._enqueue_typing(chat_id)
         refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
@@ -200,9 +227,138 @@ class TelegramBot:
             except asyncio.CancelledError:
                 pass
         self._chat_history.setdefault(key, [])
+        skill_info = None
+        if isinstance(response, str) and response.startswith('{"_skill_detected'):
+            try:
+                parsed = json.loads(response)
+                skill_info = parsed.get("_skill_detected")
+                response = parsed.get("response", "")
+            except (json.JSONDecodeError, TypeError):
+                pass
         self._chat_history[key].extend([{"role": "user", "content": text}, {"role": "assistant", "content": response}])
         self._chat_history[key] = self._chat_history[key][-self._history_max:]
         self._send_message(chat_id, response)
+        if skill_info:
+            await self._show_skill_confirmation(chat_id, skill_info)
+
+    def _show_skill_confirmation(self, chat_id: int, skill: dict) -> None:
+        """Send inline confirmation for a detected skill."""
+        import uuid as _uuid
+        token = _uuid.uuid4().hex[:8]
+        self._pending_skills[token] = {
+            "chat_id": chat_id,
+            "skill": skill,
+            "expires_at": time.time() + 300,
+        }
+        title = skill.get("title", "?")[:80]
+        problem = skill.get("problem", "?")[:200]
+        procedure = skill.get("procedure", "?")[:300]
+        text = (
+            f"📘 Potential skill learned:\n\n"
+            f"Title: {title}\n"
+            f"Trigger: {problem}\n"
+            f"Steps: {procedure}\n"
+        )
+        failure = skill.get("failure_pattern", "")
+        if failure:
+            text += f"Avoid: {failure[:200]}\n"
+        kb = {
+            "inline_keyboard": [
+                [
+                    {"text": "💾 Save", "callback_data": f"ac:skill_save:{token}"},
+                    {"text": "📝 Edit", "callback_data": f"ac:skill_edit:{token}"},
+                    {"text": "❌ Discard", "callback_data": f"ac:skill_discard:{token}"},
+                ]
+            ]
+        }
+        self._send_message(chat_id, text, reply_markup=kb)
+
+    def _pending_skill_cleanup(self) -> None:
+        now = time.time()
+        self._pending_skills = {k: v for k, v in self._pending_skills.items() if v.get("expires_at", 0) > now}
+
+    async def _handle_improve(self, chat_id: int, arg: str) -> None:
+        ms = self.bridge.memory_store if self.bridge else None
+        if not ms:
+            self._send_message(chat_id, "Memory system not available.")
+            return
+        parts = arg.split(maxsplit=1) if arg else []
+        sub = parts[0].lower() if parts else ""
+        sub_arg = parts[1].strip() if len(parts) > 1 else ""
+        if not sub:
+            # List all skills
+            skills = ms.skill_list(str(chat_id))
+            if not skills:
+                self._send_message(chat_id, "No skills saved yet. Skills are auto-detected with AUTO_LEARN=true.")
+                return
+            lines = [f"Skills ({len(skills)} total):\n"]
+            for s in skills:
+                icon = "🟢" if s["status"] == "active" else ("🟡" if s["status"] == "unverified" else "⚪")
+                lines.append(f"{icon} {s['id']}: {s['title'][:80]}")
+            self._send_message(chat_id, "\n".join(lines))
+        elif sub == "search" and sub_arg:
+            results = ms.skill_search(sub_arg, str(chat_id), 10)
+            if not results:
+                self._send_message(chat_id, f"No skills matching: {sub_arg}")
+                return
+            lines = [f"Skills matching '{sub_arg}':\n"]
+            for s in results:
+                lines.append(f"{s['id']}: {s['title'][:80]}")
+            self._send_message(chat_id, "\n".join(lines))
+        elif sub in ("delete", "del", "rm") and sub_arg:
+            try:
+                sid = int(sub_arg)
+            except ValueError:
+                self._send_message(chat_id, "Usage: /improve delete <id>")
+                return
+            if ms.skill_remove(sid):
+                self._send_message(chat_id, f"✅ Skill {sid} deleted.")
+            else:
+                self._send_message(chat_id, f"Skill {sid} not found.")
+        elif sub == "edit" and sub_arg:
+            try:
+                sid = int(sub_arg)
+            except ValueError:
+                self._send_message(chat_id, "Usage: /improve edit <id>")
+                return
+            s = ms.skill_get(sid)
+            if not s:
+                self._send_message(chat_id, f"Skill {sid} not found.")
+                return
+            token = f"edit_{sid}_{int(time.time())}"
+            self._pending_skills[token + "_editing"] = {
+                "chat_id": chat_id,
+                "skill_id": sid,
+                "step": "procedure",
+                "expires_at": time.time() + 300,
+            }
+            self._send_message(chat_id, f"Send the new procedure text for skill {sid} now.")
+        elif sub == "export":
+            skills = ms.skill_list(str(chat_id))
+            blob = json.dumps(skills, indent=2, default=str)
+            for chunk in [blob[i:i+3900] for i in range(0, len(blob), 3900)]:
+                self._send_message(chat_id, chunk)
+        else:
+            # Try showing detail by ID
+            try:
+                sid = int(sub)
+            except ValueError:
+                self._send_message(chat_id, "Usage: /improve [list|search <q>|edit <id>|delete <id>|export]")
+                return
+            s = ms.skill_get(sid)
+            if not s:
+                self._send_message(chat_id, f"Skill {sid} not found.")
+                return
+            text = (
+                f"Skill {s['id']} — {s['status']}\n\n"
+                f"Title: {s['title']}\n"
+                f"Problem: {s['problem']}\n"
+                f"Procedure: {s['procedure']}\n"
+            )
+            if s["failure_pattern"]:
+                text += f"Failure pattern: {s['failure_pattern']}\n"
+            text += f"\nUsage: {s['access_count']}× | Injected: {s['injection_count']}× | Created: {time.strftime('%Y-%m-%d', time.localtime(s['created_at']))}"
+            self._send_message(chat_id, text)
 
     async def _handle_schedule_add(self, chat_id: int, text: str) -> None:
         """Parse /schedule add <text>, show confirmation with Yes/No inline."""
@@ -332,6 +488,107 @@ class TelegramBot:
         elif data.startswith("ac:schedule_rs:"):
             job_id = data[15:]
             await _action_schedule_resume_by_id(self, chat_id, job_id)
+        elif data.startswith("ac:skill_save:"):
+            token = data[len("ac:skill_save:"):]
+            self._pending_skill_cleanup()
+            pending = self._pending_skills.pop(token, None)
+            if not pending or pending.get("chat_id") != chat_id:
+                self._send_message(chat_id, "Confirmation expired or invalid.")
+                return
+            if pending.get("expires_at", 0) < time.time():
+                self._send_message(chat_id, "Confirmation expired.")
+                return
+            skill = pending["skill"]
+            ms = self.bridge.memory_store if self.bridge else None
+            if not ms:
+                self._send_message(chat_id, "Memory system not available.")
+                return
+            r = ms.skill_add(
+                title=skill.get("title", "Untitled"),
+                problem=skill.get("problem", ""),
+                procedure=skill.get("procedure", ""),
+                failure_pattern=skill.get("failure_pattern", ""),
+                tags=[],
+                scope=str(chat_id),
+            )
+            if r.get("error"):
+                self._send_message(chat_id, f"Failed to save: {r['error']}")
+            else:
+                self._send_message(chat_id, f"✅ Skill saved! ID: {r['id']}")
+        elif data.startswith("ac:skill_edit:"):
+            token = data[len("ac:skill_edit:"):]
+            self._pending_skill_cleanup()
+            pending = self._pending_skills.get(token)
+            if not pending or pending.get("chat_id") != chat_id:
+                self._send_message(chat_id, "Confirmation expired or invalid.")
+                return
+            skill = pending["skill"]
+            self._send_message(chat_id, "Send the corrected procedure text now.")
+            # Store edit context for next message
+            self._pending_skills[token + "_editing"] = {"chat_id": chat_id, "skill": skill, "step": "procedure", "orig_token": token, "expires_at": time.time() + 300}
+        elif data.startswith("ac:skill_discard:"):
+            token = data[len("ac:skill_discard:"):]
+            self._pending_skills.pop(token, None)
+            self._send_callback_answer(cb_id, "Discarded")
+            self._send_message(chat_id, "Skill discarded.")
+        elif data.startswith("ac:skill_confirm_del:"):
+            sid = data[len("ac:skill_confirm_del:"):]
+            self._send_message(chat_id, f"Send /improve delete {sid} to confirm deletion.")
+        elif data.startswith("ac:skill_detail:"):
+            sid_str = data[len("ac:skill_detail:"):]
+            try:
+                sid = int(sid_str)
+            except ValueError:
+                self._send_message(chat_id, "Invalid skill ID.")
+                return
+            ms = self.bridge.memory_store if self.bridge else None
+            if not ms:
+                self._send_message(chat_id, "Memory not available.")
+                return
+            s = ms.skill_get(sid)
+            if not s:
+                self._send_message(chat_id, f"Skill {sid} not found.")
+                return
+            text = (
+                f"Skill {s['id']} — {s['status']}\n\n"
+                f"Title: {s['title']}\n"
+                f"Problem: {s['problem']}\n"
+                f"Procedure: {s['procedure']}\n"
+            )
+            if s["failure_pattern"]:
+                text += f"Failure pattern: {s['failure_pattern']}\n"
+            text += f"\nUsage: {s['access_count']}× | Injected: {s['injection_count']}×"
+            self._send_message(chat_id, text)
+        elif data.startswith("ac:skill_autolearn_toggle"):
+            ms = self.bridge.memory_store if self.bridge else None
+            if not ms:
+                self._send_message(chat_id, "Memory not available.")
+                return
+            # Toggle via a fact entry; newest exact flag wins
+            current = ms.search("auto_learn", str(chat_id), 20)
+            exact = [c for c in current if c["content"].strip().lower() in ("auto_learn=true", "auto_learn=false")]
+            is_on = False
+            if exact:
+                latest = max(exact, key=lambda c: c.get("id", 0))
+                is_on = latest["content"].strip().lower() == "auto_learn=true"
+            if is_on:
+                ms.add("auto_learn=false", str(chat_id))
+                self._send_message(chat_id, "⚙️ Auto-learn turned OFF.")
+            else:
+                ms.add("auto_learn=true", str(chat_id))
+                self._send_message(chat_id, "⚙️ Auto-learn turned ON.")
+        elif data.startswith("ac:skill_forget_inactive"):
+            ms = self.bridge.memory_store if self.bridge else None
+            if not ms:
+                self._send_message(chat_id, "Memory not available.")
+                return
+            skills = ms.skill_list(str(chat_id))
+            removed = 0
+            for s in skills:
+                if s["status"] == "inactive":
+                    ms.skill_remove(s["id"])
+                    removed += 1
+            self._send_message(chat_id, f"Removed {removed} inactive skills.")
         elif data.startswith("ac:"):
             handler = MENU_ACTIONS_ASYNC.get(data[3:])
             if handler:
@@ -427,6 +684,7 @@ MENUS = {
             [{"text": "🧠 Memory", "callback_data": "mn:memory"}],
             [{"text": "💬 Chat", "callback_data": "mn:chat"}],
             [{"text": "🎤 Voice & Minutes", "callback_data": "mn:voice"}],
+            [{"text": "📘 Skills", "callback_data": "mn:skills"}],
             [{"text": "⚙️ System", "callback_data": "mn:system"}],
             [{"text": "⏰ Schedule", "callback_data": "mn:schedule"}],
         ],
@@ -487,6 +745,16 @@ MENUS = {
         "buttons": [
             [{"text": "➕ Add Task", "callback_data": "ac:schedule_add"}],
             [{"text": "📋 List Tasks", "callback_data": "ac:schedule_list"}],
+            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+        ],
+    },
+    "skills": {
+        "text": "📘 Skills\n\nSkills let you save reusable procedures from conversations.\n\nUse /improve for detail and management.",
+        "buttons": [
+            [{"text": "📋 List Skills", "callback_data": "ac:skill_list"}],
+            [{"text": "🔍 Search", "callback_data": "ac:skill_search_prompt"}],
+            [{"text": "⚙️ Toggle Auto-Learn", "callback_data": "ac:skill_autolearn_toggle"}],
+            [{"text": "🧹 Forget Inactive", "callback_data": "ac:skill_forget_inactive"}],
             [{"text": "🔙 Back", "callback_data": "mn:main"}],
         ],
     },
@@ -699,6 +967,67 @@ async def _action_schedule_resume_by_id(bot: TelegramBot, chat_id: int, job_id: 
         bot._send_message(chat_id, f"▶️ Job resumed. Next run at {next_s}.")
 
 
+# -- Skill action handlers ----------------------------------------------------
+
+
+async def _action_skill_list(bot: TelegramBot, chat_id: int) -> None:
+    ms = bot.bridge.memory_store if bot.bridge else None
+    if not ms:
+        bot._send_message(chat_id, "Memory not available.")
+        return
+    skills = ms.skill_list(str(chat_id))
+    if not skills:
+        bot._send_message(chat_id, "No skills saved yet.")
+        return
+    active = sum(1 for s in skills if s["status"] == "active")
+    unverified = sum(1 for s in skills if s["status"] == "unverified")
+    inactive = sum(1 for s in skills if s["status"] == "inactive")
+    lines = [f"📘 Skills ({len(skills)} total): {active} active, {unverified} pending, {inactive} inactive\n"]
+    for s in skills[:15]:
+        icon = "🟢" if s["status"] == "active" else ("🟡" if s["status"] == "unverified" else "⚪")
+        lines.append(f"{icon} {s['id']}: {s['title'][:80]}")
+    if len(skills) > 15:
+        lines.append(f"\n...and {len(skills) - 15} more. Use /improve to see all.")
+    bot._send_message(chat_id, "\n".join(lines))
+
+
+async def _action_skill_search_prompt(bot: TelegramBot, chat_id: int) -> None:
+    bot._send_message(chat_id, "Send a search query to find matching skills.\n\nOr use: /improve search <query>")
+
+
+async def _action_skill_autolearn_toggle(bot: TelegramBot, chat_id: int) -> None:
+    ms = bot.bridge.memory_store if bot.bridge else None
+    if not ms:
+        bot._send_message(chat_id, "Memory not available.")
+        return
+    current = ms.search("auto_learn", str(chat_id), 20)
+    exact = [c for c in current if c["content"].strip().lower() in ("auto_learn=true", "auto_learn=false")]
+    is_on = False
+    if exact:
+        latest = max(exact, key=lambda c: c.get("created_at", 0))
+        is_on = latest["content"].strip().lower() == "auto_learn=true"
+    if is_on:
+        ms.add("auto_learn=false", str(chat_id))
+        bot._send_message(chat_id, "⚙️ Auto-learn turned OFF.")
+    else:
+        ms.add("auto_learn=true", str(chat_id))
+        bot._send_message(chat_id, "⚙️ Auto-learn turned ON.")
+
+
+async def _action_skill_forget_inactive(bot: TelegramBot, chat_id: int) -> None:
+    ms = bot.bridge.memory_store if bot.bridge else None
+    if not ms:
+        bot._send_message(chat_id, "Memory not available.")
+        return
+    skills = ms.skill_list(str(chat_id))
+    removed = 0
+    for s in skills:
+        if s["status"] == "inactive":
+            ms.skill_remove(s["id"])
+            removed += 1
+    bot._send_message(chat_id, f"Removed {removed} inactive skills.")
+
+
 MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "web_status": _action_web_status,
     "memory_view": _action_memory_view,
@@ -714,4 +1043,8 @@ MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "system_composio": _action_system_composio,
     "schedule_add": _action_schedule_add,
     "schedule_list": _action_schedule_list,
+    "skill_list": _action_skill_list,
+    "skill_search_prompt": _action_skill_search_prompt,
+    "skill_autolearn_toggle": _action_skill_autolearn_toggle,
+    "skill_forget_inactive": _action_skill_forget_inactive,
 }

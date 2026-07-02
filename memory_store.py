@@ -104,6 +104,25 @@ class MemoryStore:
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_facts_scope ON facts(scope)")
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_facts_created ON facts(created_at)")
         self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS skills (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                problem TEXT NOT NULL,
+                procedure TEXT NOT NULL,
+                evidence TEXT DEFAULT '',
+                failure_pattern TEXT DEFAULT '',
+                tags TEXT DEFAULT '[]',
+                scope TEXT NOT NULL DEFAULT 'global',
+                status TEXT NOT NULL DEFAULT 'unverified',
+                access_count INTEGER DEFAULT 0,
+                injection_count INTEGER DEFAULT 0,
+                created_at REAL NOT NULL,
+                updated_at REAL NOT NULL
+            )
+        """)
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_skills_scope ON skills(scope)")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status)")
+        self._conn.execute("""
             CREATE TABLE IF NOT EXISTS scheduled_jobs (
                 id TEXT PRIMARY KEY,
                 chat_id INTEGER NOT NULL,
@@ -227,11 +246,15 @@ class MemoryStore:
             total = self._conn.execute("SELECT COUNT(*) FROM facts").fetchone()[0]
             avg = self._conn.execute("SELECT COALESCE(AVG(trust_score),0) FROM facts").fetchone()[0]
             top = self._conn.execute("SELECT * FROM facts ORDER BY created_at DESC LIMIT 10").fetchall()
-        return {"total_facts": total, "avg_trust": avg, "top_facts": [self._row(r) for r in top]}
+            skill_count = self._conn.execute("SELECT COUNT(*) FROM skills").fetchone()[0]
+            active_skills = self._conn.execute("SELECT COUNT(*) FROM skills WHERE status='active'").fetchone()[0]
+            unverified_skills = self._conn.execute("SELECT COUNT(*) FROM skills WHERE status='unverified'").fetchone()[0]
+            inactive_skills = self._conn.execute("SELECT COUNT(*) FROM skills WHERE status='inactive'").fetchone()[0]
+        return {"total_facts": total, "avg_trust": avg, "top_facts": [self._row(r) for r in top], "skill_count": skill_count, "active_skills": active_skills, "unverified_skills": unverified_skills, "inactive_skills": inactive_skills}
 
     def status(self) -> dict:
         s = self.stats()
-        return {"ready": self.ready, "db_path": self.db_path, "fact_count": s["total_facts"], "avg_trust": s["avg_trust"], "top_facts": s["top_facts"]}
+        return {"ready": self.ready, "db_path": self.db_path, "fact_count": s["total_facts"], "avg_trust": s["avg_trust"], "top_facts": s["top_facts"], "skill_count": s["skill_count"], "active_skills": s["active_skills"], "unverified_skills": s["unverified_skills"], "inactive_skills": s["inactive_skills"]}
 
     def close(self) -> None:
         if self._conn:
@@ -243,3 +266,162 @@ class MemoryStore:
     def sync(self) -> None:
         """Explicit backup call (e.g. from a periodic timer)."""
         self._backup_to_hub()
+
+    # -- Skills -------------------------------------------------------------------
+
+    def _skill_row(self, row: sqlite3.Row) -> dict:
+        return {
+            "id": row["id"], "title": row["title"], "problem": row["problem"],
+            "procedure": row["procedure"], "evidence": row["evidence"],
+            "failure_pattern": row["failure_pattern"],
+            "tags": json.loads(row["tags"] or "[]"),
+            "scope": row["scope"], "status": row["status"],
+            "access_count": row["access_count"],
+            "injection_count": row["injection_count"],
+            "created_at": row["created_at"], "updated_at": row["updated_at"],
+        }
+
+    def skill_add(self, title: str, problem: str, procedure: str,
+                  failure_pattern: str = "", tags: list | None = None,
+                  scope: str = "global") -> dict:
+        """Add a skill. Upserts on normalized title match."""
+        title = (title or "").strip()[:300]
+        if not title or not procedure:
+            return {"id": -1, "error": "title and procedure required"}
+        norm = title.lower().strip()
+        now = time.time()
+        with self._lock:
+            existing = self._conn.execute(
+                "SELECT id FROM skills WHERE LOWER(TRIM(title))=?", (norm,)
+            ).fetchone()
+            if existing:
+                self._conn.execute(
+                    "UPDATE skills SET access_count=access_count+1, updated_at=? WHERE id=?",
+                    (now, existing["id"]),
+                )
+                self._conn.commit()
+                return {"id": existing["id"], "error": ""}
+            cur = self._conn.execute(
+                "INSERT INTO skills(title,problem,procedure,evidence,failure_pattern,tags,scope,created_at,updated_at)"
+                " VALUES(?,?,?,?,?,?,?,?,?)",
+                (title, problem, procedure, "", failure_pattern,
+                 json.dumps(tags or []), scope, now, now),
+            )
+            self._conn.commit()
+            rowid = int(cur.lastrowid)
+        self._backup_to_hub()
+        return {"id": rowid, "error": ""}
+
+    def skill_search(self, query: str, scope: str | None = "global",
+                     limit: int = 5) -> list[dict]:
+        """LIKE-based token match on title + problem + tags. Excludes inactive."""
+        words = [w for w in (query or "").lower().split() if len(w) > 2]
+        if not words:
+            return [s for s in self.skill_list(scope) if s["status"] != "inactive"][:limit]
+        results = []
+        with self._lock:
+            for word in words[:5]:
+                q = f"%{word}%"
+                if scope:
+                    sql = ("SELECT * FROM skills WHERE scope=? AND status!='inactive' "
+                           "AND (LOWER(title) LIKE ? OR LOWER(problem) LIKE ? OR LOWER(tags) LIKE ?) "
+                           "ORDER BY access_count DESC, created_at DESC LIMIT ?")
+                    params = (scope, q, q, q, limit)
+                else:
+                    sql = ("SELECT * FROM skills WHERE status!='inactive' "
+                           "AND (LOWER(title) LIKE ? OR LOWER(problem) LIKE ? OR LOWER(tags) LIKE ?) "
+                           "ORDER BY access_count DESC, created_at DESC LIMIT ?")
+                    params = (q, q, q, limit)
+                results.extend(self._conn.execute(sql, params).fetchall())
+        seen, out = set(), []
+        for r in results:
+            if r["id"] not in seen:
+                seen.add(r["id"])
+                out.append(self._skill_row(r))
+        return out[:limit]
+
+    def skill_list(self, scope: str | None = "global") -> list[dict]:
+        if scope:
+            sql = "SELECT * FROM skills WHERE scope=? ORDER BY created_at DESC"
+            params = (scope,)
+        else:
+            sql = "SELECT * FROM skills ORDER BY created_at DESC"
+            params = ()
+        with self._lock:
+            return [self._skill_row(r)
+                    for r in self._conn.execute(sql, params).fetchall()]
+
+    def skill_get(self, skill_id: int) -> dict | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM skills WHERE id=?", (skill_id,)
+            ).fetchone()
+            return self._skill_row(row) if row else None
+
+    def skill_update(self, skill_id: int, **fields) -> bool:
+        allowed = {"title", "problem", "procedure", "failure_pattern",
+                   "tags", "status"}
+        updates = {k: v for k, v in fields.items() if k in allowed}
+        if "tags" in updates and not isinstance(updates["tags"], str):
+            updates["tags"] = json.dumps(updates["tags"] or [])
+        if not updates:
+            return False
+        now = time.time()
+        updates["updated_at"] = now
+        sets = ", ".join(f"{k}=?" for k in updates)
+        vals = list(updates.values()) + [skill_id]
+        with self._lock:
+            self._conn.execute(
+                f"UPDATE skills SET {sets} WHERE id=?", vals
+            )
+            self._conn.commit()
+            rc = self._conn.execute(
+                "SELECT changes()"
+            ).fetchone()[0]
+        if rc:
+            self._backup_to_hub()
+        return rc > 0
+
+    def skill_remove(self, skill_id: int) -> bool:
+        with self._lock:
+            self._conn.execute("DELETE FROM skills WHERE id=?", (skill_id,))
+            self._conn.commit()
+            rc = self._conn.execute("SELECT changes()").fetchone()[0]
+        if rc:
+            self._backup_to_hub()
+        return rc > 0
+
+    def skill_inject(self, query: str, scope: str = "global",
+                     limit: int = 3) -> list[dict]:
+        """Search + increment injection_count. For injection pipeline."""
+        with self._lock:
+            self._conn.execute(
+                "UPDATE skills SET status='inactive' "
+                "WHERE status!='inactive' AND injection_count>=3 AND access_count=0"
+            )
+            self._conn.commit()
+        skills = self.skill_search(query, scope, limit)
+        if skills:
+            ids = [s["id"] for s in skills]
+            now = time.time()
+            with self._lock:
+                self._conn.execute(
+                    f"UPDATE skills SET injection_count=injection_count+1, "
+                    f"updated_at=? WHERE id IN "
+                    f"({','.join('?' for _ in ids)})",
+                    [now] + ids,
+                )
+                self._conn.commit()
+        return skills
+
+    def skill_record_usage(self, skill_id: int) -> bool:
+        with self._lock:
+            self._conn.execute(
+                "UPDATE skills SET access_count=access_count+1, "
+                "status='active', updated_at=? WHERE id=?",
+                (time.time(), skill_id),
+            )
+            self._conn.commit()
+            return self._conn.execute(
+                "SELECT changes()"
+            ).fetchone()[0] > 0

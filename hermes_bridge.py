@@ -19,7 +19,7 @@ class HermesBridge:
         self._model = self._resolve_model()
         self.memory_store = None
         self.memory_enabled = settings.MEMORY_ENABLED
-        self._memory_stats = {"injections": 0, "hits": 0, "misses": 0, "extractions": 0}
+        self._memory_stats = {"injections": 0, "hits": 0, "misses": 0, "extractions": 0, "skill_detections": 0}
 
     def _resolve_model(self) -> str:
         s = self.settings
@@ -76,10 +76,17 @@ class HermesBridge:
         self._ready = True
         return {"success": True, "provider": self._provider, "model": self._model}
 
-    def _build_messages(self, message: str, history: list, memory_context: str | None = None) -> list[dict]:
+    def _build_messages(self, message: str, history: list, memory_context: str | None = None, injected_skills: list | None = None) -> list[dict]:
         sys = self.settings.SYSTEM_PROMPT
+        if injected_skills:
+            sys += "\n\n[SKILLS]\nRelevant procedures you know:\n"
+            for s in injected_skills:
+                sys += f'- "{s["title"]}": {s["problem"][:200]}\n'
+                if s.get("failure_pattern"):
+                    sys += f'  Failure pattern to avoid: {s["failure_pattern"][:200]}\n'
+            sys += "\nAsk the user if they want the full procedure.\n"
         if memory_context:
-            sys += "\n\nFacts I know about the user (use these to answer accurately):\n" + memory_context
+            sys += "\n\n[USER FACTS]\n" + memory_context
         msgs = [{"role": "system", "content": sys}]
         for item in history[-100:]:
             if isinstance(item, dict):
@@ -102,19 +109,19 @@ class HermesBridge:
             return self._composio.get_openai_tools()
         return []
 
-    def chat(self, message: str, history: list | None = None, memory_context: str | None = None) -> str:
+    def chat(self, message: str, history: list | None = None, memory_context: str | None = None, injected_skills: list | None = None) -> str:
         if not self._ready:
             return "Hermes Agent is not configured. Add a provider API key."
         try:
-            return self._call_llm(message, history or [], memory_context)
+            return self._call_llm(message, history or [], memory_context, injected_skills)
         except Exception as e:
             logger.exception("Chat failed")
             return f"Error: {e}"
 
-    def _call_llm(self, message: str, history: list, memory_context: str | None = None) -> str:
+    def _call_llm(self, message: str, history: list, memory_context: str | None = None, injected_skills: list | None = None) -> str:
         import openai
         client = openai.OpenAI(api_key=self._resolve_api_key(), base_url=self._resolve_base_url(), max_retries=0)
-        messages = self._build_messages(message, history, memory_context)
+        messages = self._build_messages(message, history, memory_context, injected_skills)
         tools = self._get_tools()
         kwargs = {"model": self._model, "messages": messages, "max_tokens": self.settings.MAX_TOKENS, "temperature": self.settings.TEMPERATURE}
         if tools:
@@ -176,8 +183,23 @@ class HermesBridge:
                         self.memory_store.add(fact, scope)
                         self._memory_stats["extractions"] += 1
 
+    def _auto_learn_enabled(self, scope: str) -> bool:
+        env_on = self.settings.AUTO_LEARN
+        if not self.memory_store:
+            return env_on
+        try:
+            flags = self.memory_store.search("auto_learn", scope, 20)
+            exact = [f for f in flags if f["content"].strip().lower() in ("auto_learn=true", "auto_learn=false")]
+            if exact:
+                latest = max(exact, key=lambda f: f.get("id", 0))
+                return latest["content"].strip().lower() == "auto_learn=true"
+        except Exception:
+            pass
+        return env_on
+
     def chat_with_memory(self, message: str, history: list | None = None, scope: str = "global") -> str:
         mem_block = None
+        injected_skills = None
         if self.memory_enabled and self.memory_store:
             self._memory_stats["injections"] += 1
             mems = self.memory_store.get_relevant(message, scope, 100)
@@ -186,9 +208,64 @@ class HermesBridge:
                 mem_block = "\n".join("- " + m["content"] for m in mems)
             else:
                 self._memory_stats["misses"] += 1
-        response = self.chat(message, history or [], mem_block)
+            # Skill injection
+            skills = self.memory_store.skill_inject(message, scope, 3)
+            if skills:
+                injected_skills = skills
+        response = self.chat(message, history or [], mem_block, injected_skills)
+        if injected_skills and re.search(r"skill|procedure|steps|here.?s how", response or "", re.I):
+            for s in injected_skills:
+                try:
+                    self.memory_store.skill_record_usage(s["id"])
+                except Exception:
+                    pass
         self._extract_facts(message, response, scope)
+        # Skill detection (only for Telegram scope with AUTO_LEARN enabled)
+        if self._auto_learn_enabled(scope) and scope != "gradio":
+            skill = self._detect_skill(message, response, history or [])
+            if skill:
+                return json.dumps({"_skill_detected": skill, "response": response})
         return response
+
+    def _detect_skill(self, message: str, response: str, history: list) -> dict | None:
+        """Two-tier detection. Tier 1: heuristic. Tier 2: LLM extraction.
+        Returns extracted skill dict or None."""
+        import re as _re
+        if not self.memory_store:
+            return None
+        # Tier 1: heuristic gate
+        user_success = bool(_re.search(r"thanks|works|fixed|got it|solved|that did it|perfect", message, _re.I))
+        hist_pairs = len([m for m in history if isinstance(m, dict) and m.get("role") == "user"])
+        correction = hist_pairs >= 3 and bool(_re.search(r"(send|error|token|key|reset|reconfig|relay|timeout)", message, _re.I))
+        explicit = bool(_re.search(r"remember this|save this|note this|learn this", message, _re.I))
+        if not (user_success or correction or explicit):
+            return None
+        # Tier 2: LLM extraction
+        last_user = message[:800]
+        last_asst = response[:800]
+        extract_prompt = (
+            "--- Exchange ---\n"
+            f"User: {last_user}\n"
+            f"Assistant: {last_asst}\n"
+            "--- End ---\n\n"
+            "Was a reusable workflow learned here? Apply the rubric:\n"
+            "1. Was a specific multi-step procedure demonstrated?\n"
+            "2. Was the outcome verified (user confirmed \"works\"/\"thanks\"/\"fixed\")?\n"
+            "3. Is the procedure specific enough to teach someone else?\n\n"
+            "If yes, return ONLY valid JSON (no other text):\n"
+            '{"skill": true, "title": "...", "problem": "...", "procedure": "...", "failure_pattern": "..."}\n\n'
+            'If no: {"skill": false}'
+        )
+        try:
+            body = self.chat(extract_prompt, [])
+            result = json.loads(body)
+            if result.get("skill") and result.get("title") and result.get("procedure"):
+                self._memory_stats.setdefault("skill_detections", 0)
+                self._memory_stats["skill_detections"] += 1
+                return result
+        except (json.JSONDecodeError, Exception):
+            pass
+        return None
 
     def parse_schedule(self, text: str) -> dict:
         """Parse natural-language scheduling intent via constrained LLM call.
