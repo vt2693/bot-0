@@ -1005,7 +1005,7 @@ async def _action_skill_autolearn_toggle(bot: TelegramBot, chat_id: int) -> None
     exact = [c for c in current if c["content"].strip().lower() in ("auto_learn=true", "auto_learn=false")]
     is_on = False
     if exact:
-        latest = max(exact, key=lambda c: c.get("created_at", 0))
+        latest = max(exact, key=lambda c: c.get("id", 0))
         is_on = latest["content"].strip().lower() == "auto_learn=true"
     if is_on:
         ms.add("auto_learn=false", str(chat_id))
