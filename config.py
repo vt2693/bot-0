@@ -74,7 +74,7 @@ class Settings:
             return override
         if override:
             logger.warning("Unknown PROVIDER=%s, auto-detecting", override)
-        if self.ROUTER_0_API_KEY:
+        if self.ROUTER_0_API_KEY or self.ROUTER_0_BASE_URL:
             return "router_0"
         if self.OPENCODE_ZEN_API_KEY:
             return "opencode_zen"

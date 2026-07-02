@@ -41,7 +41,11 @@ class HermesBridge:
 
     def _resolve_api_key(self) -> Optional[str]:
         s = self.settings
-        return {"opencode_zen": s.OPENCODE_ZEN_API_KEY, "openrouter": s.OPENROUTER_API_KEY, "google": s.GOOGLE_API_KEY, "nvidia": s.NVIDIA_API_KEY, "groq": s.GROQ_API_KEY, "openai": s.OPENAI_API_KEY, "anthropic": s.ANTHROPIC_API_KEY, "huggingface": s.HF_TOKEN, "router_0": s.ROUTER_0_API_KEY}.get(self._provider)
+        key = {"opencode_zen": s.OPENCODE_ZEN_API_KEY, "openrouter": s.OPENROUTER_API_KEY, "google": s.GOOGLE_API_KEY, "nvidia": s.NVIDIA_API_KEY, "groq": s.GROQ_API_KEY, "openai": s.OPENAI_API_KEY, "anthropic": s.ANTHROPIC_API_KEY, "huggingface": s.HF_TOKEN, "router_0": s.ROUTER_0_API_KEY}.get(self._provider)
+        # router_0 proxy works without an API key; pass empty string to satisfy OpenAI client
+        if not key and self._provider == "router_0":
+            return ""
+        return key
 
     @property
     def memory_stats(self) -> dict:
