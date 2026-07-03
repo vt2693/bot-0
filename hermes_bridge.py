@@ -165,7 +165,7 @@ class HermesBridge:
 
     def _scan_for_facts(self, text: str, scope: str) -> None:
         patterns = [
-            r"(?:remember|save|store|note)\s+(?:that\s+)?(.+?)(?:\.|$|\n)",
+            r"(?:remember|save|store|note|don'?t\s+forget)\s+(?:that\s+)?(.+?)(?:\.|$|\n)",
             r"\bmy name(?:\s+is)?\s+(.+?)(?:\.|$|\n)",
             r"\bi (?:like|love|enjoy|hate|dislike)\s+(.+?)(?:\.|$|\n)",
             r"\bi (?:work|study)(?:\s+at|\s+for|\s+as)?\s+(.+?)(?:\.|$|\n)",
