@@ -234,6 +234,7 @@ class MemoryStore:
             else:
                 self._conn.execute("DELETE FROM facts")
             self._conn.commit()
+        self._backup_to_hub()
 
     def cleanup_low_trust(self) -> int:
         with self._lock:
