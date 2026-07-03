@@ -54,6 +54,7 @@ class Settings:
     SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT", "You are Hermes Agent, a concise helpful assistant powered by Nous Research.")
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2048"))
     TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
+    TOOL_LOOP_MAX_ROUNDS = int(os.getenv("TOOL_LOOP_MAX_ROUNDS", "1000"))
 
     APP_DIR = Path("/app")
     LOG_DIR = APP_DIR / "logs"
