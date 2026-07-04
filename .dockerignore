@@ -4,3 +4,4 @@ __pycache__
 .env
 .hermes-tokens.env
 logs/
+data/
