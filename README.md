@@ -33,6 +33,7 @@ Set in HF Space Settings → Secrets:
 - Optional: `PROVIDER=opencode_zen`
 - Optional: `AUTO_LEARN=true` to detect reusable skills and ask before saving them
 - Optional: `TOOL_LOOP_MAX_ROUNDS=1000` to control max LLM tool-call rounds
+- Optional: `BROADCAST_CHAT_ID=-100...` — channel/group ID to receive tool call results
 
 ## Android relay
 

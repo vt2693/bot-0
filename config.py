@@ -67,6 +67,7 @@ class Settings:
     AUTO_LEARN = os.getenv("AUTO_LEARN", "false").lower() in ("true", "1", "yes")
     MEMORY_API_KEY: Optional[str] = os.getenv("MEMORY_API_KEY")
     MEMORY_DB_PATH = os.getenv("MEMORY_DB_PATH", "")
+    BROADCAST_CHAT_ID = os.getenv("BROADCAST_CHAT_ID", "")
 
     @property
     def provider_name(self) -> Optional[str]:

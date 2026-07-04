@@ -20,6 +20,7 @@ class HermesBridge:
         self.memory_store = None
         self.memory_enabled = settings.MEMORY_ENABLED
         self._memory_stats = {"injections": 0, "hits": 0, "misses": 0, "extractions": 0, "skill_detections": 0}
+        self.broadcast_fn = None
 
     def _resolve_model(self) -> str:
         s = self.settings
@@ -128,7 +129,7 @@ class HermesBridge:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
         max_rounds = self.settings.TOOL_LOOP_MAX_ROUNDS
-        for _ in range(max_rounds):
+        for round_i in range(max_rounds):
             resp = client.chat.completions.create(**kwargs)
             msg = resp.choices[0].message
             calls = getattr(msg, "tool_calls", None) or []
@@ -140,6 +141,16 @@ class HermesBridge:
                 args = json.loads(c.function.arguments or "{}")
                 result = self._execute_tool(name, args)
                 messages.append({"role": "tool", "tool_call_id": c.id, "content": result[:12000]})
+                # Broadcast tool call result if configured
+                if self.broadcast_fn:
+                    try:
+                        self.broadcast_fn(
+                            f"🔧 [{round_i+1}] **{name}**\n"
+                            f"Args: `{json.dumps(args, default=str)[:500]}`\n"
+                            f"Result: `{result[:2000]}`"
+                        )
+                    except Exception:
+                        pass
             kwargs["messages"] = messages
         return f"Tool loop stopped after {max_rounds} rounds. The task may need more steps or the tools are failing. Try a simpler request."
 

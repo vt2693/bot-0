@@ -118,6 +118,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         t = asyncio.create_task(get_composio().initialize_async())
         t.add_done_callback(_task_done); _background_tasks.add(t)
     tg = get_telegram_bot()
+    # Wire broadcast channel for tool call results
+    if tg.configured and s.BROADCAST_CHAT_ID:
+        bid = int(s.BROADCAST_CHAT_ID)
+        def _broadcast(text: str):
+            tg._send_message(bid, text)
+        bridge.broadcast_fn = _broadcast
+        logger.info("Broadcast enabled for chat %s", bid)
     if tg.configured:
         await tg.initialize_async()
         t = asyncio.create_task(tg.process_queue_worker())
