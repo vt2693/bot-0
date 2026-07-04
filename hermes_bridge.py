@@ -170,13 +170,17 @@ class HermesBridge:
     def _extract_facts(self, message: str, response: str, scope: str) -> None:
         if not self.memory_store or not self.settings.MEMORY_AUTO_EXTRACT:
             return
-        # Scan message and response separately so \n boundaries work correctly
-        for text in (message, response):
+        explicit = re.search(r"\b(?:remember|save|store|note|don'?t\s+forget)\b", message or "", re.I)
+        # Explicit memory commands should be trusted as the source of truth. Do
+        # not scan the assistant response, which often paraphrases the same fact.
+        texts = (message,) if explicit else (message, response)
+        for text in texts:
             self._scan_for_facts(text, scope)
 
     def _scan_for_facts(self, text: str, scope: str) -> None:
+        explicit_pattern = r"(?:remember|save|store|note|don'?t\s+forget)\s+(?:that\s+)?(.+?)(?:\.|$|\n)"
         patterns = [
-            r"(?:remember|save|store|note|don'?t\s+forget)\s+(?:that\s+)?(.+?)(?:\.|$|\n)",
+            explicit_pattern,
             r"\bmy name(?:\s+is)?\s+(.+?)(?:\.|$|\n)",
             r"\bi (?:like|love|enjoy|hate|dislike)\s+(.+?)(?:\.|$|\n)",
             r"\bi (?:work|study)(?:\s+at|\s+for|\s+as)?\s+(.+?)(?:\.|$|\n)",
@@ -185,7 +189,8 @@ class HermesBridge:
             r"\bmy (?:email|phone|address|website)\s+(?:is\s+)?(.+?)(?:\.|$|\n)",
         ]
         for pat in patterns:
-            for m in re.findall(pat, text, re.I):
+            matches = re.findall(pat, text, re.I)
+            for m in matches:
                 fact = m.strip()
                 if len(fact) > 2:
                     if not re.search(r"^(user|my|i )", fact, re.I):
@@ -194,6 +199,8 @@ class HermesBridge:
                     if not existing:
                         self.memory_store.add(fact, scope)
                         self._memory_stats["extractions"] += 1
+            if pat == explicit_pattern and matches:
+                return
 
     def _auto_learn_enabled(self, scope: str) -> bool:
         env_on = self.settings.AUTO_LEARN
