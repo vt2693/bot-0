@@ -46,7 +46,7 @@ class MemoryStore:
             return
         try:
             from huggingface_hub import hf_hub_download
-            path = hf_hub_download(repo_id=space, repo_type="space", filename="data/memory.db", token=token)
+            path = hf_hub_download(repo_id=space, repo_type="space", filename="data/memory.db", revision="memory-backups", token=token)
             if path and Path(path).stat().st_size > 0:
                 import shutil
                 shutil.copy2(path, str(dbp))
