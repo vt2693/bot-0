@@ -808,8 +808,8 @@ async def _action_memory_clear(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    ms.clear(scope=str(chat_id))
-    bot._send_message(chat_id, "Memory cleared for this chat.")
+    ms.clear(scope=None)
+    bot._send_message(chat_id, "Memory cleared (all scopes).")
 
 
 async def _action_memory_cleanup(bot: TelegramBot, chat_id: int) -> None:
