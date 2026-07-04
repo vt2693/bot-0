@@ -64,6 +64,7 @@ class Settings:
     TEMP_DIR = Path(os.getenv("TEMP_DIR", "/tmp/app"))
     MEMORY_ENABLED = os.getenv("MEMORY_ENABLED", "true").lower() in ("true", "1", "yes")
     MEMORY_AUTO_EXTRACT = os.getenv("MEMORY_AUTO_EXTRACT", "true").lower() in ("true", "1", "yes")
+    MEMORY_RESTORE_ON_STARTUP = os.getenv("MEMORY_RESTORE_ON_STARTUP", "false").lower() in ("true", "1", "yes")
     AUTO_LEARN = os.getenv("AUTO_LEARN", "false").lower() in ("true", "1", "yes")
     MEMORY_API_KEY: Optional[str] = os.getenv("MEMORY_API_KEY")
     MEMORY_DB_PATH = os.getenv("MEMORY_DB_PATH", "")

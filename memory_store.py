@@ -32,7 +32,10 @@ class MemoryStore:
         return os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
 
     def _restore_backup(self) -> None:
-        """Download memory.db from HF Hub via huggingface_hub."""
+        """Download memory.db from HF Hub via huggingface_hub when explicitly enabled."""
+        if os.getenv("MEMORY_RESTORE_ON_STARTUP", "false").lower() not in ("true", "1", "yes"):
+            logger.info("Memory: startup restore disabled")
+            return
         dbp = Path(self.db_path)
         if dbp.exists() and dbp.stat().st_size > 0:
             logger.info("Memory: existing db %s (%d bytes)", dbp, dbp.stat().st_size)

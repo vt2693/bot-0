@@ -32,6 +32,7 @@ Set in HF Space Settings → Secrets:
 - Optional: `GROQ_API_KEY` for in-Space chat fallback. Voice relay reads Groq on Android.
 - Optional: `PROVIDER=opencode_zen`
 - Optional: `AUTO_LEARN=true` to detect reusable skills and ask before saving them
+- Optional: `MEMORY_RESTORE_ON_STARTUP=true` to restore `memory.db` from HF Hub on startup (default: false)
 - Optional: `TOOL_LOOP_MAX_ROUNDS=1000` to control max LLM tool-call rounds
 - Optional: `BROADCAST_CHAT_ID=-100...` — channel/group ID to receive tool call results
 
