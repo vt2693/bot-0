@@ -170,7 +170,7 @@ class MemoryStore:
             )
             self._conn.commit()
             rowid = int(cur.lastrowid)
-        # Backup immediately so facts survive crash/git push restarts
+        # Backup immediately for deployments that opt into HF Hub restore.
         self._backup_to_hub()
         return rowid
 

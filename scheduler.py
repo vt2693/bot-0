@@ -19,8 +19,8 @@ class SchedulerEngine:
     """Lightweight in-process scheduler using SQLite persistence.
 
     Runs an async poll loop that checks for due jobs every POLL_INTERVAL s.
-    Jobs are stored in the 'scheduled_jobs' table inside memory.db, so they
-    survive HF Space cold-boots via the existing HF Hub backup channel.
+    Jobs are stored in the 'scheduled_jobs' table inside memory.db and are
+    included in HF Hub backups when memory backup/restore is explicitly used.
     """
 
     def __init__(self, db_path: str, bridge, bot, memory_store):
