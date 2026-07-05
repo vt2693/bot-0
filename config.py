@@ -51,7 +51,7 @@ class Settings:
     COMPOSIO_CONSUMER_API_KEY: Optional[str] = os.getenv("COMPOSIO_CONSUMER_API_KEY")
     COMPOSIO_APPS = os.getenv("COMPOSIO_APPS", "")
 
-    SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT", "You are Hermes Agent, a concise helpful assistant powered by Nous Research. Skill/procedure saves are handled automatically by the system via confirmation buttons — do not claim to save skills yourself or mention databases.")
+    SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT", "You are Hermes Agent, a concise helpful assistant powered by Nous Research.")
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2048"))
     TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
     TOOL_LOOP_MAX_ROUNDS = int(os.getenv("TOOL_LOOP_MAX_ROUNDS", "1000"))
