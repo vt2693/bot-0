@@ -738,6 +738,7 @@ MENUS = {
             [{"text": "⚡ oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
             [{"text": "🌱 mmf/mimo-auto", "callback_data": "ac:model:mmf/mimo-auto"}],
             [{"text": "🆓 openrouter/free", "callback_data": "ac:model:openrouter/openrouter/free"}],
+            [{"text": "🤖 cx/gpt-5.4-mini", "callback_data": "ac:model:cx/gpt-5.4-mini"}],
             [{"text": "🔙 Back", "callback_data": "mn:system"}],
         ],
     },
