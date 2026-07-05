@@ -228,7 +228,7 @@ class HermesBridge:
             else:
                 self._memory_stats["misses"] += 1
             # Skill injection
-            skills = self.memory_store.skill_inject(message, scope, 3)
+            skills = self.memory_store.skill_inject(message, scope, 10)
             if skills:
                 injected_skills = skills
         response = self.chat(message, history or [], mem_block, injected_skills)
@@ -265,14 +265,14 @@ class HermesBridge:
         if explicit:
             # User explicitly asked to save — extract from conversation history
             hist_ctx = []
-            for item in (history or [])[-6:]:
+            for item in (history or [])[-15:]:
                 if isinstance(item, dict):
                     hist_ctx.append(f"{item['role']}: {item['content'][:300]}")
             extract_prompt = (
                 "The user wants to save a reusable skill/procedure. "
                 "Extract it from the conversation.\n\n"
                 "--- Previous conversation ---\n"
-                + "\n".join(hist_ctx[-4:]) +
+                + "\n".join(hist_ctx[-10:]) +
                 "\n--- Current message ---\n"
                 f"User: {last_user}\n"
                 "--- End ---\n\n"

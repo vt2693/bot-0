@@ -206,7 +206,7 @@ class MemoryStore:
     def get_relevant(self, query: str, scope: str = "global", limit: int = 5) -> list[dict]:
         words = [w for w in (query or "").lower().split() if len(w) > 3]
         results = []
-        for w in words[:4]:
+        for w in words[:5]:
             results.extend(self.search(w, scope, limit))
         seen, out = set(), []
         for r in results:
