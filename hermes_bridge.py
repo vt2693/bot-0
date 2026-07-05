@@ -256,7 +256,7 @@ class HermesBridge:
         user_success = bool(_re.search(r"thanks|works|fixed|got it|solved|that did it|perfect", message, _re.I))
         hist_pairs = len([m for m in history if isinstance(m, dict) and m.get("role") == "user"])
         correction = hist_pairs >= 3 and bool(_re.search(r"(send|error|token|key|reset|reconfig|relay|timeout)", message, _re.I))
-        explicit = bool(_re.search(r"remember this|save this|note this|learn this", message, _re.I))
+        explicit = bool(_re.search(r"(?:save|create|remember|note|learn|store)\s+(?:this|a|that|the)?\s*(?:skill|procedure|workflow|process|technique)?", message, _re.I))
         if not (user_success or correction or explicit):
             return None
         # Tier 2: LLM extraction

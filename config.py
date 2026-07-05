@@ -51,7 +51,7 @@ class Settings:
     COMPOSIO_CONSUMER_API_KEY: Optional[str] = os.getenv("COMPOSIO_CONSUMER_API_KEY")
     COMPOSIO_APPS = os.getenv("COMPOSIO_APPS", "")
 
-    SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT", "You are Hermes Agent, a concise helpful assistant powered by Nous Research.")
+    SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT", "You are Hermes Agent, a concise helpful assistant powered by Nous Research. Skill/procedure saves are handled automatically by the system via confirmation buttons — do not claim to save skills yourself or mention databases.")
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2048"))
     TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
     TOOL_LOOP_MAX_ROUNDS = int(os.getenv("TOOL_LOOP_MAX_ROUNDS", "1000"))
@@ -65,7 +65,7 @@ class Settings:
     MEMORY_ENABLED = os.getenv("MEMORY_ENABLED", "true").lower() in ("true", "1", "yes")
     MEMORY_AUTO_EXTRACT = os.getenv("MEMORY_AUTO_EXTRACT", "true").lower() in ("true", "1", "yes")
     MEMORY_RESTORE_ON_STARTUP = os.getenv("MEMORY_RESTORE_ON_STARTUP", "false").lower() in ("true", "1", "yes")
-    AUTO_LEARN = os.getenv("AUTO_LEARN", "false").lower() in ("true", "1", "yes")
+    AUTO_LEARN = os.getenv("AUTO_LEARN", "true").lower() in ("true", "1", "yes")
     MEMORY_API_KEY: Optional[str] = os.getenv("MEMORY_API_KEY")
     MEMORY_DB_PATH = os.getenv("MEMORY_DB_PATH", "")
     BROADCAST_CHAT_ID = os.getenv("BROADCAST_CHAT_ID", "")
