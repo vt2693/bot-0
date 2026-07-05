@@ -262,19 +262,37 @@ class HermesBridge:
         # Tier 2: LLM extraction
         last_user = message[:800]
         last_asst = response[:800]
-        extract_prompt = (
-            "--- Exchange ---\n"
-            f"User: {last_user}\n"
-            f"Assistant: {last_asst}\n"
-            "--- End ---\n\n"
-            "Was a reusable workflow learned here? Apply the rubric:\n"
-            "1. Was a specific multi-step procedure demonstrated?\n"
-            "2. Was the outcome verified (user confirmed \"works\"/\"thanks\"/\"fixed\")?\n"
-            "3. Is the procedure specific enough to teach someone else?\n\n"
-            "If yes, return ONLY valid JSON (no other text):\n"
-            '{"skill": true, "title": "...", "problem": "...", "procedure": "...", "failure_pattern": "..."}\n\n'
-            'If no: {"skill": false}'
-        )
+        if explicit:
+            # User explicitly asked to save — extract from conversation history
+            hist_ctx = []
+            for item in (history or [])[-6:]:
+                if isinstance(item, dict):
+                    hist_ctx.append(f"{item['role']}: {item['content'][:300]}")
+            extract_prompt = (
+                "The user wants to save a reusable skill/procedure. "
+                "Extract it from the conversation.\n\n"
+                "--- Previous conversation ---\n"
+                + "\n".join(hist_ctx[-4:]) +
+                "\n--- Current message ---\n"
+                f"User: {last_user}\n"
+                "--- End ---\n\n"
+                "Return ONLY valid JSON (no other text):\n"
+                '{"skill": true, "title": "...", "problem": "...", "procedure": "...", "failure_pattern": "..."}'
+            )
+        else:
+            extract_prompt = (
+                "--- Exchange ---\n"
+                f"User: {last_user}\n"
+                f"Assistant: {last_asst}\n"
+                "--- End ---\n\n"
+                "Was a reusable workflow learned here? Apply the rubric:\n"
+                "1. Was a specific multi-step procedure demonstrated?\n"
+                "2. Was the outcome verified (user confirmed \"works\"/\"thanks\"/\"fixed\")?\n"
+                "3. Is the procedure specific enough to teach someone else?\n\n"
+                "If yes, return ONLY valid JSON (no other text):\n"
+                '{"skill": true, "title": "...", "problem": "...", "procedure": "...", "failure_pattern": "..."}\n\n'
+                'If no: {"skill": false}'
+            )
         try:
             body = self.chat(extract_prompt, [])
             result = json.loads(body)
