@@ -121,7 +121,7 @@ class HermesBridge:
 
     def _call_llm(self, message: str, history: list, memory_context: str | None = None, injected_skills: list | None = None) -> str:
         import openai
-        client = openai.OpenAI(api_key=self._resolve_api_key(), base_url=self._resolve_base_url(), max_retries=0)
+        client = openai.OpenAI(api_key=self._resolve_api_key(), base_url=self._resolve_base_url(), max_retries=0, timeout=self.settings.LLM_TIMEOUT)
         messages = self._build_messages(message, history, memory_context, injected_skills)
         tools = self._get_tools()
         kwargs = {"model": self._model, "messages": messages, "max_tokens": self.settings.MAX_TOKENS, "temperature": self.settings.TEMPERATURE}

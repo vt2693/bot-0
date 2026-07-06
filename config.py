@@ -55,6 +55,7 @@ class Settings:
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2048"))
     TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
     TOOL_LOOP_MAX_ROUNDS = int(os.getenv("TOOL_LOOP_MAX_ROUNDS", "1000"))
+    LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "120"))
 
     APP_DIR = Path("/app")
     LOG_DIR = APP_DIR / "logs"
