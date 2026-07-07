@@ -454,7 +454,10 @@ class TelegramBot:
         if msg_id:
             self._menu_msg_id[chat_id] = msg_id
         if data.startswith("mn:"):
+            t0 = time.time()
             await self._show_menu(chat_id, data[3:])
+            elapsed = round(time.time() - t0, 3)
+            logger.info("mn:%s show_menu took %.3fs, outbox_size=%d", data[3:], elapsed, len(self.outbox))
         elif data.startswith("ac:model:"):
             model = data[9:]
             if model:
