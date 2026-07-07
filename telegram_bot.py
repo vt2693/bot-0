@@ -692,7 +692,6 @@ MENUS = {
             [{"text": "⚙️ System", "callback_data": "mn:system"}],
             [{"text": "⏰ Schedule", "callback_data": "mn:schedule"}],
             [{"text": "📋 Jira — Open Tasks", "callback_data": "ac:jira_open_tasks"}],
-            [{"text": "🔍 Jira Debug", "callback_data": "ac:jira_debug_search"}],
         ],
     },
     "web": {
@@ -906,9 +905,7 @@ async def _action_system_composio(bot: TelegramBot, chat_id: int) -> None:
         bot._send_message(chat_id, "Composio not available.")
         return
     s = composio.status()
-    tool_names = [t.get("name", "?") for t in getattr(composio, "_tools", [])]
-    tools_str = "\n".join(f"• {n}" for n in tool_names) if tool_names else "(none)"
-    bot._send_message(chat_id, f"Composio\n\nReady: {s.get('ready', False)}\nTools: {s.get('tool_count', 0)}\nError: {s.get('error', 'none')}\n\n{tools_str}")
+    bot._send_message(chat_id, "Composio\n\nReady: " + str(s.get("ready", False)) + "\nTools: " + str(s.get("tool_count", 0)) + "\nError: " + str(s.get("error", "none")))
 
 
 # -- Schedule action handlers ------------------------------------------------
@@ -1051,13 +1048,6 @@ async def _action_skill_forget_inactive(bot: TelegramBot, chat_id: int) -> None:
 
 # -- Jira action handlers ----------------------------------------------------
 
-async def _action_jira_debug_search(bot: TelegramBot, chat_id: int) -> None:
-    """DEBUG: Search Composio for available Jira tools."""
-    result = await _call_composio(bot, "COMPOSIO_SEARCH_TOOLS", {"query": "jira"})
-    debug = json.dumps(result, default=str)[:2000]
-    bot._send_message(chat_id, f"🔍 Composio Jira tool search:\n\n```{debug}```")
-
-
 async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     """Show open tasks from configured JIRA_EPICS via Composio."""
     epics = getattr(bot, "jira_epics", [])
@@ -1066,7 +1056,7 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
         return
     epic_list = ",".join(f'"{e}"' for e in epics)
     jql = f'"Epic Link" IN ({epic_list}) AND status IN ("To Do","In Progress") ORDER BY status DESC, priority DESC'
-    result = await _call_composio(bot, "JIRA_SEARCH_ISSUES", {"jql": jql})
+    result = await _call_composio(bot, "JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET", {"jql": jql})
     if "error" in result:
         bot._send_message(chat_id, f"❌ {result['error']}")
         return
@@ -1079,10 +1069,6 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
             issues = raw.get("issues") or raw.get("data", {}).get("issues") or []
     except (json.JSONDecodeError, KeyError, IndexError):
         pass
-    # DEBUG: show raw response structure
-    if not issues:
-        debug = json.dumps(result, default=str)[:1500]
-        bot._send_message(chat_id, f"🔍 DEBUG\nJQL: `{jql}`\n\nRaw response:\n```{debug}```")
     if not issues:
         kb = {"inline_keyboard": [
             [{"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
@@ -1113,7 +1099,7 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
 async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
     """Show subtasks for a given issue via Composio."""
     jql = f'parent = {issue_key} ORDER BY status DESC, priority DESC'
-    result = await _call_composio(bot, "JIRA_SEARCH_ISSUES", {"jql": jql})
+    result = await _call_composio(bot, "JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET", {"jql": jql})
     if "error" in result:
         bot._send_message(chat_id, f"❌ {result['error']}")
         return
@@ -1166,5 +1152,4 @@ MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "skill_autolearn_toggle": _action_skill_autolearn_toggle,
     "skill_forget_inactive": _action_skill_forget_inactive,
     "jira_open_tasks": _action_jira_open_tasks,
-    "jira_debug_search": _action_jira_debug_search,
 }
