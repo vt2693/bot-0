@@ -1048,25 +1048,60 @@ async def _action_skill_forget_inactive(bot: TelegramBot, chat_id: int) -> None:
 
 # -- Jira action handlers ----------------------------------------------------
 
+def _jira_workbench_code(code: str) -> str:
+    """Wrap Python code for Composio REMOTE_WORKBENCH execution."""
+    return code
+
+
+def _parse_workbench_issues(stdout: str) -> list[dict]:
+    """Extract issues list from workbench stdout output."""
+    # stdout contains JSON with data.issues embedded in the text
+    try:
+        # Find the JSON block in stdout — look for the issues array
+        import re as _re
+        # Try to find issues array directly
+        match = _re.search(r'"issues"\s*:\s*(\[.*?\])\s*[,}]', stdout, _re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
+        # Try to find full data block
+        match = _re.search(r'\{[^{]*"issues"\s*:\s*(\[.*?\])', stdout, _re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
+    except (json.JSONDecodeError, AttributeError):
+        pass
+    return []
+
+
 async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
-    """Show open tasks from configured JIRA_EPICS via Composio."""
+    """Show open tasks from configured JIRA_EPICS via Composio workbench."""
     epics = getattr(bot, "jira_epics", [])
     if not epics:
         bot._send_message(chat_id, "⚠️ JIRA_EPICS not configured.\n\nAdd a HF Space secret:\nJIRA_EPICS = PROJ-123,PROJ-456")
         return
     epic_list = ",".join(f'"{e}"' for e in epics)
     jql = f'"Epic Link" IN ({epic_list}) AND status IN ("To Do","In Progress") ORDER BY status DESC, priority DESC'
-    result = await _call_composio(bot, "JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET", {"jql": jql})
+    code = (
+        "import json\n"
+        "result, err = run_composio_tool(\"JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET\", "
+        f'{{"jql": {json.dumps(jql)}, "fields": ["summary","status","assignee","issuetype","priority"], "max_results": 100}})\n'
+        "if err:\n"
+        '    print(json.dumps({{"error": str(err)}}))\n'
+        "else:\n"
+        "    print(json.dumps(result))\n"
+    )
+    result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
     if "error" in result:
-        bot._send_message(chat_id, f"❌ {result['error']}\n\n💡 Jira tools may not be visible to Composio MCP yet. Verify connection at dashboard.composio.dev")
+        bot._send_message(chat_id, f"❌ {result['error']}")
         return
-    # Parse issues from Composio response (content[0].text JSON)
+    # Parse workbench response
     issues = []
     try:
         content = result.get("content", [])
         if isinstance(content, list) and content:
-            raw = json.loads(content[0].get("text", "{}"))
-            issues = raw.get("issues") or raw.get("data", {}).get("issues") or []
+            text = content[0].get("text", "{}")
+            outer = json.loads(text)
+            stdout = outer.get("data", {}).get("stdout", "")
+            issues = _parse_workbench_issues(stdout)
     except (json.JSONDecodeError, KeyError, IndexError):
         pass
     if not issues:
@@ -1081,9 +1116,9 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     lines = [f"📋 Open Tasks ({len(issues)} total)\n"]
     for issue in issues[:20]:
         key = issue.get("key", "?")
-        fields = issue.get("fields") or {}
-        summary = fields.get("summary") or fields.get("title") or key
-        status = (fields.get("status") or {}).get("name") or "?"
+        summary = issue.get("summary") or issue.get("fields", {}).get("summary") or key
+        status_obj = issue.get("status") or issue.get("fields", {}).get("status") or {}
+        status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
         icon = "🟡" if status == "In Progress" else "🔵"
         lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
         kb_rows.append([{"text": f"{icon} {key}: {summary[:30]}", "callback_data": f"ac:jira_task:{key}"}])
@@ -1097,9 +1132,18 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
 
 
 async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
-    """Show subtasks for a given issue via Composio."""
-    jql = f'parent = {issue_key} ORDER BY status DESC, priority DESC'
-    result = await _call_composio(bot, "JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET", {"jql": jql})
+    """Show subtasks for a given issue via Composio workbench."""
+    jql = f"parent = {issue_key} AND status IN ('To Do','In Progress','Done') ORDER BY status DESC, priority DESC"
+    code = (
+        "import json\n"
+        "result, err = run_composio_tool(\"JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET\", "
+        f'{{"jql": {json.dumps(jql)}, "fields": ["summary","status","assignee","issuetype","priority"], "max_results": 100}})\n'
+        "if err:\n"
+        '    print(json.dumps({{"error": str(err)}}))\n'
+        "else:\n"
+        "    print(json.dumps(result))\n"
+    )
+    result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
     if "error" in result:
         bot._send_message(chat_id, f"❌ {result['error']}")
         return
@@ -1107,8 +1151,10 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
     try:
         content = result.get("content", [])
         if isinstance(content, list) and content:
-            raw = json.loads(content[0].get("text", "{}"))
-            issues = raw.get("issues") or raw.get("data", {}).get("issues") or []
+            text = content[0].get("text", "{}")
+            outer = json.loads(text)
+            stdout = outer.get("data", {}).get("stdout", "")
+            issues = _parse_workbench_issues(stdout)
     except (json.JSONDecodeError, KeyError, IndexError):
         pass
     if not issues:
@@ -1118,9 +1164,9 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
     lines = [f"📄 {issue_key} — Subtasks ({len(issues)} total)\n"]
     for sub in issues[:15]:
         key = sub.get("key", "?")
-        fields = sub.get("fields") or {}
-        summary = fields.get("summary") or key
-        status = (fields.get("status") or {}).get("name") or "?"
+        summary = sub.get("summary") or sub.get("fields", {}).get("summary") or key
+        status_obj = sub.get("status") or sub.get("fields", {}).get("status") or {}
+        status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
         icon = "✅" if status == "Done" else ("🟡" if status == "In Progress" else "🔵")
         lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
     if len(issues) > 15:
