@@ -1055,19 +1055,14 @@ def _jira_workbench_code(code: str) -> str:
 
 def _parse_workbench_issues(stdout: str) -> list[dict]:
     """Extract issues list from workbench stdout output."""
-    # stdout contains JSON with data.issues embedded in the text
     try:
-        # Find the JSON block in stdout — look for the issues array
-        import re as _re
-        # Try to find issues array directly
-        match = _re.search(r'"issues"\s*:\s*(\[.*?\])\s*[,}]', stdout, _re.DOTALL)
-        if match:
-            return json.loads(match.group(1))
-        # Try to find full data block
-        match = _re.search(r'\{[^{]*"issues"\s*:\s*(\[.*?\])', stdout, _re.DOTALL)
-        if match:
-            return json.loads(match.group(1))
-    except (json.JSONDecodeError, AttributeError):
+        data = json.loads(stdout)
+        # Handle nested: {"data": {"issues": [...]}} or just {"issues": [...]}
+        if isinstance(data, dict):
+            inner = data.get("data", data)
+            if isinstance(inner, dict):
+                return inner.get("issues") or []
+    except (json.JSONDecodeError, TypeError):
         pass
     return []
 
@@ -1095,34 +1090,29 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
         return
     # Parse workbench response
     issues = []
-    debug_info = ""
     try:
         content = result.get("content", [])
         if isinstance(content, list) and content:
             text = content[0].get("text", "{}")
             outer = json.loads(text)
             stdout = outer.get("data", {}).get("stdout", "")
-            debug_info = stdout[:1500]
             issues = _parse_workbench_issues(stdout)
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
-        debug_info = f"Parse error: {e}\nRaw: {json.dumps(result, default=str)[:1000]}"
+    except (json.JSONDecodeError, KeyError, IndexError):
+        pass
     if not issues:
         kb = {"inline_keyboard": [
             [{"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
              {"text": "🔙 Back", "callback_data": "mn:main"}]
         ]}
-        if debug_info:
-            bot._send_message(chat_id, f"📋 No open tasks found.\n\n🔍 Debug:\n```{debug_info}```", reply_markup=kb)
-        else:
-            bot._send_message(chat_id, "📋 No open tasks found in the configured epics.", reply_markup=kb)
+        bot._send_message(chat_id, "📋 No open tasks found in the configured epics.", reply_markup=kb)
         return
     # Build inline keyboard rows — max 20 tasks, one per row
     kb_rows = []
     lines = [f"📋 Open Tasks ({len(issues)} total)\n"]
     for issue in issues[:20]:
         key = issue.get("key", "?")
-        summary = issue.get("summary") or issue.get("fields", {}).get("summary") or key
-        status_obj = issue.get("status") or issue.get("fields", {}).get("status") or {}
+        summary = issue.get("summary") or key
+        status_obj = issue.get("status") or {}
         status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
         icon = "🟡" if status == "In Progress" else "🔵"
         lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
@@ -1169,8 +1159,8 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
     lines = [f"📄 {issue_key} — Subtasks ({len(issues)} total)\n"]
     for sub in issues[:15]:
         key = sub.get("key", "?")
-        summary = sub.get("summary") or sub.get("fields", {}).get("summary") or key
-        status_obj = sub.get("status") or sub.get("fields", {}).get("status") or {}
+        summary = sub.get("summary") or key
+        status_obj = sub.get("status") or {}
         status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
         icon = "✅" if status == "Done" else ("🟡" if status == "In Progress" else "🔵")
         lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
