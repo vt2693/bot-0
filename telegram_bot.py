@@ -1,6 +1,6 @@
 import os
 import time
-import json
+import json  # noqa: F811
 import asyncio
 import logging
 import threading

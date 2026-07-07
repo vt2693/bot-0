@@ -29,6 +29,8 @@ class ComposioMCP:
             await self._rpc("initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "Hermes", "version": "1.0"}})
             tools = await self._rpc("tools/list", {}) or {}
             self._tools = tools.get("tools", [])
+            tool_names = [t.get("name", "?") for t in self._tools]
+            logger.info("Composio tools: %s", tool_names)
             self._ready = True
             return True
         except Exception as e:
