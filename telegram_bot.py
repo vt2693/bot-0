@@ -1095,21 +1095,26 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
         return
     # Parse workbench response
     issues = []
+    debug_info = ""
     try:
         content = result.get("content", [])
         if isinstance(content, list) and content:
             text = content[0].get("text", "{}")
             outer = json.loads(text)
             stdout = outer.get("data", {}).get("stdout", "")
+            debug_info = stdout[:1500]
             issues = _parse_workbench_issues(stdout)
-    except (json.JSONDecodeError, KeyError, IndexError):
-        pass
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        debug_info = f"Parse error: {e}\nRaw: {json.dumps(result, default=str)[:1000]}"
     if not issues:
         kb = {"inline_keyboard": [
             [{"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
              {"text": "🔙 Back", "callback_data": "mn:main"}]
         ]}
-        bot._send_message(chat_id, "📋 No open tasks found in the configured epics.", reply_markup=kb)
+        if debug_info:
+            bot._send_message(chat_id, f"📋 No open tasks found.\n\n🔍 Debug:\n```{debug_info}```", reply_markup=kb)
+        else:
+            bot._send_message(chat_id, "📋 No open tasks found in the configured epics.", reply_markup=kb)
         return
     # Build inline keyboard rows — max 20 tasks, one per row
     kb_rows = []
