@@ -770,19 +770,15 @@ MENUS = {
 
 # -- Action Handlers -------------------------------------------------------
 
-def _call_composio(bot: "TelegramBot", tool_name: str, args: dict) -> dict:
-    """Call a Composio tool synchronously (blocks via event loop)."""
+async def _call_composio(bot: "TelegramBot", tool_name: str, args: dict) -> dict:
+    """Call a Composio tool (async, awaits directly in running loop)."""
     composio = getattr(bot.bridge, "_composio", None) if bot.bridge else None
     if not composio or not composio._ready:
         return {"error": "Composio not ready — try /menu → System → Composio"}
-    import asyncio as _aio
-    loop = _aio.new_event_loop()
     try:
-        return loop.run_until_complete(composio.call_tool(tool_name, args)) or {}
+        return await composio.call_tool(tool_name, args) or {}
     except Exception as e:
         return {"error": str(e)}
-    finally:
-        loop.close()
 
 
 async def _action_web_status(bot: TelegramBot, chat_id: int) -> None:
@@ -1060,7 +1056,7 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
         return
     epic_list = ",".join(f'"{e}"' for e in epics)
     jql = f'"Epic Link" IN ({epic_list}) AND status IN ("To Do","In Progress") ORDER BY status DESC, priority DESC'
-    result = _call_composio(bot, "JIRA_SEARCH_ISSUES", {"jql": jql})
+    result = await _call_composio(bot, "JIRA_SEARCH_ISSUES", {"jql": jql})
     if "error" in result:
         bot._send_message(chat_id, f"❌ {result['error']}")
         return
@@ -1103,7 +1099,7 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
 async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
     """Show subtasks for a given issue via Composio."""
     jql = f'parent = {issue_key} ORDER BY status DESC, priority DESC'
-    result = _call_composio(bot, "JIRA_SEARCH_ISSUES", {"jql": jql})
+    result = await _call_composio(bot, "JIRA_SEARCH_ISSUES", {"jql": jql})
     if "error" in result:
         bot._send_message(chat_id, f"❌ {result['error']}")
         return
