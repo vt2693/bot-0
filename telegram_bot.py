@@ -905,7 +905,9 @@ async def _action_system_composio(bot: TelegramBot, chat_id: int) -> None:
         bot._send_message(chat_id, "Composio not available.")
         return
     s = composio.status()
-    bot._send_message(chat_id, "Composio\n\nReady: " + str(s.get("ready", False)) + "\nTools: " + str(s.get("tool_count", 0)) + "\nError: " + str(s.get("error", "none")))
+    tool_names = [t.get("name", "?") for t in getattr(composio, "_tools", [])]
+    tools_str = "\n".join(f"• {n}" for n in tool_names) if tool_names else "(none)"
+    bot._send_message(chat_id, f"Composio\n\nReady: {s.get('ready', False)}\nTools: {s.get('tool_count', 0)}\nError: {s.get('error', 'none')}\n\n{tools_str}")
 
 
 # -- Schedule action handlers ------------------------------------------------
