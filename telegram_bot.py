@@ -1058,7 +1058,7 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     jql = f'"Epic Link" IN ({epic_list}) AND status IN ("To Do","In Progress") ORDER BY status DESC, priority DESC'
     result = await _call_composio(bot, "JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET", {"jql": jql})
     if "error" in result:
-        bot._send_message(chat_id, f"❌ {result['error']}")
+        bot._send_message(chat_id, f"❌ {result['error']}\n\n💡 Jira tools may not be visible to Composio MCP yet. Verify connection at dashboard.composio.dev")
         return
     # Parse issues from Composio response (content[0].text JSON)
     issues = []
