@@ -106,7 +106,6 @@ class TelegramBot:
             elapsed = round(time.time() - t_start, 3)
             data_type = "callback" if item.get("callback_query") else "message"
             logger.info("queue worker processed %s in %.3fs, outbox=%d", data_type, elapsed, len(self.outbox))
-                logger.exception("Telegram queue error")
 
     async def process_update(self, update: dict) -> None:
         cb = update.get("callback_query")
