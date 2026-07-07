@@ -35,6 +35,8 @@ class TelegramBot:
         self.scheduler = None
         self._pending_schedule: dict[str, dict] = {}
         self._pending_skills: dict[str, dict] = {}
+        epics_raw = os.getenv("JIRA_EPICS", "")
+        self.jira_epics = [e.strip() for e in epics_raw.split(",") if e.strip()]
 
     @property
     def configured(self) -> bool:
@@ -589,6 +591,8 @@ class TelegramBot:
                     ms.skill_remove(s["id"])
                     removed += 1
             self._send_message(chat_id, f"Removed {removed} inactive skills.")
+        elif data.startswith("ac:jira_task:"):
+            await _action_jira_subtasks(self, chat_id, data[13:])
         elif data.startswith("ac:"):
             handler = MENU_ACTIONS_ASYNC.get(data[3:])
             if handler:
@@ -687,6 +691,7 @@ MENUS = {
             [{"text": "📘 Skills", "callback_data": "mn:skills"}],
             [{"text": "⚙️ System", "callback_data": "mn:system"}],
             [{"text": "⏰ Schedule", "callback_data": "mn:schedule"}],
+            [{"text": "📋 Jira — Open Tasks", "callback_data": "ac:jira_open_tasks"}],
         ],
     },
     "web": {
@@ -764,6 +769,21 @@ MENUS = {
 
 
 # -- Action Handlers -------------------------------------------------------
+
+def _call_composio(bot: "TelegramBot", tool_name: str, args: dict) -> dict:
+    """Call a Composio tool synchronously (blocks via event loop)."""
+    composio = getattr(bot.bridge, "_composio", None) if bot.bridge else None
+    if not composio or not composio._ready:
+        return {"error": "Composio not ready — try /menu → System → Composio"}
+    import asyncio as _aio
+    loop = _aio.new_event_loop()
+    try:
+        return loop.run_until_complete(composio.call_tool(tool_name, args)) or {}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        loop.close()
+
 
 async def _action_web_status(bot: TelegramBot, chat_id: int) -> None:
     composio = getattr(bot.bridge, "_composio", None) if bot.bridge else None
@@ -1030,6 +1050,92 @@ async def _action_skill_forget_inactive(bot: TelegramBot, chat_id: int) -> None:
     bot._send_message(chat_id, f"Removed {removed} inactive skills.")
 
 
+# -- Jira action handlers ----------------------------------------------------
+
+async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
+    """Show open tasks from configured JIRA_EPICS via Composio."""
+    epics = getattr(bot, "jira_epics", [])
+    if not epics:
+        bot._send_message(chat_id, "⚠️ JIRA_EPICS not configured.\n\nAdd a HF Space secret:\nJIRA_EPICS = PROJ-123,PROJ-456")
+        return
+    epic_list = ",".join(f'"{e}"' for e in epics)
+    jql = f'"Epic Link" IN ({epic_list}) AND status IN ("To Do","In Progress") ORDER BY status DESC, priority DESC'
+    result = _call_composio(bot, "JIRA_SEARCH_ISSUES", {"jql": jql})
+    if "error" in result:
+        bot._send_message(chat_id, f"❌ {result['error']}")
+        return
+    # Parse issues from Composio response (content[0].text JSON)
+    issues = []
+    try:
+        content = result.get("content", [])
+        if isinstance(content, list) and content:
+            raw = json.loads(content[0].get("text", "{}"))
+            issues = raw.get("issues") or raw.get("data", {}).get("issues") or []
+    except (json.JSONDecodeError, KeyError, IndexError):
+        pass
+    if not issues:
+        kb = {"inline_keyboard": [
+            [{"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
+             {"text": "🔙 Back", "callback_data": "mn:main"}]
+        ]}
+        bot._send_message(chat_id, "📋 No open tasks found in the configured epics.", reply_markup=kb)
+        return
+    # Build inline keyboard rows — max 20 tasks, one per row
+    kb_rows = []
+    lines = [f"📋 Open Tasks ({len(issues)} total)\n"]
+    for issue in issues[:20]:
+        key = issue.get("key", "?")
+        fields = issue.get("fields") or {}
+        summary = fields.get("summary") or fields.get("title") or key
+        status = (fields.get("status") or {}).get("name") or "?"
+        icon = "🟡" if status == "In Progress" else "🔵"
+        lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
+        kb_rows.append([{"text": f"{icon} {key}: {summary[:30]}", "callback_data": f"ac:jira_task:{key}"}])
+    if len(issues) > 20:
+        lines.append(f"\n...and {len(issues) - 20} more.")
+    kb_rows.append([
+        {"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
+        {"text": "🔙 Back", "callback_data": "mn:main"},
+    ])
+    bot._send_message(chat_id, "\n".join(lines), reply_markup={"inline_keyboard": kb_rows})
+
+
+async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
+    """Show subtasks for a given issue via Composio."""
+    jql = f'parent = {issue_key} ORDER BY status DESC, priority DESC'
+    result = _call_composio(bot, "JIRA_SEARCH_ISSUES", {"jql": jql})
+    if "error" in result:
+        bot._send_message(chat_id, f"❌ {result['error']}")
+        return
+    issues = []
+    try:
+        content = result.get("content", [])
+        if isinstance(content, list) and content:
+            raw = json.loads(content[0].get("text", "{}"))
+            issues = raw.get("issues") or raw.get("data", {}).get("issues") or []
+    except (json.JSONDecodeError, KeyError, IndexError):
+        pass
+    if not issues:
+        kb = {"inline_keyboard": [[{"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"}]]}
+        bot._send_message(chat_id, f"📄 {issue_key}: No subtasks found.", reply_markup=kb)
+        return
+    lines = [f"📄 {issue_key} — Subtasks ({len(issues)} total)\n"]
+    for sub in issues[:15]:
+        key = sub.get("key", "?")
+        fields = sub.get("fields") or {}
+        summary = fields.get("summary") or key
+        status = (fields.get("status") or {}).get("name") or "?"
+        icon = "✅" if status == "Done" else ("🟡" if status == "In Progress" else "🔵")
+        lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
+    if len(issues) > 15:
+        lines.append(f"\n...and {len(issues) - 15} more.")
+    kb = {"inline_keyboard": [[
+        {"text": "🔄 Refresh", "callback_data": f"ac:jira_task:{issue_key}"},
+        {"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"},
+    ]]}
+    bot._send_message(chat_id, "\n".join(lines), reply_markup=kb)
+
+
 MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "web_status": _action_web_status,
     "memory_view": _action_memory_view,
@@ -1049,4 +1155,5 @@ MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "skill_search_prompt": _action_skill_search_prompt,
     "skill_autolearn_toggle": _action_skill_autolearn_toggle,
     "skill_forget_inactive": _action_skill_forget_inactive,
+    "jira_open_tasks": _action_jira_open_tasks,
 }
