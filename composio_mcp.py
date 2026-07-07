@@ -27,10 +27,15 @@ class ComposioMCP:
         self._client = httpx.AsyncClient(timeout=30.0)
         try:
             await self._rpc("initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "Hermes", "version": "1.0"}})
-            tools = await self._rpc("tools/list", {}) or {}
+            # Try tools/list with apps filter first, fallback to unfiltered
+            import os as _os
+            apps_raw = _os.getenv("COMPOSIO_APPS", "")
+            apps = [a.strip() for a in apps_raw.split(",") if a.strip()] if apps_raw else []
+            params = {"apps": apps} if apps else {}
+            tools = await self._rpc("tools/list", params) or {}
             self._tools = tools.get("tools", [])
             tool_names = [t.get("name", "?") for t in self._tools]
-            logger.info("Composio tools: %s", tool_names)
+            logger.info("Composio tools (apps=%s): %s", apps or "all", tool_names)
             self._ready = True
             return True
         except Exception as e:
