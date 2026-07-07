@@ -96,11 +96,16 @@ class TelegramBot:
             if not item:
                 await asyncio.sleep(0.5)
                 continue
+            t_start = time.time()
             try:
                 self._queue_processed += 1
                 await self.process_update(item)
             except Exception as e:
                 self._queue_error = str(e)
+                logger.exception("Telegram queue error")
+            elapsed = round(time.time() - t_start, 3)
+            data_type = "callback" if item.get("callback_query") else "message"
+            logger.info("queue worker processed %s in %.3fs, outbox=%d", data_type, elapsed, len(self.outbox))
                 logger.exception("Telegram queue error")
 
     async def process_update(self, update: dict) -> None:
@@ -443,12 +448,14 @@ class TelegramBot:
 
     async def _handle_callback(self, cb: dict) -> None:
         """Route callback_query: navigation (mn:*) or action (ac:*)."""
+        t_cb = time.time()
         chat_id = cb.get("message", {}).get("chat", {}).get("id")
         data = cb.get("data", "")
         cb_id = cb.get("id")
         msg_id = cb.get("message", {}).get("message_id")
         if not chat_id or not cb_id:
             return
+        logger.info("callback received: data=%s chat=%s outbox=%d", data, chat_id, len(self.outbox))
         # Acknowledge the callback so Telegram stops the loading spinner
         self._send_callback_answer(cb_id, "")
         if msg_id:
