@@ -1069,6 +1069,10 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
             issues = raw.get("issues") or raw.get("data", {}).get("issues") or []
     except (json.JSONDecodeError, KeyError, IndexError):
         pass
+    # DEBUG: show raw response structure
+    if not issues:
+        debug = json.dumps(result, default=str)[:1500]
+        bot._send_message(chat_id, f"🔍 DEBUG\nJQL: `{jql}`\n\nRaw response:\n```{debug}```")
     if not issues:
         kb = {"inline_keyboard": [
             [{"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
