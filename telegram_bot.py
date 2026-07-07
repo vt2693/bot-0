@@ -691,7 +691,14 @@ MENUS = {
             [{"text": "📘 Skills", "callback_data": "mn:skills"}],
             [{"text": "⚙️ System", "callback_data": "mn:system"}],
             [{"text": "⏰ Schedule", "callback_data": "mn:schedule"}],
-            [{"text": "📋 Jira — Open Tasks", "callback_data": "ac:jira_open_tasks"}],
+            [{"text": "📋 Jira", "callback_data": "mn:jira"}],
+        ],
+    },
+    "jira": {
+        "text": "Jira\n\nManage and browse Jira issues.",
+        "buttons": [
+            [{"text": "📋 Open Tasks", "callback_data": "ac:jira_open_tasks"}],
+            [{"text": "🔙 Back", "callback_data": "mn:main"}],
         ],
     },
     "web": {
