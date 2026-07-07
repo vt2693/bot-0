@@ -1083,6 +1083,20 @@ def _parse_workbench_issues(stdout: str) -> list[dict]:
     return []
 
 
+def _parse_jira_result(result: dict) -> list[dict]:
+    """Parse issues from Composio workbench response."""
+    try:
+        content = result.get("content", [])
+        if isinstance(content, list) and content:
+            text = content[0].get("text", "{}")
+            outer = json.loads(text)
+            stdout = outer.get("data", {}).get("stdout", "")
+            return _parse_workbench_issues(stdout)
+    except (json.JSONDecodeError, KeyError, IndexError):
+        pass
+    return []
+
+
 async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     """Show open tasks from configured JIRA_EPICS via Composio workbench."""
     epics = getattr(bot, "jira_epics", [])
@@ -1104,17 +1118,13 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     if "error" in result:
         bot._send_message(chat_id, f"❌ {result['error']}")
         return
-    # Parse workbench response
-    issues = []
-    try:
-        content = result.get("content", [])
-        if isinstance(content, list) and content:
-            text = content[0].get("text", "{}")
-            outer = json.loads(text)
-            stdout = outer.get("data", {}).get("stdout", "")
-            issues = _parse_workbench_issues(stdout)
-    except (json.JSONDecodeError, KeyError, IndexError):
-        pass
+    # Parse workbench response — retry once on empty (workbench cold-start)
+    issues = _parse_jira_result(result)
+    if not issues:
+        await asyncio.sleep(2)
+        result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
+        if "error" not in result:
+            issues = _parse_jira_result(result)
     if not issues:
         kb = {"inline_keyboard": [
             [{"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
@@ -1158,16 +1168,12 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
     if "error" in result:
         bot._send_message(chat_id, f"❌ {result['error']}")
         return
-    issues = []
-    try:
-        content = result.get("content", [])
-        if isinstance(content, list) and content:
-            text = content[0].get("text", "{}")
-            outer = json.loads(text)
-            stdout = outer.get("data", {}).get("stdout", "")
-            issues = _parse_workbench_issues(stdout)
-    except (json.JSONDecodeError, KeyError, IndexError):
-        pass
+    issues = _parse_jira_result(result)
+    if not issues:
+        await asyncio.sleep(2)
+        result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
+        if "error" not in result:
+            issues = _parse_jira_result(result)
     if not issues:
         kb = {"inline_keyboard": [[{"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"}]]}
         bot._send_message(chat_id, f"📄 {issue_key}: No subtasks found.", reply_markup=kb)
