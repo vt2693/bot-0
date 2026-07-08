@@ -591,6 +591,8 @@ class TelegramBot:
                     ms.skill_remove(s["id"])
                     removed += 1
             self._send_message(chat_id, f"Removed {removed} inactive skills.")
+        elif data.startswith("ac:jira_run:"):
+            await _action_jira_run(self, chat_id, data[12:])
         elif data.startswith("ac:jira_task:"):
             await _action_jira_subtasks(self, chat_id, data[13:])
         elif data.startswith("ac:"):
@@ -1088,6 +1090,24 @@ def _parse_jira_result(result: dict) -> list[dict]:
     return []
 
 
+def _parse_jira_single(result: dict) -> dict | None:
+    """Parse single issue from JIRA_GET_ISSUE workbench response."""
+    try:
+        content = result.get("content", [])
+        if isinstance(content, list) and content:
+            text = content[0].get("text", "{}")
+            outer = json.loads(text)
+            stdout = outer.get("data", {}).get("stdout", "{}")
+            data = json.loads(stdout)
+            if isinstance(data, dict):
+                inner = data.get("data", data)
+                if isinstance(inner, dict) and inner.get("key"):
+                    return inner
+    except (json.JSONDecodeError, KeyError, IndexError, TypeError):
+        pass
+    return None
+
+
 async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     """Show open tasks from configured JIRA_EPICS via Composio workbench."""
     epics = getattr(bot, "jira_epics", [])
@@ -1169,21 +1189,70 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
         kb = {"inline_keyboard": [[{"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"}]]}
         bot._send_message(chat_id, f"📄 {issue_key}: No subtasks found.", reply_markup=kb)
         return
-    lines = [f"📄 {issue_key} — Subtasks ({len(issues)} total)\n"]
+    header = f"📄 {issue_key} — Subtasks ({len(issues)} total)\n"
+    kb_rows = []
     for sub in issues[:15]:
         key = sub.get("key", "?")
         summary = sub.get("summary") or key
         status_obj = sub.get("status") or {}
         status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
         icon = "✅" if status == "Done" else ("🟡" if status == "In Progress" else "🔵")
-        lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
+        kb_rows.append([
+            {"text": f"{icon} {key}: {summary[:40]}", "callback_data": f"ac:jira_task:{key}"},
+            {"text": "▶️ Run", "callback_data": f"ac:jira_run:{key}"},
+        ])
     if len(issues) > 15:
-        lines.append(f"\n...and {len(issues) - 15} more.")
-    kb = {"inline_keyboard": [[
+        header += f"\n...and {len(issues) - 15} more."
+    kb_rows.append([
         {"text": "🔄 Refresh", "callback_data": f"ac:jira_task:{issue_key}"},
         {"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"},
-    ]]}
-    bot._send_message(chat_id, "\n".join(lines), reply_markup=kb)
+    ])
+    bot._send_message(chat_id, header, reply_markup={"inline_keyboard": kb_rows})
+
+
+async def _action_jira_run(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
+    """Fetch Jira issue description and run it as an LLM prompt."""
+    code = (
+        "import json\n"
+        "result, err = run_composio_tool(\"JIRA_GET_ISSUE\", "
+        f'{{"issue_id": {json.dumps(issue_key)}, "fields": ["description", "summary", "status", "assignee"]}})\n'
+        "if err:\n"
+        '    print(json.dumps({{"error": str(err)}}))\n'
+        "else:\n"
+        "    print(json.dumps(result))\n"
+    )
+    bot._enqueue_typing(chat_id)
+    result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
+    if "error" in result:
+        bot._send_message(chat_id, f"❌ {result['error']}")
+        return
+    issue = _parse_jira_single(result)
+    if not issue:
+        await asyncio.sleep(2)
+        result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
+        if "error" not in result:
+            issue = _parse_jira_single(result)
+    if not issue:
+        bot._send_message(chat_id, f"Could not fetch details for {issue_key}.")
+        return
+    summary = issue.get("summary") or ""
+    description = issue.get("description") or summary
+    prompt = f"Execute this Jira task:\n\n{issue_key}: {summary}\n\n{description}"
+    key = str(chat_id)
+    history = bot._chat_history.setdefault(key, [])
+    refresh = asyncio.create_task(bot._typing_refresher(chat_id))
+    try:
+        response = await asyncio.to_thread(bot.bridge_chat, prompt, history, key)
+    finally:
+        refresh.cancel()
+        try:
+            await refresh
+        except asyncio.CancelledError:
+            pass
+    history.extend([{"role": "user", "content": prompt}, {"role": "assistant", "content": response}])
+    if len(history) > bot._history_max:
+        bot._chat_history[key] = history[-bot._history_max:]
+    bot._send_message(chat_id, response)
 
 
 MENU_ACTIONS_ASYNC: dict[str, Callable] = {
