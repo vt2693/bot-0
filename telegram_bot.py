@@ -1091,7 +1091,12 @@ def _parse_jira_result(result: dict) -> list[dict]:
 
 
 def _parse_jira_single(result: dict) -> dict | None:
-    """Parse single issue from JIRA_GET_ISSUE workbench response."""
+    """Parse single issue from JIRA_GET_ISSUE workbench response.
+
+    Response shape:
+    {"data": {"key": "...", "fields": {"summary": "...", "description": "...", ...}, ...}}
+    Normalizes by promoting fields.* to top level.
+    """
     try:
         content = result.get("content", [])
         if isinstance(content, list) and content:
@@ -1102,6 +1107,11 @@ def _parse_jira_single(result: dict) -> dict | None:
             if isinstance(data, dict):
                 inner = data.get("data", data)
                 if isinstance(inner, dict) and inner.get("key"):
+                    fields = inner.get("fields") or {}
+                    if isinstance(fields, dict):
+                        for k, v in fields.items():
+                            if k not in inner:
+                                inner[k] = v
                     return inner
     except (json.JSONDecodeError, KeyError, IndexError, TypeError):
         pass
@@ -1215,7 +1225,7 @@ async def _action_jira_run(bot: TelegramBot, chat_id: int, issue_key: str) -> No
     code = (
         "import json\n"
         "result, err = run_composio_tool(\"JIRA_GET_ISSUE\", "
-        f'{{"issue_id": {json.dumps(issue_key)}, "fields": ["description", "summary", "status", "assignee"]}})\n'
+        f'{{"issue_key": {json.dumps(issue_key)}, "fields": ["description", "summary", "status", "assignee"]}})\n'
         "if err:\n"
         '    print(json.dumps({{"error": str(err)}}))\n'
         "else:\n"
