@@ -27,7 +27,24 @@ else
 fi
 
 # Install Python deps (minimal — no FastAPI/Gradio)
+echo "Installing Python packages..."
 pip install openai==2.24.0 httpx>=0.25.0 numpy>=1.24.0 huggingface_hub>=0.26.0
+if [ $? -ne 0 ]; then
+  echo "pip install failed — retrying with --default-timeout=300..."
+  pip install --default-timeout=300 openai==2.24.0 httpx>=0.25.0 numpy>=1.24.0 huggingface_hub>=0.26.0
+fi
+
+# Verify critical imports
+echo "Verifying packages..."
+python -c "
+import sys, importlib
+pkgs = ['openai', 'httpx', 'numpy', 'huggingface_hub']
+missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
+if missing:
+    print('ERROR: missing packages:', ' '.join(missing))
+    sys.exit(1)
+print('  ✓ all packages installed')
+"
 
 # Prompt for tokens
 echo ""
