@@ -129,6 +129,7 @@ class HermesBridge:
             "messages": messages,
             "max_tokens": self.settings.MAX_TOKENS,
             "temperature": self.settings.TEMPERATURE,
+            "stream": False,
         }
         if tools:
             body["tools"] = tools
