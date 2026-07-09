@@ -1,11 +1,13 @@
 #!/data/data/com.termux/files/usr/bin/bash
-set -e
+# NOTE: no set -e — pkg mirrors are flaky; we handle failures explicitly
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Install system pkgs
-pkg update -y
-pkg install -y python ffmpeg tmux termux-api git binutils
+# Install system pkgs (mirrors flaky — don't abort on transient errors)
+echo "Updating package lists..."
+pkg update -y 2>&1 || echo "  ⚠ pkg update failed (mirror issue), trying to install directly..."
+
+pkg install -y python ffmpeg tmux termux-api git binutils 2>&1 || echo "  ⚠ some pkg installs failed — continuing if core pkgs exist"
 
 # Ensure storage access for /sdcard/Download
 termux-setup-storage 2>/dev/null || echo "Storage already granted or run manually: termux-setup-storage"
@@ -32,13 +34,7 @@ echo "Installing numpy via pkg (pre-built)..."
 pkg install -y python-numpy 2>/dev/null || pip install numpy>=1.24.0
 
 echo "Installing Python packages..."
-set +e  # don't die on pip failure — we retry
-pip install openai==2.24.0 httpx>=0.25.0 huggingface_hub>=0.26.0
-if [ $? -ne 0 ]; then
-  echo "pip failed — retrying with --default-timeout=300..."
-  pip install --default-timeout=300 openai==2.24.0 httpx>=0.25.0 huggingface_hub>=0.26.0
-fi
-set -e
+pip install openai==2.24.0 httpx>=0.25.0 huggingface_hub>=0.26.0 || pip install --default-timeout=300 openai==2.24.0 httpx>=0.25.0 huggingface_hub>=0.26.0
 
 # Verify critical imports
 echo "Verifying packages..."
