@@ -16,7 +16,7 @@ mkdir -p "$TEMP_DIR" logs
 # Verify critical deps before starting
 python -c "
 import sys, importlib.util
-pkgs = ['openai', 'httpx', 'numpy', 'huggingface_hub']
+pkgs = ['openai', 'httpx', 'numpy']
 missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
 if missing:
     print('ERROR: Missing packages: ' + ' '.join(missing), flush=True)

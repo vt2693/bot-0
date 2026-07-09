@@ -40,13 +40,13 @@ pkg install -y python-numpy 2>/dev/null || pip install numpy>=1.24.0
 pip install --upgrade pip 2>&1 | tail -1
 
 echo "Installing Python packages (unpinned for 3.14 compatibility)..."
-pip install openai httpx huggingface_hub 2>&1 || pip install --default-timeout=300 openai httpx huggingface_hub 2>&1
+pip install openai httpx numpy 2>&1 || pip install --default-timeout=300 openai httpx numpy 2>&1
 
 # Verify critical imports
 echo "Verifying packages..."
 python -c "
 import sys, importlib.util
-pkgs = ['openai', 'httpx', 'numpy', 'huggingface_hub']
+pkgs = ['openai', 'httpx', 'numpy']
 missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
 if missing:
     print('ERROR: missing packages:', ' '.join(missing))
