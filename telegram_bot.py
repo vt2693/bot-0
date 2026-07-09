@@ -617,6 +617,7 @@ class TelegramBot:
     # -- Direct-send emergency fallback (manual only, not auto-started) ----
 
     _TELEGRAM_PATHS = {
+        "sendChatAction": "/sendChatAction",
         "sendMessage": "/sendMessage",
         "editMessageText": "/editMessageText",
         "answerCallbackQuery": "/answerCallbackQuery",

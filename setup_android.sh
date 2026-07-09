@@ -3,50 +3,58 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Install deps
+# Install system pkgs
 pkg update -y
-pkg install -y python ffmpeg tmux termux-api git
+pkg install -y python ffmpeg tmux termux-api git binutils
 
-# Repo: git pull if exists, clone if not
-if [ -f "$SCRIPT_DIR/relay.py" ]; then
-  echo "Repo already cloned at $SCRIPT_DIR"
+# Ensure storage access for /sdcard/Download
+termux-setup-storage 2>/dev/null || echo "Storage already granted or run manually: termux-setup-storage"
+
+# Clone or pull
+if [ -f "$SCRIPT_DIR/android_bot.py" ]; then
+  echo "Using local files at $SCRIPT_DIR"
   cd "$SCRIPT_DIR"
-  git pull origin main 2>/dev/null || echo "git pull failed (no upstream?), using local files"
+  git pull origin main 2>/dev/null || echo "git pull skipped, using local files"
 else
   echo "Cloning repo..."
   cd /data/data/com.termux/files/home
-  rm -rf hermes-relay 2>/dev/null
-  git clone https://huggingface.co/spaces/vt2693/bot-0 hermes-relay
-  cd hermes-relay
+  rm -rf hermes-bot 2>/dev/null
+  echo "WARNING: vt2693/bot-0 HF Space is deleted. Use rsync/scp to copy the repo."
+  echo "From your computer: rsync -avz bot-0/ termux@phone:~/hermes-bot/"
+  echo "Or manually copy the files to ~/hermes-bot/ and re-run setup."
+  mkdir -p hermes-bot
+  cd hermes-bot
 fi
 
-# Prompt for tokens (always runs)
+# Install Python deps (minimal — no FastAPI/Gradio)
+pip install openai==2.24.0 httpx>=0.25.0 numpy>=1.24.0 huggingface_hub>=0.26.0
+
+# Prompt for tokens
 echo ""
-echo "=== Hermes Relay Tokens ==="
-echo "(press Enter to keep existing value, or skip if blank)"
+echo "=== Hermes Bot Tokens ==="
+echo "(press Enter to keep existing value)"
 echo ""
 
-# Hardcoded defaults (script values always win over stale env file)
-DEFAULT_SPACE_URL="https://vt2693-bot-0.hf.space"
-DEFAULT_WORK_DIR="/sdcard/Download"
-DEFAULT_POLL="3"
-
-# Load existing values only for previously-entered secrets
+# Load existing values
+ENV_FILE="$HOME/.hermes-tokens.env"
 EXISTING_TG=""; EXISTING_GROQ=""; EXISTING_NVIDIA=""
-if [ -f "$HOME/.hermes-tokens.env" ]; then
-  . "$HOME/.hermes-tokens.env"
+EXISTING_ROUTER=""; EXISTING_COMPOSIO=""; EXISTING_OPENCODE=""
+EXISTING_GOOGLE=""; EXISTING_ANTHROPIC=""; EXISTING_OPENAI=""
+if [ -f "$ENV_FILE" ]; then
+  . "$ENV_FILE"
   EXISTING_TG="$TELEGRAM_BOT_TOKEN"
   EXISTING_GROQ="$GROQ_API_KEY"
   EXISTING_NVIDIA="$NVIDIA_API_KEY"
+  EXISTING_ROUTER="$ROUTER_0_API_KEY"
+  EXISTING_COMPOSIO="$COMPOSIO_CONSUMER_API_KEY"
+  EXISTING_OPENCODE="$OPENCODE_ZEN_API_KEY"
+  EXISTING_GOOGLE="$GOOGLE_API_KEY"
+  EXISTING_ANTHROPIC="$ANTHROPIC_API_KEY"
+  EXISTING_OPENAI="$OPENAI_API_KEY"
 fi
-
-read -p "SPACE_URL [$DEFAULT_SPACE_URL]: " input
-SPACE_URL="${input:-$DEFAULT_SPACE_URL}"
 
 read -p "TELEGRAM_BOT_TOKEN [${EXISTING_TG:-}]: " input
 TELEGRAM_BOT_TOKEN="${input:-$EXISTING_TG}"
-
-BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
 
 read -p "GROQ_API_KEY [${EXISTING_GROQ:-}]: " input
 GROQ_API_KEY="${input:-$EXISTING_GROQ}"
@@ -54,17 +62,43 @@ GROQ_API_KEY="${input:-$EXISTING_GROQ}"
 read -p "NVIDIA_API_KEY [${EXISTING_NVIDIA:-}]: " input
 NVIDIA_API_KEY="${input:-$EXISTING_NVIDIA}"
 
-cat > "$HOME/.hermes-tokens.env" <<EOF
-export SPACE_URL="${SPACE_URL}"
+read -p "ROUTER_0_API_KEY [${EXISTING_ROUTER:-}]: " input
+ROUTER_0_API_KEY="${input:-$EXISTING_ROUTER}"
+
+read -p "COMPOSIO_CONSUMER_API_KEY [${EXISTING_COMPOSIO:-}]: " input
+COMPOSIO_CONSUMER_API_KEY="${input:-$EXISTING_COMPOSIO}"
+
+read -p "OPENCODE_ZEN_API_KEY [${EXISTING_OPENCODE:-}]: " input
+OPENCODE_ZEN_API_KEY="${input:-$EXISTING_OPENCODE}"
+
+read -p "GOOGLE_API_KEY [${EXISTING_GOOGLE:-}]: " input
+GOOGLE_API_KEY="${input:-$EXISTING_GOOGLE}"
+
+read -p "ANTHROPIC_API_KEY [${EXISTING_ANTHROPIC:-}]: " input
+ANTHROPIC_API_KEY="${input:-$EXISTING_ANTHROPIC}"
+
+read -p "OPENAI_API_KEY [${EXISTING_OPENAI:-}]: " input
+OPENAI_API_KEY="${input:-$EXISTING_OPENAI}"
+
+cat > "$ENV_FILE" <<EOF
 export TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN}"
-export BOT_TOKEN="\${TELEGRAM_BOT_TOKEN}"
 export GROQ_API_KEY="${GROQ_API_KEY}"
 export NVIDIA_API_KEY="${NVIDIA_API_KEY}"
-export WORK_DIR="/sdcard/Download"
-export POLL_INTERVAL="1"
+export ROUTER_0_API_KEY="${ROUTER_0_API_KEY}"
+export COMPOSIO_CONSUMER_API_KEY="${COMPOSIO_CONSUMER_API_KEY}"
+export OPENCODE_ZEN_API_KEY="${OPENCODE_ZEN_API_KEY}"
+export GOOGLE_API_KEY="${GOOGLE_API_KEY}"
+export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}"
+export OPENAI_API_KEY="${OPENAI_API_KEY}"
+export PROVIDER="router_0"
+export BROADCAST_CHAT_ID=""
+# Leave HF_TOKEN unset to prevent memory_store.py from attempting
+# backup to deleted Space (vt2693/bot-0). MEMORY_SPACE_ID is set
+# to an invalid Space name so the backup guard ("/" in path) skips.
+export MEMORY_SPACE_ID="none"
 EOF
-chmod 600 "$HOME/.hermes-tokens.env"
-echo "Saved $HOME/.hermes-tokens.env"
+chmod 600 "$ENV_FILE"
+echo "Saved $ENV_FILE"
 
 echo ""
 echo "Done. Run: bash start_android.sh"
