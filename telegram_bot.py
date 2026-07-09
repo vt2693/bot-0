@@ -72,8 +72,6 @@ class TelegramBot:
             {"command": "model", "description": "List/switch provider"},
             {"command": "improve", "description": "Extract skills from conversation"},
             {"command": "secrets", "description": "Configured providers"},
-            {"command": "restart", "description": "Restart instructions"},
-            {"command": "reconfigure", "description": "Re-enqueue webhook"},
             {"command": "schedule", "description": "Manage scheduled tasks"},
         ]
         self.enqueue_config("setMyCommands", {"commands": cmds})
@@ -136,7 +134,7 @@ class TelegramBot:
             self._menu_msg_id.pop(chat_id, None)  # fresh send, never edit
             await self._show_menu(chat_id, "main")
         elif cmd == "/help":
-            self._send_message(chat_id, "/start /menu /model /secrets /restart. Ask normally to chat.")
+            self._send_message(chat_id, "/start /menu /model /secrets. Ask normally to chat.")
         elif cmd == "/model":
             if not self.bridge:
                 self._send_message(chat_id, "Bridge unavailable")
@@ -150,12 +148,6 @@ class TelegramBot:
         elif cmd == "/secrets":
             s = self.bridge.status() if self.bridge else {}
             self._send_message(chat_id, "Provider: " + s.get("provider", "?") + "\nComposio: " + str(bool(getattr(self.bridge, "_composio", None))) + "\nFirecrawl: via Composio")
-        elif cmd == "/restart":
-            self._send_message(chat_id, "Restart Space from Hugging Face UI -> Settings -> Restart Space.")
-        elif cmd in ("/reconfigure", "/reconfig"):
-            self.enqueue_webhook()
-            self.configure_commands()
-            self._send_message(chat_id, "Webhook + commands re-enqueued for relay.")
         elif cmd == "/schedule":
             if not arg:
                 self._menu_msg_id.pop(chat_id, None)
