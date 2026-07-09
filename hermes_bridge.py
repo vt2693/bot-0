@@ -172,14 +172,9 @@ class HermesBridge:
         return f"Tool loop stopped after {max_rounds} rounds. The task may need more steps or the tools are failing. Try a simpler request."
 
     def _execute_tool(self, name: str, args: dict) -> str:
-        import asyncio
         try:
             if self._composio:
-                loop = asyncio.new_event_loop()
-                try:
-                    return json.dumps(loop.run_until_complete(self._composio.call_tool(name, args)), default=str)
-                finally:
-                    loop.close()
+                return json.dumps(self._composio.call_tool_sync(name, args), default=str)
         except Exception as e:
             return f"Tool {name} failed: {e}"
         return f"Unknown tool: {name}"

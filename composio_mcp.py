@@ -63,6 +63,27 @@ class ComposioMCP:
     async def call_tool(self, name: str, arguments: dict) -> dict:
         return await self._rpc("tools/call", {"name": name, "arguments": arguments}) or {}
 
+    def call_tool_sync(self, name: str, arguments: dict) -> dict:
+        """Synchronous version — uses httpx.Client, no event loop needed.
+
+        Used from HermesBridge._execute_tool which runs in a thread pool
+        (asyncio.to_thread) and cannot safely create a new event loop.
+        """
+        import httpx as _httpx
+        with _httpx.Client(timeout=120.0) as client:
+            self._request_id += 1
+            headers = {"x-consumer-api-key": self.api_key, "Content-Type": "application/json", "Accept": "application/json, text/event-stream"}
+            payload = {"jsonrpc": "2.0", "method": "tools/call", "params": {"name": name, "arguments": arguments}, "id": self._request_id}
+            r = client.post(BASE_URL, json=payload, headers=headers)
+            r.raise_for_status()
+            text = r.text.strip()
+            for line in text.splitlines():
+                line = line.strip()
+                if line.startswith("data: "):
+                    data = json.loads(line[6:])
+                    return data.get("result") or {}
+            return json.loads(text).get("result") or {}
+
     async def close(self) -> None:
         if self._client:
             await self._client.aclose()
