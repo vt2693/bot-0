@@ -29,18 +29,17 @@ else
 fi
 
 # Install Python deps (minimal — no FastAPI/Gradio)
-# NOTE: Python 3.14 on Termux — pinning openai==2.24.0 fails because
-# tiktoken/tokenizers have no 3.14 wheel and Rust compilation fails.
-# Use latest versions instead (if they have 3.14 wheels), else fall back
-# to pkg for C-ext deps.
-echo "Installing numpy via pkg (pre-built)..."
-pkg install -y python-numpy 2>/dev/null || pip install numpy>=1.24.0
+# Python 3.14 on Termux: jiter (openai dep, C/Rust) has no 3.14 wheel
+# and aarch64-unknown-linux-android isn't known to rustup. Install
+# jiter via pkg (pre-built), rest via pip.
+echo "Installing pre-built C-extension deps via pkg..."
+pkg install -y python-numpy python-jiter 2>/dev/null || true
 
-# Ensure pip is up to date (Python 3.14 needs recent pip)
+# Ensure pip is up to date
 pip install --upgrade pip 2>&1 | tail -1
 
-echo "Installing Python packages (unpinned for 3.14 compatibility)..."
-pip install openai httpx numpy 2>&1 || pip install --default-timeout=300 openai httpx numpy 2>&1
+echo "Installing Python packages..."
+pip install openai httpx 2>&1 || pip install --default-timeout=300 openai httpx 2>&1
 
 # Verify critical imports
 echo "Verifying packages..."
