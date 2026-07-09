@@ -25,11 +25,7 @@ if missing:
 " 2>&1 || exit 1
 
 termux-wake-lock || true
-if tmux has-session -t hermes 2>/dev/null; then
-  echo "Bot already running in tmux session 'hermes'. Attach: tmux attach -t hermes"
-  echo "To restart: tmux kill-session -t hermes; bash $0"
-  exit 0
-fi
+tmux has-session -t hermes 2>/dev/null && echo "Killing existing session..." && tmux kill-session -t hermes
 tmux new-session -d -s hermes -n bot \
   "while true; do python -u android_bot.py 2>&1 | tee -a logs/bot.log; echo 'Bot crashed, restarting in 2s...'; sleep 2; done"
 
