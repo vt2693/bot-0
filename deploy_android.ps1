@@ -179,13 +179,12 @@ function Run-Setup {
 }
 
 # ─── main ─────────────────────────────────────────────────────────────
-Clear-Host
-Write-Host @"
-╔═══════════════════════════════════════╗
-║  Hermes Agent — Android Deploy Tool  ║
-╚═══════════════════════════════════════╝
-
-"@ -ForegroundColor Magenta
+[Console]::ForegroundColor = [ConsoleColor]::Magenta
+Write-Host "╔═══════════════════════════════════════╗"
+Write-Host "║  Hermes Agent - Android Deploy Tool  ║"
+Write-Host "╚═══════════════════════════════════════╝"
+Write-Host ""
+[Console]::ResetColor()
 
 cd $REPO_DIR
 
@@ -213,11 +212,11 @@ Write-OK "All files transferred to ${PHONE_DIR}"
 
 Run-Setup -Method $method
 
-Write-Host @"
-
-`nDone! Quick reference:
-  Attach to bot:   tmux attach -t hermes
-  View logs:       cat ~/hermes-bot/logs/bot.log
-  Restart bot:     ~/hermes-bot/start_android.sh
-  Manual deploy:   $PSCommandPath
-"@ -ForegroundColor Cyan
+[Console]::ForegroundColor = [ConsoleColor]::Cyan
+Write-Host ""
+Write-Host "Done! Quick reference:"
+Write-Host "  Attach to bot:   tmux attach -t hermes"
+Write-Host "  View logs:       cat ~/hermes-bot/logs/bot.log"
+Write-Host "  Restart bot:     ~/hermes-bot/start_android.sh"
+Write-Host "  Manual deploy:   $PSCommandPath"
+[Console]::ResetColor()
