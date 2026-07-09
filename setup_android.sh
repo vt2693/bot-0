@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo "Updating package lists..."
 pkg update -y 2>&1 || echo "  ⚠ pkg update failed (mirror issue), trying to install directly..."
 
-pkg install -y python ffmpeg tmux termux-api git binutils 2>&1 || echo "  ⚠ some pkg installs failed — continuing if core pkgs exist"
+pkg install -y python ffmpeg tmux termux-api git binutils python-pip 2>&1 || echo "  ⚠ some pkg installs failed — continuing if core pkgs exist"
 
 # Ensure storage access for /sdcard/Download
 termux-setup-storage 2>/dev/null || echo "Storage already granted or run manually: termux-setup-storage"
@@ -29,12 +29,18 @@ else
 fi
 
 # Install Python deps (minimal — no FastAPI/Gradio)
-# numpy on Termux requires pkg (C compilation fails via pip)
+# NOTE: Python 3.14 on Termux — pinning openai==2.24.0 fails because
+# tiktoken/tokenizers have no 3.14 wheel and Rust compilation fails.
+# Use latest versions instead (if they have 3.14 wheels), else fall back
+# to pkg for C-ext deps.
 echo "Installing numpy via pkg (pre-built)..."
 pkg install -y python-numpy 2>/dev/null || pip install numpy>=1.24.0
 
-echo "Installing Python packages..."
-pip install openai==2.24.0 httpx>=0.25.0 huggingface_hub>=0.26.0 || pip install --default-timeout=300 openai==2.24.0 httpx>=0.25.0 huggingface_hub>=0.26.0
+# Ensure pip is up to date (Python 3.14 needs recent pip)
+pip install --upgrade pip 2>&1 | tail -1
+
+echo "Installing Python packages (unpinned for 3.14 compatibility)..."
+pip install openai httpx huggingface_hub 2>&1 || pip install --default-timeout=300 openai httpx huggingface_hub 2>&1
 
 # Verify critical imports
 echo "Verifying packages..."
