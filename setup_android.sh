@@ -27,12 +27,18 @@ else
 fi
 
 # Install Python deps (minimal — no FastAPI/Gradio)
+# numpy on Termux requires pkg (C compilation fails via pip)
+echo "Installing numpy via pkg (pre-built)..."
+pkg install -y python-numpy 2>/dev/null || pip install numpy>=1.24.0
+
 echo "Installing Python packages..."
-pip install openai==2.24.0 httpx>=0.25.0 numpy>=1.24.0 huggingface_hub>=0.26.0
+set +e  # don't die on pip failure — we retry
+pip install openai==2.24.0 httpx>=0.25.0 huggingface_hub>=0.26.0
 if [ $? -ne 0 ]; then
-  echo "pip install failed — retrying with --default-timeout=300..."
-  pip install --default-timeout=300 openai==2.24.0 httpx>=0.25.0 numpy>=1.24.0 huggingface_hub>=0.26.0
+  echo "pip failed — retrying with --default-timeout=300..."
+  pip install --default-timeout=300 openai==2.24.0 httpx>=0.25.0 huggingface_hub>=0.26.0
 fi
+set -e
 
 # Verify critical imports
 echo "Verifying packages..."
