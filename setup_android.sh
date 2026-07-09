@@ -61,6 +61,7 @@ ENV_FILE="$HOME/.hermes-tokens.env"
 EXISTING_TG=""; EXISTING_GROQ=""; EXISTING_NVIDIA=""
 EXISTING_ROUTER=""; EXISTING_COMPOSIO=""; EXISTING_OPENCODE=""
 EXISTING_GOOGLE=""; EXISTING_ANTHROPIC=""; EXISTING_OPENAI=""
+EXISTING_EPICS=""
 if [ -f "$ENV_FILE" ]; then
   . "$ENV_FILE"
   EXISTING_TG="$TELEGRAM_BOT_TOKEN"
@@ -72,6 +73,7 @@ if [ -f "$ENV_FILE" ]; then
   EXISTING_GOOGLE="$GOOGLE_API_KEY"
   EXISTING_ANTHROPIC="$ANTHROPIC_API_KEY"
   EXISTING_OPENAI="$OPENAI_API_KEY"
+  EXISTING_EPICS="$JIRA_EPICS"
 fi
 
 read -p "TELEGRAM_BOT_TOKEN [${EXISTING_TG:-}]: " input
@@ -101,6 +103,9 @@ ANTHROPIC_API_KEY="${input:-$EXISTING_ANTHROPIC}"
 read -p "OPENAI_API_KEY [${EXISTING_OPENAI:-}]: " input
 OPENAI_API_KEY="${input:-$EXISTING_OPENAI}"
 
+read -p "JIRA_EPICS (comma-separated, optional) [${EXISTING_EPICS:-}]: " input
+JIRA_EPICS="${input:-$EXISTING_EPICS}"
+
 cat > "$ENV_FILE" <<EOF
 export TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN}"
 export GROQ_API_KEY="${GROQ_API_KEY}"
@@ -113,6 +118,7 @@ export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}"
 export OPENAI_API_KEY="${OPENAI_API_KEY}"
 export PROVIDER="router_0"
 export BROADCAST_CHAT_ID=""
+export JIRA_EPICS="${JIRA_EPICS}"
 # Leave HF_TOKEN unset to prevent memory_store.py from attempting
 # backup to deleted Space (vt2693/bot-0). MEMORY_SPACE_ID is set
 # to an invalid Space name so the backup guard ("/" in path) skips.
