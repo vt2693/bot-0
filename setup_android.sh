@@ -37,7 +37,7 @@ fi
 # Verify critical imports
 echo "Verifying packages..."
 python -c "
-import sys, importlib
+import sys, importlib.util
 pkgs = ['openai', 'httpx', 'numpy', 'huggingface_hub']
 missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
 if missing:
