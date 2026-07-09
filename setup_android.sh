@@ -29,11 +29,11 @@ else
 fi
 
 # Install Python deps (minimal — no FastAPI/Gradio)
-# Python 3.14 on Termux: jiter (openai dep, C/Rust) has no 3.14 wheel
-# and aarch64-unknown-linux-android isn't known to rustup. Install
-# jiter via pkg (pre-built), rest via pip.
-echo "Installing pre-built C-extension deps via pkg..."
-pkg install -y python-numpy python-jiter 2>/dev/null || true
+# openai >= 2.40 depends on jiter (Rust). On Termux aarch64 we need
+# native rust (pkg) to compile it. Install rust first for speed,
+# then pin to a version that works.
+echo "Installing C-extension deps via pkg..."
+pkg install -y python-numpy rust 2>/dev/null || true
 
 # Ensure pip is up to date
 pip install --upgrade pip 2>&1 | tail -1
