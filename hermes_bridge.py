@@ -4,6 +4,8 @@ import time
 import logging
 from typing import Optional
 
+import httpx
+
 from config import Settings
 
 logger = logging.getLogger(__name__)
@@ -120,28 +122,42 @@ class HermesBridge:
             return f"Error: {e}"
 
     def _call_llm(self, message: str, history: list, memory_context: str | None = None, injected_skills: list | None = None) -> str:
-        import openai
-        client = openai.OpenAI(api_key=self._resolve_api_key(), base_url=self._resolve_base_url(), max_retries=0, timeout=self.settings.LLM_TIMEOUT)
         messages = self._build_messages(message, history, memory_context, injected_skills)
         tools = self._get_tools()
-        kwargs = {"model": self._model, "messages": messages, "max_tokens": self.settings.MAX_TOKENS, "temperature": self.settings.TEMPERATURE}
+        body = {
+            "model": self._model,
+            "messages": messages,
+            "max_tokens": self.settings.MAX_TOKENS,
+            "temperature": self.settings.TEMPERATURE,
+        }
         if tools:
-            kwargs["tools"] = tools
-            kwargs["tool_choice"] = "auto"
+            body["tools"] = tools
+            body["tool_choice"] = "auto"
+
+        headers = {"Content-Type": "application/json"}
+        api_key = self._resolve_api_key()
+        base_url = self._resolve_base_url()
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        url = (base_url.rstrip("/") if base_url else "") + "/chat/completions"
+
         max_rounds = self.settings.TOOL_LOOP_MAX_ROUNDS
         for round_i in range(max_rounds):
-            resp = client.chat.completions.create(**kwargs)
-            msg = resp.choices[0].message
-            calls = getattr(msg, "tool_calls", None) or []
+            resp = httpx.post(url, json=body, headers=headers, timeout=self.settings.LLM_TIMEOUT)
+            resp.raise_for_status()
+            data = resp.json()
+            choice = data["choices"][0]
+            msg = choice["message"]
+            content = msg.get("content") or ""
+            calls = msg.get("tool_calls") or []
             if not calls:
-                return msg.content or ""
-            messages.append({"role": "assistant", "content": msg.content or "", "tool_calls": [c.model_dump() for c in calls]})
+                return content
+            messages.append({"role": "assistant", "content": content, "tool_calls": calls})
             for c in calls:
-                name = c.function.name
-                args = json.loads(c.function.arguments or "{}")
+                name = c["function"]["name"]
+                args = json.loads(c["function"]["arguments"] or "{}")
                 result = self._execute_tool(name, args)
-                messages.append({"role": "tool", "tool_call_id": c.id, "content": result[:12000]})
-                # Broadcast tool call result if configured
+                messages.append({"role": "tool", "tool_call_id": c["id"], "content": result[:12000]})
                 if self.broadcast_fn:
                     try:
                         self.broadcast_fn(
@@ -151,7 +167,7 @@ class HermesBridge:
                         )
                     except Exception:
                         pass
-            kwargs["messages"] = messages
+            body["messages"] = messages
         return f"Tool loop stopped after {max_rounds} rounds. The task may need more steps or the tools are failing. Try a simpler request."
 
     def _execute_tool(self, name: str, args: dict) -> str:

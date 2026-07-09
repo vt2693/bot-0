@@ -28,24 +28,21 @@ else
   cd hermes-bot
 fi
 
-# Install Python deps (minimal — no FastAPI/Gradio)
-# openai >= 2.40 depends on jiter (Rust). On Termux aarch64 we need
-# native rust (pkg) to compile it. Install rust first for speed,
-# then pin to a version that works.
-echo "Installing C-extension deps via pkg..."
-pkg install -y python-numpy rust 2>/dev/null || true
+# Install Python deps — bot now uses httpx directly, no openai SDK needed
+echo "Installing numpy via pkg (pre-built)..."
+pkg install -y python-numpy 2>/dev/null || true
 
 # Ensure pip is up to date
 pip install --upgrade pip 2>&1 | tail -1
 
-echo "Installing Python packages..."
-pip install openai httpx 2>&1 || pip install --default-timeout=300 openai httpx 2>&1
+echo "Installing Python packages (httpx only — no openai SDK)..."
+pip install httpx 2>&1 || pip install --default-timeout=300 httpx 2>&1
 
 # Verify critical imports
 echo "Verifying packages..."
 python -c "
 import sys, importlib.util
-pkgs = ['openai', 'httpx', 'numpy']
+pkgs = ['httpx', 'numpy']
 missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
 if missing:
     print('ERROR: missing packages:', ' '.join(missing))
