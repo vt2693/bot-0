@@ -1201,7 +1201,7 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
         status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
         icon = "✅" if status == "Done" else ("🟡" if status == "In Progress" else "🔵")
         kb_rows.append([
-            {"text": f"{icon} {key}: {summary[:40]}", "callback_data": f"ac:jira_task:{key}"},
+            {"text": f"{icon} {key}: {summary[:80]}", "callback_data": f"ac:jira_task:{key}"},
             {"text": "▶️ Run", "callback_data": f"ac:jira_run:{key}"},
         ])
     if len(issues) > 25:
