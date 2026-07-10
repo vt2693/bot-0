@@ -1146,10 +1146,10 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
         ]}
         bot._send_message(chat_id, "📋 No open tasks found in the configured epics.", reply_markup=kb)
         return
-    # Build inline keyboard rows — max 20 tasks, one per row
+    # Build inline keyboard rows — max 25 tasks, one per row
     kb_rows = []
     lines = [f"📋 Open Tasks ({len(issues)} total)\n"]
-    for issue in issues[:20]:
+    for issue in issues[:25]:
         key = issue.get("key", "?")
         summary = issue.get("summary") or key
         status_obj = issue.get("status") or {}
@@ -1157,8 +1157,8 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
         icon = "🟡" if status == "In Progress" else "🔵"
         lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
         kb_rows.append([{"text": f"{icon} {key}: {summary[:30]}", "callback_data": f"ac:jira_task:{key}"}])
-    if len(issues) > 20:
-        lines.append(f"\n...and {len(issues) - 20} more.")
+    if len(issues) > 25:
+        lines.append(f"\n...and {len(issues) - 25} more.")
     kb_rows.append([
         {"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
         {"text": "🔙 Back", "callback_data": "mn:main"},
@@ -1194,7 +1194,7 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
         return
     header = f"📄 {issue_key} — Subtasks ({len(issues)} total)\n"
     kb_rows = []
-    for sub in issues[:15]:
+    for sub in issues[:25]:
         key = sub.get("key", "?")
         summary = sub.get("summary") or key
         status_obj = sub.get("status") or {}
@@ -1204,8 +1204,8 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
             {"text": f"{icon} {key}: {summary[:40]}", "callback_data": f"ac:jira_task:{key}"},
             {"text": "▶️ Run", "callback_data": f"ac:jira_run:{key}"},
         ])
-    if len(issues) > 15:
-        header += f"\n...and {len(issues) - 15} more."
+    if len(issues) > 25:
+        header += f"\n...and {len(issues) - 25} more."
     kb_rows.append([
         {"text": "🔄 Refresh", "callback_data": f"ac:jira_task:{issue_key}"},
         {"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"},
