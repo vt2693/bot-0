@@ -34,17 +34,16 @@ class HermesBridge:
             "groq": s.GROQ_MODEL,
             "openai": s.OPENAI_MODEL,
             "anthropic": s.ANTHROPIC_MODEL,
-            "huggingface": s.HF_MODEL,
             "router_0": s.ROUTER_0_MODEL,
         }.get(self._provider, "unknown")
 
     def _resolve_base_url(self) -> Optional[str]:
         s = self.settings
-        return {"opencode_zen": s.OPENCODE_ZEN_BASE_URL, "openrouter": s.OPENROUTER_BASE_URL, "google": s.GOOGLE_BASE_URL, "nvidia": s.NVIDIA_BASE_URL, "groq": s.GROQ_BASE_URL, "openai": s.OPENAI_BASE_URL, "huggingface": s.HF_BASE_URL, "anthropic": None, "router_0": s.ROUTER_0_BASE_URL}.get(self._provider)
+        return {"opencode_zen": s.OPENCODE_ZEN_BASE_URL, "openrouter": s.OPENROUTER_BASE_URL, "google": s.GOOGLE_BASE_URL, "nvidia": s.NVIDIA_BASE_URL, "groq": s.GROQ_BASE_URL, "openai": s.OPENAI_BASE_URL, "anthropic": None, "router_0": s.ROUTER_0_BASE_URL}.get(self._provider)
 
     def _resolve_api_key(self) -> Optional[str]:
         s = self.settings
-        key = {"opencode_zen": s.OPENCODE_ZEN_API_KEY, "openrouter": s.OPENROUTER_API_KEY, "google": s.GOOGLE_API_KEY, "nvidia": s.NVIDIA_API_KEY, "groq": s.GROQ_API_KEY, "openai": s.OPENAI_API_KEY, "anthropic": s.ANTHROPIC_API_KEY, "huggingface": s.HF_TOKEN, "router_0": s.ROUTER_0_API_KEY}.get(self._provider)
+        key = {"opencode_zen": s.OPENCODE_ZEN_API_KEY, "openrouter": s.OPENROUTER_API_KEY, "google": s.GOOGLE_API_KEY, "nvidia": s.NVIDIA_API_KEY, "groq": s.GROQ_API_KEY, "openai": s.OPENAI_API_KEY, "anthropic": s.ANTHROPIC_API_KEY, "router_0": s.ROUTER_0_API_KEY}.get(self._provider)
         # router_0 proxy works without an API key; pass empty string to satisfy OpenAI client
         if not key and self._provider == "router_0":
             return ""
