@@ -1113,6 +1113,71 @@ def _parse_jira_single(result: dict) -> dict | None:
     return None
 
 
+def _adf_to_plaintext(node: dict | list | str, indent: str = "") -> str:
+    """Convert Atlassian Document Format (ADF) JSON to plain text."""
+    if isinstance(node, str):
+        return node
+    if isinstance(node, list):
+        return "".join(_adf_to_plaintext(n, indent) for n in node)
+    if not isinstance(node, dict):
+        return str(node)
+    node_type = node.get("type", "")
+    content = node.get("content", [])
+    text = node.get("text", "")
+    marks = node.get("marks", [])
+
+    if node_type == "doc":
+        return _adf_to_plaintext(content, indent).strip()
+    if node_type == "paragraph":
+        return _adf_to_plaintext(content, indent) + "\n"
+    if node_type == "heading":
+        level = node.get("attrs", {}).get("level", 1)
+        prefix = "#" * level + " "
+        return prefix + _adf_to_plaintext(content, indent) + "\n"
+    if node_type == "orderedList":
+        order = node.get("attrs", {}).get("order", 1)
+        lines = []
+        for i, item in enumerate(content):
+            lines.append(indent + f"{order + i}. " + _adf_to_plaintext(item.get("content", []), indent + "  ").lstrip())
+        return "\n".join(lines) + "\n"
+    if node_type == "bulletList":
+        lines = []
+        for item in content:
+            lines.append(indent + "• " + _adf_to_plaintext(item.get("content", []), indent + "  ").lstrip())
+        return "\n".join(lines) + "\n"
+    if node_type == "listItem":
+        return _adf_to_plaintext(content, indent)
+    if node_type == "text":
+        for m in marks:
+            if m.get("type") == "link":
+                href = m.get("attrs", {}).get("href", "")
+                return f"[{text}]({href})"
+        return text
+    if node_type in ("hardBreak", "rule"):
+        return "\n"
+    if node_type == "inlineCard":
+        return node.get("attrs", {}).get("url", "")
+    if node_type == "mention":
+        return f"@{node.get('attrs', {}).get('text', '')}"
+    if node_type == "emoji":
+        return node.get("attrs", {}).get("text", "")
+    if node_type == "table":
+        rows = []
+        for row in content:
+            cells = []
+            for cell in (row.get("content") or []):
+                cells.append(_adf_to_plaintext(cell.get("content", []), "").strip())
+            rows.append(" | ".join(cells))
+        return "\n".join(rows) + "\n"
+    if node_type in ("tableRow", "tableHeader", "tableCell"):
+        return _adf_to_plaintext(content, indent)
+    # Fallback: recurse into content
+    if content:
+        return _adf_to_plaintext(content, indent)
+    if text:
+        return text
+    return ""
+
 async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     """Show open tasks from configured JIRA_EPICS via Composio workbench."""
     epics = getattr(bot, "jira_epics", [])
@@ -1241,7 +1306,18 @@ async def _action_jira_show(bot: TelegramBot, chat_id: int, issue_key: str) -> N
         bot._send_message(chat_id, f"Could not fetch details for {issue_key}.")
         return
     summary = issue.get("summary") or issue_key
-    desc = issue.get("description") or "*No description.*"
+    desc = issue.get("description") or ""
+    if isinstance(desc, dict):
+        desc = _adf_to_plaintext(desc)
+    elif isinstance(desc, str):
+        try:
+            parsed = json.loads(desc)
+            if isinstance(parsed, dict):
+                desc = _adf_to_plaintext(parsed)
+        except json.JSONDecodeError:
+            pass
+    if not desc:
+        desc = "*No description.*"
     status_obj = issue.get("status") or {}
     status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
     assignee_obj = issue.get("assignee") or {}
