@@ -35,6 +35,7 @@ class TelegramBot:
         self.scheduler = None
         self._pending_schedule: dict[str, dict] = {}
         self._pending_skills: dict[str, dict] = {}
+        self._subtask_parents: dict[int, str] = {}  # chat_id -> parent issue key for back button
         epics_raw = os.getenv("JIRA_EPICS", "")
         self.jira_epics = [e.strip() for e in epics_raw.split(",") if e.strip()]
 
@@ -585,6 +586,8 @@ class TelegramBot:
             self._send_message(chat_id, f"Removed {removed} inactive skills.")
         elif data.startswith("ac:jira_run:"):
             await _action_jira_run(self, chat_id, data[12:])
+        elif data.startswith("ac:jira_show:"):
+            await _action_jira_show(self, chat_id, data[13:])
         elif data.startswith("ac:jira_task:"):
             await _action_jira_subtasks(self, chat_id, data[13:])
         elif data.startswith("ac:"):
@@ -1167,6 +1170,7 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
 
 async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
     """Show subtasks for a given issue via Composio workbench."""
+    bot._subtask_parents[chat_id] = issue_key
     jql = f"parent = {issue_key} AND status IN ('To Do','In Progress') ORDER BY status DESC, priority DESC"
     code = (
         "import json\n"
@@ -1200,7 +1204,7 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
         status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
         icon = "✅" if status == "Done" else ("🟡" if status == "In Progress" else "🔵")
         kb_rows.append([
-            {"text": f"{icon} {key}: {summary[:80]}", "callback_data": f"ac:jira_task:{key}"},
+            {"text": f"{icon} {key}: {summary[:80]}", "callback_data": f"ac:jira_show:{key}"},
             {"text": "▶️ Run", "callback_data": f"ac:jira_run:{key}"},
         ])
     if len(issues) > 25:
@@ -1210,6 +1214,44 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
         {"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"},
     ])
     bot._send_message(chat_id, header, reply_markup={"inline_keyboard": kb_rows})
+
+
+async def _action_jira_show(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
+    """Fetch and display a single Jira issue's description (read-only view)."""
+    code = (
+        "import json\n"
+        "result, err = run_composio_tool(\"JIRA_GET_ISSUE\", "
+        f'{{"issue_key": {json.dumps(issue_key)}, "fields": ["description", "summary", "status", "assignee"]}})\n'
+        "if err:\n"
+        '    print(json.dumps({{"error": str(err)}}))\n'
+        "else:\n"
+        "    print(json.dumps(result))\n"
+    )
+    result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
+    if "error" in result:
+        bot._send_message(chat_id, f"❌ {result['error']}")
+        return
+    issue = _parse_jira_single(result)
+    if not issue:
+        await asyncio.sleep(2)
+        result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
+        if "error" not in result:
+            issue = _parse_jira_single(result)
+    if not issue:
+        bot._send_message(chat_id, f"Could not fetch details for {issue_key}.")
+        return
+    summary = issue.get("summary") or issue_key
+    desc = issue.get("description") or "*No description.*"
+    status_obj = issue.get("status") or {}
+    status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
+    assignee_obj = issue.get("assignee") or {}
+    assignee = assignee_obj.get("displayName", "Unassigned") if isinstance(assignee_obj, dict) else "Unassigned"
+    status_icon = "✅" if status == "Done" else ("🟡" if status == "In Progress" else "🔵")
+    text = f"📄 {issue_key}: {summary}\nStatus: {status_icon} {status} | Assignee: {assignee}\n\n{desc}"
+    parent = bot._subtask_parents.get(chat_id, "")
+    back_data = f"ac:jira_task:{parent}" if parent else "ac:jira_open_tasks"
+    kb = {"inline_keyboard": [[{"text": "🔙 Back", "callback_data": back_data}]]}
+    bot._send_message(chat_id, text[:4000], reply_markup=kb)
 
 
 async def _action_jira_run(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
