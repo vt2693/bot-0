@@ -1,4 +1,4 @@
-import os
+﻿import os
 import time
 import json  # noqa: F811
 import asyncio
@@ -49,7 +49,7 @@ class TelegramBot:
         self._start_time = time.time()
         self.configure_commands()
         # Webhook registration + outbound delivery go through the relay
-        # (HF Space free tier blocks api.telegram.org — SSL handshake times out).
+        # (HF Space free tier blocks api.telegram.org â€” SSL handshake times out).
         # The relay polls /api/tg_outbox for outbound, and runs getUpdates
         # polling for inbound delivery to /webhook/telegram.
         self.enqueue_webhook()
@@ -75,8 +75,8 @@ class TelegramBot:
             {"command": "schedule", "description": "Manage scheduled tasks"},
         ]
         self.enqueue_config("setMyCommands", {"commands": cmds})
-        # Do NOT call setChatMenuButton — let Telegram use its own default
-        # which shows the burger ☰. Explicitly setting type: "default" after
+        # Do NOT call setChatMenuButton â€” let Telegram use its own default
+        # which shows the burger â˜°. Explicitly setting type: "default" after
         # previously setting type: "commands" doesn't restore the burger.
 
     def enqueue_update(self, update: dict) -> None:
@@ -195,7 +195,7 @@ class TelegramBot:
                 skill_id = edit_info.get("skill_id")
                 if skill_id and self.bridge and self.bridge.memory_store:
                     if self.bridge.memory_store.skill_update(int(skill_id), procedure=text):
-                        self._send_message(chat_id, f"✅ Skill {skill_id} procedure updated.")
+                        self._send_message(chat_id, f"âœ… Skill {skill_id} procedure updated.")
                     else:
                         self._send_message(chat_id, "Edit failed: skill not found.")
                     return
@@ -204,7 +204,7 @@ class TelegramBot:
                 if pending and pending.get("chat_id") == chat_id:
                     skill = pending["skill"]
                     skill["procedure"] = text
-                    self._send_message(chat_id, "✅ Procedure updated. Review and save:")
+                    self._send_message(chat_id, "âœ… Procedure updated. Review and save:")
                     self._show_skill_confirmation(chat_id, skill)
                 else:
                     self._send_message(chat_id, "Edit session expired.")
@@ -248,7 +248,7 @@ class TelegramBot:
         problem = skill.get("problem", "?")[:200]
         procedure = skill.get("procedure", "?")[:300]
         text = (
-            f"📘 Potential skill learned:\n\n"
+            f"ðŸ“˜ Potential skill learned:\n\n"
             f"Title: {title}\n"
             f"Trigger: {problem}\n"
             f"Steps: {procedure}\n"
@@ -259,9 +259,9 @@ class TelegramBot:
         kb = {
             "inline_keyboard": [
                 [
-                    {"text": "💾 Save", "callback_data": f"ac:skill_save:{token}"},
-                    {"text": "📝 Edit", "callback_data": f"ac:skill_edit:{token}"},
-                    {"text": "❌ Discard", "callback_data": f"ac:skill_discard:{token}"},
+                    {"text": "ðŸ’¾ Save", "callback_data": f"ac:skill_save:{token}"},
+                    {"text": "ðŸ“ Edit", "callback_data": f"ac:skill_edit:{token}"},
+                    {"text": "âŒ Discard", "callback_data": f"ac:skill_discard:{token}"},
                 ]
             ]
         }
@@ -287,7 +287,7 @@ class TelegramBot:
                 return
             lines = [f"Skills ({len(skills)} total):\n"]
             for s in skills:
-                icon = "🟢" if s["status"] == "active" else ("🟡" if s["status"] == "unverified" else "⚪")
+                icon = "ðŸŸ¢" if s["status"] == "active" else ("ðŸŸ¡" if s["status"] == "unverified" else "âšª")
                 lines.append(f"{icon} {s['id']}: {s['title'][:80]}")
             self._send_message(chat_id, "\n".join(lines))
         elif sub == "search" and sub_arg:
@@ -306,7 +306,7 @@ class TelegramBot:
                 self._send_message(chat_id, "Usage: /improve delete <id>")
                 return
             if ms.skill_remove(sid):
-                self._send_message(chat_id, f"✅ Skill {sid} deleted.")
+                self._send_message(chat_id, f"âœ… Skill {sid} deleted.")
             else:
                 self._send_message(chat_id, f"Skill {sid} not found.")
         elif sub == "edit" and sub_arg:
@@ -344,14 +344,14 @@ class TelegramBot:
                 self._send_message(chat_id, f"Skill {sid} not found.")
                 return
             text = (
-                f"Skill {s['id']} — {s['status']}\n\n"
+                f"Skill {s['id']} â€” {s['status']}\n\n"
                 f"Title: {s['title']}\n"
                 f"Problem: {s['problem']}\n"
                 f"Procedure: {s['procedure']}\n"
             )
             if s["failure_pattern"]:
                 text += f"Failure pattern: {s['failure_pattern']}\n"
-            text += f"\nUsage: {s['access_count']}× | Injected: {s['injection_count']}× | Created: {time.strftime('%Y-%m-%d', time.localtime(s['created_at']))}"
+            text += f"\nUsage: {s['access_count']}Ã— | Injected: {s['injection_count']}Ã— | Created: {time.strftime('%Y-%m-%d', time.localtime(s['created_at']))}"
             self._send_message(chat_id, text)
 
     async def _handle_schedule_add(self, chat_id: int, text: str) -> None:
@@ -399,8 +399,8 @@ class TelegramBot:
         kb = {
             "inline_keyboard": [
                 [
-                    {"text": "✅ Confirm", "callback_data": "ac:schedule_cfm:" + token},
-                    {"text": "❌ Cancel", "callback_data": "ac:schedule_del:" + token},
+                    {"text": "âœ… Confirm", "callback_data": "ac:schedule_cfm:" + token},
+                    {"text": "âŒ Cancel", "callback_data": "ac:schedule_del:" + token},
                 ]
             ]
         }
@@ -468,7 +468,7 @@ class TelegramBot:
                 self._send_message(chat_id, "Failed: " + r["error"])
             else:
                 next_s = time.strftime("%H:%M", time.localtime(r["next_run_at"]))
-                self._send_message(chat_id, f"✅ Job created! ID: {r['id']}\nNext run at {next_s}, then every {pending['interval_minutes']:.0f} min.")
+                self._send_message(chat_id, f"âœ… Job created! ID: {r['id']}\nNext run at {next_s}, then every {pending['interval_minutes']:.0f} min.")
         elif data.startswith("ac:schedule_del:"):
             token = data[16:]
             self._pending_schedule.pop(token, None)
@@ -508,7 +508,7 @@ class TelegramBot:
             if r.get("error"):
                 self._send_message(chat_id, f"Failed to save: {r['error']}")
             else:
-                self._send_message(chat_id, f"✅ Skill saved! ID: {r['id']}")
+                self._send_message(chat_id, f"âœ… Skill saved! ID: {r['id']}")
         elif data.startswith("ac:skill_edit:"):
             token = data[len("ac:skill_edit:"):]
             self._pending_skill_cleanup()
@@ -544,14 +544,14 @@ class TelegramBot:
                 self._send_message(chat_id, f"Skill {sid} not found.")
                 return
             text = (
-                f"Skill {s['id']} — {s['status']}\n\n"
+                f"Skill {s['id']} â€” {s['status']}\n\n"
                 f"Title: {s['title']}\n"
                 f"Problem: {s['problem']}\n"
                 f"Procedure: {s['procedure']}\n"
             )
             if s["failure_pattern"]:
                 text += f"Failure pattern: {s['failure_pattern']}\n"
-            text += f"\nUsage: {s['access_count']}× | Injected: {s['injection_count']}×"
+            text += f"\nUsage: {s['access_count']}Ã— | Injected: {s['injection_count']}Ã—"
             self._send_message(chat_id, text)
         elif data.startswith("ac:skill_autolearn_toggle"):
             ms = self.bridge.memory_store if self.bridge else None
@@ -567,10 +567,10 @@ class TelegramBot:
                 is_on = latest["content"].strip().lower() == "auto_learn=true"
             if is_on:
                 ms.add("auto_learn=false", str(chat_id))
-                self._send_message(chat_id, "⚙️ Auto-learn turned OFF.")
+                self._send_message(chat_id, "âš™ï¸ Auto-learn turned OFF.")
             else:
                 ms.add("auto_learn=true", str(chat_id))
-                self._send_message(chat_id, "⚙️ Auto-learn turned ON.")
+                self._send_message(chat_id, "âš™ï¸ Auto-learn turned ON.")
         elif data.startswith("ac:skill_forget_inactive"):
             ms = self.bridge.memory_store if self.bridge else None
             if not ms:
@@ -679,92 +679,92 @@ MENUS = {
     "main": {
         "text": "Hermes Agent - Main Menu\n\nChoose a category:",
         "buttons": [
-            [{"text": "🌐 Web", "callback_data": "mn:web"}],
-            [{"text": "🧠 Memory", "callback_data": "mn:memory"}],
-            [{"text": "💬 Chat", "callback_data": "mn:chat"}],
-            [{"text": "🎤 Voice & Minutes", "callback_data": "mn:voice"}],
-            [{"text": "📘 Skills", "callback_data": "mn:skills"}],
-            [{"text": "⚙️ System", "callback_data": "mn:system"}],
-            [{"text": "⏰ Schedule", "callback_data": "mn:schedule"}],
-            [{"text": "📋 Jira", "callback_data": "mn:jira"}],
+            [{"text": "ðŸŒ Web", "callback_data": "mn:web"}],
+            [{"text": "ðŸ§  Memory", "callback_data": "mn:memory"}],
+            [{"text": "ðŸ’¬ Chat", "callback_data": "mn:chat"}],
+            [{"text": "ðŸŽ¤ Voice & Minutes", "callback_data": "mn:voice"}],
+            [{"text": "ðŸ“˜ Skills", "callback_data": "mn:skills"}],
+            [{"text": "âš™ï¸ System", "callback_data": "mn:system"}],
+            [{"text": "â° Schedule", "callback_data": "mn:schedule"}],
+            [{"text": "ðŸ“‹ Jira", "callback_data": "mn:jira"}],
         ],
     },
     "jira": {
         "text": "Jira\n\nManage and browse Jira issues.",
         "buttons": [
-            [{"text": "📋 Open Tasks", "callback_data": "ac:jira_open_tasks"}],
-            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+            [{"text": "ðŸ“‹ Open Tasks", "callback_data": "ac:jira_open_tasks"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:main"}],
         ],
     },
     "web": {
         "text": "Web Tools\n\nScrape, crawl, and search via Firecrawl (Composio).",
         "buttons": [
-            [{"text": "💡 Status", "callback_data": "ac:web_status"}],
-            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+            [{"text": "ðŸ’¡ Status", "callback_data": "ac:web_status"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:main"}],
         ],
     },
     "memory": {
         "text": "Memory\n\nFacts are auto-extracted from conversations.",
         "buttons": [
-            [{"text": "📋 View Facts", "callback_data": "ac:memory_view"}],
-            [{"text": "📊 Status", "callback_data": "ac:memory_status"}],
-            [{"text": "🗑️ Clear Memory", "callback_data": "ac:memory_clear"}],
-            [{"text": "🧹 Cleanup Low Trust", "callback_data": "ac:memory_cleanup"}],
-            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+            [{"text": "ðŸ“‹ View Facts", "callback_data": "ac:memory_view"}],
+            [{"text": "ðŸ“Š Status", "callback_data": "ac:memory_status"}],
+            [{"text": "ðŸ—‘ï¸ Clear Memory", "callback_data": "ac:memory_clear"}],
+            [{"text": "ðŸ§¹ Cleanup Low Trust", "callback_data": "ac:memory_cleanup"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:main"}],
         ],
     },
     "chat": {
         "text": "Chat\n\nManage conversation context.",
         "buttons": [
-            [{"text": "📝 Summarize", "callback_data": "ac:chat_summarize"}],
-            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+            [{"text": "ðŸ“ Summarize", "callback_data": "ac:chat_summarize"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:main"}],
         ],
     },
     "voice": {
         "text": "Voice & Minutes\n\nSend a voice memo for transcription and minutes.",
         "buttons": [
-            [{"text": "📊 Queue Status", "callback_data": "ac:voice_queue"}],
-            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+            [{"text": "ðŸ“Š Queue Status", "callback_data": "ac:voice_queue"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:main"}],
         ],
     },
     "system": {
         "text": "System\n\nBot status, provider info, diagnostics.",
         "buttons": [
-            [{"text": "ℹ️ Status", "callback_data": "ac:system_status"}],
-            [{"text": "🔌 Provider Info", "callback_data": "ac:system_provider"}],
-            [{"text": "🤖 Switch Model", "callback_data": "mn:model"}],
-            [{"text": "⏱️ Uptime", "callback_data": "ac:system_uptime"}],
-            [{"text": "📈 Queue Stats", "callback_data": "ac:system_queue"}],
-            [{"text": "🌐 Composio", "callback_data": "ac:system_composio"}],
-            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+            [{"text": "â„¹ï¸ Status", "callback_data": "ac:system_status"}],
+            [{"text": "ðŸ”Œ Provider Info", "callback_data": "ac:system_provider"}],
+            [{"text": "ðŸ¤– Switch Model", "callback_data": "mn:model"}],
+            [{"text": "â±ï¸ Uptime", "callback_data": "ac:system_uptime"}],
+            [{"text": "ðŸ“ˆ Queue Stats", "callback_data": "ac:system_queue"}],
+            [{"text": "ðŸŒ Composio", "callback_data": "ac:system_composio"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:main"}],
         ],
     },
     "model": {
         "text": "Switch Model (router_0)\n\nPick a model below. The new model loads immediately.",
         "buttons": [
-            [{"text": "⚡ oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
-            [{"text": "🌱 mmf/mimo-auto", "callback_data": "ac:model:mmf/mimo-auto"}],
-            [{"text": "🆓 openrouter/free", "callback_data": "ac:model:openrouter/openrouter/free"}],
-            [{"text": "🤖 cx/gpt-5.4-mini", "callback_data": "ac:model:cx/gpt-5.4-mini"}],
-            [{"text": "🔙 Back", "callback_data": "mn:system"}],
+            [{"text": "âš¡ oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
+            [{"text": "ðŸŒ± mmf/mimo-auto", "callback_data": "ac:model:mmf/mimo-auto"}],
+            [{"text": "ðŸ†“ openrouter/free", "callback_data": "ac:model:openrouter/openrouter/free"}],
+            [{"text": "ðŸ¤– cx/gpt-5.4-mini", "callback_data": "ac:model:cx/gpt-5.4-mini"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:system"}],
         ],
     },
     "schedule": {
         "text": "Scheduled Tasks\n\nPeriodic jobs run automatically.\n\nTo add: /schedule add <description>\nExample: /schedule add check my gmail every 15 minutes",
         "buttons": [
-            [{"text": "➕ Add Task", "callback_data": "ac:schedule_add"}],
-            [{"text": "📋 List Tasks", "callback_data": "ac:schedule_list"}],
-            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+            [{"text": "âž• Add Task", "callback_data": "ac:schedule_add"}],
+            [{"text": "ðŸ“‹ List Tasks", "callback_data": "ac:schedule_list"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:main"}],
         ],
     },
     "skills": {
-        "text": "📘 Skills\n\nSkills let you save reusable procedures from conversations.\n\nUse /improve for detail and management.",
+        "text": "ðŸ“˜ Skills\n\nSkills let you save reusable procedures from conversations.\n\nUse /improve for detail and management.",
         "buttons": [
-            [{"text": "📋 List Skills", "callback_data": "ac:skill_list"}],
-            [{"text": "🔍 Search", "callback_data": "ac:skill_search_prompt"}],
-            [{"text": "⚙️ Toggle Auto-Learn", "callback_data": "ac:skill_autolearn_toggle"}],
-            [{"text": "🧹 Forget Inactive", "callback_data": "ac:skill_forget_inactive"}],
-            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+            [{"text": "ðŸ“‹ List Skills", "callback_data": "ac:skill_list"}],
+            [{"text": "ðŸ” Search", "callback_data": "ac:skill_search_prompt"}],
+            [{"text": "âš™ï¸ Toggle Auto-Learn", "callback_data": "ac:skill_autolearn_toggle"}],
+            [{"text": "ðŸ§¹ Forget Inactive", "callback_data": "ac:skill_forget_inactive"}],
+            [{"text": "ðŸ”™ Back", "callback_data": "mn:main"}],
         ],
     },
 }
@@ -776,7 +776,7 @@ async def _call_composio(bot: "TelegramBot", tool_name: str, args: dict) -> dict
     """Call a Composio tool (async, awaits directly in running loop)."""
     composio = getattr(bot.bridge, "_composio", None) if bot.bridge else None
     if not composio or not composio._ready:
-        return {"error": "Composio not ready — try /menu → System → Composio"}
+        return {"error": "Composio not ready â€” try /menu â†’ System â†’ Composio"}
     try:
         return await composio.call_tool(tool_name, args) or {}
     except Exception as e:
@@ -786,7 +786,7 @@ async def _call_composio(bot: "TelegramBot", tool_name: str, args: dict) -> dict
 async def _action_web_status(bot: TelegramBot, chat_id: int) -> None:
     composio = getattr(bot.bridge, "_composio", None) if bot.bridge else None
     if not composio:
-        bot._send_message(chat_id, "Web tools (Firecrawl) not available — Composio not configured.")
+        bot._send_message(chat_id, "Web tools (Firecrawl) not available â€” Composio not configured.")
         return
     s = composio.status()
     bot._send_message(chat_id, "Web Tools (Firecrawl via Composio)\n\nReady: " + str(s.get("ready", False)) + "\nTools: " + str(s.get("tool_count", 0)) + "\nError: " + str(s.get("error", "none")))
@@ -808,7 +808,7 @@ async def _action_memory_view(bot: TelegramBot, chat_id: int) -> None:
         ts = f.get("created_at", 0)
         rel = str(int(time.time() - ts)) + "s ago" if ts else ""
         trust = f.get("trust_score", 0.5)
-        bar = "🟢" if trust >= 0.7 else ("🟡" if trust >= 0.4 else "🔴")
+        bar = "ðŸŸ¢" if trust >= 0.7 else ("ðŸŸ¡" if trust >= 0.4 else "ðŸ”´")
         lines.append(bar + " " + f["content"][:150] + " (" + rel + ")")
     bot._send_message(chat_id, "Memory (" + str(count) + " facts)\n\n" + "\n".join(lines))
 
@@ -931,22 +931,22 @@ async def _action_schedule_list(bot: TelegramBot, chat_id: int) -> None:
     for j in jobs:
         sid = j["id"]
         interval_str = f"{j['interval_minutes']:.0f}m"
-        next_s = time.strftime("%H:%M", time.localtime(j["next_run_at"])) if j.get("next_run_at") else "—"
-        last_s = time.strftime("%H:%M", time.localtime(j["last_run_at"])) if j.get("last_run_at") else "—"
+        next_s = time.strftime("%H:%M", time.localtime(j["next_run_at"])) if j.get("next_run_at") else "â€”"
+        last_s = time.strftime("%H:%M", time.localtime(j["last_run_at"])) if j.get("last_run_at") else "â€”"
         err = j.get("error_count", 0)
-        status_icon = "⏸️" if j["status"] == "paused" else ("⏱️" if j["status"] == "active" else "❌")
+        status_icon = "â¸ï¸" if j["status"] == "paused" else ("â±ï¸" if j["status"] == "active" else "âŒ")
         status_tag = " [PAUSED]" if j["status"] == "paused" else (" [ERRORED]" if j["status"] == "errored" else "")
         lines.append(f"{status_icon} {sid[:8]}: {j['prompt'][:50]} every {interval_str}{status_tag}")
         lines.append(f"   Next: {next_s} | Last: {last_s} | Errors: {err}")
         # Inline buttons for this job (full 12-char ID in callback_data, well under 64-byte limit)
         sid_full = sid
-        rm_btn = {"text": "❌", "callback_data": f"ac:schedule_rmv:{sid_full}"}
+        rm_btn = {"text": "âŒ", "callback_data": f"ac:schedule_rmv:{sid_full}"}
         if j["status"] == "active":
-            toggle_btn = {"text": "⏸️", "callback_data": f"ac:schedule_ps:{sid_full}"}
+            toggle_btn = {"text": "â¸ï¸", "callback_data": f"ac:schedule_ps:{sid_full}"}
         elif j["status"] == "paused":
-            toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid_full}"}
+            toggle_btn = {"text": "â–¶ï¸", "callback_data": f"ac:schedule_rs:{sid_full}"}
         else:
-            toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid_full}"}
+            toggle_btn = {"text": "â–¶ï¸", "callback_data": f"ac:schedule_rs:{sid_full}"}
         kb_rows.append([rm_btn, toggle_btn])
     text = "\n".join(lines)
     kb = {"inline_keyboard": kb_rows} if kb_rows else None
@@ -961,7 +961,7 @@ async def _action_schedule_remove_by_id(bot: TelegramBot, chat_id: int, job_id: 
     if "error" in r:
         bot._send_message(chat_id, "Failed: " + r["error"])
     else:
-        bot._send_message(chat_id, "✅ Job removed.")
+        bot._send_message(chat_id, "âœ… Job removed.")
 
 
 async def _action_schedule_pause_by_id(bot: TelegramBot, chat_id: int, job_id: str) -> None:
@@ -972,7 +972,7 @@ async def _action_schedule_pause_by_id(bot: TelegramBot, chat_id: int, job_id: s
     if "error" in r:
         bot._send_message(chat_id, "Failed: " + r["error"])
     else:
-        bot._send_message(chat_id, "⏸️ Job paused.")
+        bot._send_message(chat_id, "â¸ï¸ Job paused.")
 
 
 async def _action_schedule_resume_by_id(bot: TelegramBot, chat_id: int, job_id: str) -> None:
@@ -984,7 +984,7 @@ async def _action_schedule_resume_by_id(bot: TelegramBot, chat_id: int, job_id: 
         bot._send_message(chat_id, "Failed: " + r["error"])
     else:
         next_s = time.strftime("%H:%M", time.localtime(r["next_run_at"]))
-        bot._send_message(chat_id, f"▶️ Job resumed. Next run at {next_s}.")
+        bot._send_message(chat_id, f"â–¶ï¸ Job resumed. Next run at {next_s}.")
 
 
 # -- Skill action handlers ----------------------------------------------------
@@ -1002,9 +1002,9 @@ async def _action_skill_list(bot: TelegramBot, chat_id: int) -> None:
     active = sum(1 for s in skills if s["status"] == "active")
     unverified = sum(1 for s in skills if s["status"] == "unverified")
     inactive = sum(1 for s in skills if s["status"] == "inactive")
-    lines = [f"📘 Skills ({len(skills)} total): {active} active, {unverified} pending, {inactive} inactive\n"]
+    lines = [f"ðŸ“˜ Skills ({len(skills)} total): {active} active, {unverified} pending, {inactive} inactive\n"]
     for s in skills[:15]:
-        icon = "🟢" if s["status"] == "active" else ("🟡" if s["status"] == "unverified" else "⚪")
+        icon = "ðŸŸ¢" if s["status"] == "active" else ("ðŸŸ¡" if s["status"] == "unverified" else "âšª")
         lines.append(f"{icon} {s['id']}: {s['title'][:80]}")
     if len(skills) > 15:
         lines.append(f"\n...and {len(skills) - 15} more. Use /improve to see all.")
@@ -1028,10 +1028,10 @@ async def _action_skill_autolearn_toggle(bot: TelegramBot, chat_id: int) -> None
         is_on = latest["content"].strip().lower() == "auto_learn=true"
     if is_on:
         ms.add("auto_learn=false", str(chat_id))
-        bot._send_message(chat_id, "⚙️ Auto-learn turned OFF.")
+        bot._send_message(chat_id, "âš™ï¸ Auto-learn turned OFF.")
     else:
         ms.add("auto_learn=true", str(chat_id))
-        bot._send_message(chat_id, "⚙️ Auto-learn turned ON.")
+        bot._send_message(chat_id, "âš™ï¸ Auto-learn turned ON.")
 
 
 async def _action_skill_forget_inactive(bot: TelegramBot, chat_id: int) -> None:
@@ -1115,7 +1115,7 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     """Show open tasks from configured JIRA_EPICS via Composio workbench."""
     epics = getattr(bot, "jira_epics", [])
     if not epics:
-        bot._send_message(chat_id, "⚠️ JIRA_EPICS not configured.\n\nAdd a HF Space secret:\nJIRA_EPICS = PROJ-123,PROJ-456")
+        bot._send_message(chat_id, "âš ï¸ JIRA_EPICS not configured.\n\nAdd a HF Space secret:\nJIRA_EPICS = PROJ-123,PROJ-456")
         return
     epic_list = ",".join(f'"{e}"' for e in epics)
     jql = f'"Epic Link" IN ({epic_list}) AND status IN ("To Do","In Progress") ORDER BY status DESC, priority DESC'
@@ -1130,9 +1130,9 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     )
     result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
     if "error" in result:
-        bot._send_message(chat_id, f"❌ {result['error']}")
+        bot._send_message(chat_id, f"âŒ {result['error']}")
         return
-    # Parse workbench response — retry once on empty (workbench cold-start)
+    # Parse workbench response â€” retry once on empty (workbench cold-start)
     issues = _parse_jira_result(result)
     if not issues:
         await asyncio.sleep(2)
@@ -1141,34 +1141,34 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
             issues = _parse_jira_result(result)
     if not issues:
         kb = {"inline_keyboard": [
-            [{"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
-             {"text": "🔙 Back", "callback_data": "mn:main"}]
+            [{"text": "ðŸ”„ Refresh", "callback_data": "ac:jira_open_tasks"},
+             {"text": "ðŸ”™ Back", "callback_data": "mn:main"}]
         ]}
-        bot._send_message(chat_id, "📋 No open tasks found in the configured epics.", reply_markup=kb)
+        bot._send_message(chat_id, "ðŸ“‹ No open tasks found in the configured epics.", reply_markup=kb)
         return
-    # Build inline keyboard rows — max 20 tasks, one per row
+    # Build inline keyboard rows â€” max 20 tasks, one per row
     kb_rows = []
-    lines = [f"📋 Open Tasks ({len(issues)} total)\n"]
+    lines = [f"ðŸ“‹ Open Tasks ({len(issues)} total)\n"]
     for issue in issues[:20]:
         key = issue.get("key", "?")
         summary = issue.get("summary") or key
         status_obj = issue.get("status") or {}
         status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
-        icon = "🟡" if status == "In Progress" else "🔵"
+        icon = "ðŸŸ¡" if status == "In Progress" else "ðŸ”µ"
         lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
         kb_rows.append([{"text": f"{icon} {key}: {summary[:30]}", "callback_data": f"ac:jira_task:{key}"}])
     if len(issues) > 20:
         lines.append(f"\n...and {len(issues) - 20} more.")
     kb_rows.append([
-        {"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
-        {"text": "🔙 Back", "callback_data": "mn:main"},
+        {"text": "ðŸ”„ Refresh", "callback_data": "ac:jira_open_tasks"},
+        {"text": "ðŸ”™ Back", "callback_data": "mn:main"},
     ])
     bot._send_message(chat_id, "\n".join(lines), reply_markup={"inline_keyboard": kb_rows})
 
 
 async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
     """Show subtasks for a given issue via Composio workbench."""
-    jql = f"parent = {issue_key} AND status IN ('To Do','In Progress','Done') ORDER BY status DESC, priority DESC"
+    jql = f"parent = {issue_key} AND status IN ('To Do','In Progress') ORDER BY status DESC, priority DESC"
     code = (
         "import json\n"
         "result, err = run_composio_tool(\"JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET\", "
@@ -1180,7 +1180,7 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
     )
     result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
     if "error" in result:
-        bot._send_message(chat_id, f"❌ {result['error']}")
+        bot._send_message(chat_id, f"âŒ {result['error']}")
         return
     issues = _parse_jira_result(result)
     if not issues:
@@ -1189,26 +1189,26 @@ async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) 
         if "error" not in result:
             issues = _parse_jira_result(result)
     if not issues:
-        kb = {"inline_keyboard": [[{"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"}]]}
-        bot._send_message(chat_id, f"📄 {issue_key}: No subtasks found.", reply_markup=kb)
+        kb = {"inline_keyboard": [[{"text": "ðŸ”™ Back", "callback_data": "ac:jira_open_tasks"}]]}
+        bot._send_message(chat_id, f"ðŸ“„ {issue_key}: No subtasks found.", reply_markup=kb)
         return
-    header = f"📄 {issue_key} — Subtasks ({len(issues)} total)\n"
+    header = f"ðŸ“„ {issue_key} â€” Subtasks ({len(issues)} total)\n"
     kb_rows = []
     for sub in issues[:15]:
         key = sub.get("key", "?")
         summary = sub.get("summary") or key
         status_obj = sub.get("status") or {}
         status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
-        icon = "✅" if status == "Done" else ("🟡" if status == "In Progress" else "🔵")
+        icon = "âœ…" if status == "Done" else ("ðŸŸ¡" if status == "In Progress" else "ðŸ”µ")
         kb_rows.append([
             {"text": f"{icon} {key}: {summary[:40]}", "callback_data": f"ac:jira_task:{key}"},
-            {"text": "▶️ Run", "callback_data": f"ac:jira_run:{key}"},
+            {"text": "â–¶ï¸ Run", "callback_data": f"ac:jira_run:{key}"},
         ])
     if len(issues) > 15:
         header += f"\n...and {len(issues) - 15} more."
     kb_rows.append([
-        {"text": "🔄 Refresh", "callback_data": f"ac:jira_task:{issue_key}"},
-        {"text": "🔙 Back", "callback_data": "ac:jira_open_tasks"},
+        {"text": "ðŸ”„ Refresh", "callback_data": f"ac:jira_task:{issue_key}"},
+        {"text": "ðŸ”™ Back", "callback_data": "ac:jira_open_tasks"},
     ])
     bot._send_message(chat_id, header, reply_markup={"inline_keyboard": kb_rows})
 
@@ -1227,7 +1227,7 @@ async def _action_jira_run(bot: TelegramBot, chat_id: int, issue_key: str) -> No
     bot._enqueue_typing(chat_id)
     result = await _call_composio(bot, "COMPOSIO_REMOTE_WORKBENCH", {"code_to_execute": code})
     if "error" in result:
-        bot._send_message(chat_id, f"❌ {result['error']}")
+        bot._send_message(chat_id, f"âŒ {result['error']}")
         return
     issue = _parse_jira_single(result)
     if not issue:
@@ -1279,3 +1279,4 @@ MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "skill_forget_inactive": _action_skill_forget_inactive,
     "jira_open_tasks": _action_jira_open_tasks,
 }
+
