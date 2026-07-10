@@ -10,55 +10,48 @@ app_port: 7860
 
 # Hermes Agent Bot 0
 
-Docker HF Space wrapper for `hermes-agent` with:
+Android/Termux Telegram bot with:
 
-- FastAPI health/API
-- Gradio web chat
-- Telegram getUpdates polling + outbox relay (external — HF Space can't reach api.telegram.org)
-- Android Termux relay scripts
-- SQLite memory + learned skills with HF Hub backup
-- Composio MCP client
-- Firecrawl scrape/search/crawl via Composio MCP
-- voice memo → transcription relay → LLM minutes
+- Headless Telegram polling (getUpdates)
+- 8-provider LLM routing via httpx (no openai SDK)
+- Composio MCP tools (Jira, Firecrawl)
+- Voice memo → transcription → LLM minutes (Groq/NVIDIA)
+- SQLite memory (facts + learned skills)
+- Scheduler engine (periodic tasks)
+- Inline keyboard menus
 
-## Required Space secrets
+## Required secrets
 
-Set in HF Space Settings → Secrets:
+Set in `~/.hermes-tokens.env`:
 
-- `OPENCODE_ZEN_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
-- `TELEGRAM_ALLOWED_USERS`
-- `COMPOSIO_CONSUMER_API_KEY`
-- Optional: `GROQ_API_KEY` for in-Space chat fallback. Voice relay reads Groq on Android.
-- Optional: `PROVIDER=opencode_zen`
-- Optional: `AUTO_LEARN=true` to detect reusable skills and ask before saving them
-- Optional: `MEMORY_RESTORE_ON_STARTUP=true` to restore `memory.db` from HF Hub on startup (default: false)
-- Optional: `TOOL_LOOP_MAX_ROUNDS=1000` to control max LLM tool-call rounds
-- Optional: `BROADCAST_CHAT_ID=-100...` — channel/group ID to receive tool call results
+- `GROQ_API_KEY`
+- `ROUTER_0_API_KEY`
+- `COMPOSIO_CONSUMER_API_KEY` (for Jira/Firecrawl tools)
+- Optional: `JIRA_EPICS` — comma-separated epic keys
+- Optional: `AUTO_LEARN=true` to detect reusable skills
+- Optional: `BROADCAST_CHAT_ID=-100...` — channel for tool call results
 
-## Android relay
-
-Termux:
+## Android deploy
 
 ```bash
-pkg update && pkg install -y git python ffmpeg tmux termux-api
-git clone https://huggingface.co/spaces/vt2693/bot-0 hermes-relay
-cd hermes-relay
+pkg install -y git python ffmpeg tmux termux-api
+git clone https://github.com/vt2693/bot-0.git hermes-bot
+cd hermes-bot
 bash setup_android.sh
 nano ~/.hermes-tokens.env
 bash start_android.sh
 tmux attach -t hermes
 ```
 
-Never commit real secrets. `start_android.sh` sources `~/.hermes-tokens.env`.
+## Files
 
-## Endpoints
-
-- `GET /health`
-- `POST /webhook/telegram`
-- `GET /api/tg_outbox`
-- `POST /api/tg_reconfigure`
-- `GET /api/tg_voice_pending`
-- `POST /api/tg_voice_result`
-- `POST /api/tg_voice_fail`
-- `/api/memory/*`
+- `android_bot.py` — main entry point (poll loop)
+- `telegram_bot.py` — menus, callbacks, outbox
+- `hermes_bridge.py` — LLM bridge (httpx), tool loop
+- `config.py` — 8-provider settings
+- `composio_mcp.py` — Composio MCP client
+- `memory_store.py` — SQLite facts + skills
+- `scheduler.py` — periodic task engine
+- `tg_voice.py` — download → ffmpeg → Groq transcription
+- `deploy_android.ps1` — Windows ADB/SSH deploy script

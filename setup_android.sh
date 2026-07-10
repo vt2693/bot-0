@@ -21,7 +21,7 @@ else
   echo "Cloning repo..."
   cd /data/data/com.termux/files/home
   rm -rf hermes-bot 2>/dev/null
-  echo "WARNING: vt2693/bot-0 HF Space is deleted. Use rsync/scp to copy the repo."
+  echo "WARNING: vt2693/bot-0 remote repo not reachable. Use rsync/scp to copy the repo."
   echo "From your computer: rsync -avz bot-0/ termux@phone:~/hermes-bot/"
   echo "Or manually copy the files to ~/hermes-bot/ and re-run setup."
   mkdir -p hermes-bot
@@ -119,9 +119,9 @@ export OPENAI_API_KEY="${OPENAI_API_KEY}"
 export PROVIDER="router_0"
 export BROADCAST_CHAT_ID=""
 export JIRA_EPICS="${JIRA_EPICS}"
-# Leave HF_TOKEN unset to prevent memory_store.py from attempting
-# backup to deleted Space (vt2693/bot-0). MEMORY_SPACE_ID is set
-# to an invalid Space name so the backup guard ("/" in path) skips.
+# Leave HF_TOKEN env var unset to prevent memory_store.py from attempting
+# backup to a deleted remote repo. MEMORY_SPACE_ID is set to "none"
+# so the backup guard ("/" in path) skips.
 export MEMORY_SPACE_ID="none"
 EOF
 chmod 600 "$ENV_FILE"

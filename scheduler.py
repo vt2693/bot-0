@@ -20,7 +20,7 @@ class SchedulerEngine:
 
     Runs an async poll loop that checks for due jobs every POLL_INTERVAL s.
     Jobs are stored in the 'scheduled_jobs' table inside memory.db and are
-    included in HF Hub backups when memory backup/restore is explicitly used.
+    included in remote storage backups when memory backup/restore is explicitly used.
     """
 
     def __init__(self, db_path: str, bridge, bot, memory_store):

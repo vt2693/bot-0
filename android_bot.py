@@ -261,7 +261,7 @@ async def main() -> None:
         try:
             store.close()
         except Exception:
-            pass  # _backup_to_hub may fail without HF_TOKEN on Android
+            pass  # _backup_to_hub may fail without storage token on Android
 
 
 if __name__ == "__main__":

@@ -49,7 +49,7 @@ class TelegramBot:
         self._start_time = time.time()
         self.configure_commands()
         # Webhook registration + outbound delivery go through the relay
-        # (HF Space free tier blocks api.telegram.org — SSL handshake times out).
+        # (server on free tier blocks api.telegram.org — SSL handshake times out).
         # The relay polls /api/tg_outbox for outbound, and runs getUpdates
         # polling for inbound delivery to /webhook/telegram.
         self.enqueue_webhook()
@@ -656,8 +656,7 @@ class TelegramBot:
             return out
 
     # -- Inbound via webhook only (relay registers webhook externally) -----
-    # HF Space cannot reach api.telegram.org at all (SSL handshake times out
-    # on HF free tier). The external relay handles both inbound getUpdates
+    # Server on free tier cannot reach api.telegram.org (SSL handshake may time out).
     # polling -> /webhook/telegram and outbox draining -> api.telegram.org.
 
     async def stop(self) -> None:

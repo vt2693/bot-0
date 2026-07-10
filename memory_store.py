@@ -32,7 +32,7 @@ class MemoryStore:
         return os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
 
     def _restore_backup(self) -> None:
-        """Download memory.db from HF Hub via huggingface_hub when explicitly enabled."""
+        """Download memory.db from remote backup when explicitly enabled."""
         if os.getenv("MEMORY_RESTORE_ON_STARTUP", "false").lower() not in ("true", "1", "yes"):
             logger.info("Memory: startup restore disabled")
             return
@@ -50,12 +50,12 @@ class MemoryStore:
             if path and Path(path).stat().st_size > 0:
                 import shutil
                 shutil.copy2(path, str(dbp))
-                logger.info("Memory: restored %d bytes from HF Hub", Path(path).stat().st_size)
+                logger.info("Memory: restored %d bytes from remote backup", Path(path).stat().st_size)
         except Exception:
-            logger.info("Memory: no backup on HF Hub yet")
+            logger.info("Memory: no remote backup available")
 
     def _backup_to_hub(self) -> None:
-        """Upload memory.db snapshot to HF Hub via huggingface_hub."""
+        """Upload memory.db snapshot to remote storage."""
         try:
             db = Path(self.db_path)
             if not db.exists() or db.stat().st_size == 0:
@@ -70,7 +70,7 @@ class MemoryStore:
             try:
                 with self._lock:
                     self._conn.execute(f"VACUUM INTO '{tmpname}'")
-                # Upload via huggingface_hub
+                # Upload via remote storage
                 from huggingface_hub import HfApi
                 api = HfApi()
                 api.upload_file(
@@ -81,7 +81,7 @@ class MemoryStore:
                     token=token,
                     revision="memory-backups",
                 )
-                logger.info("Memory: backed up %d bytes to HF Hub", db.stat().st_size)
+                logger.info("Memory: backed up %d bytes to remote storage", db.stat().st_size)
             finally:
                 try: os.unlink(tmpname)
                 except: pass
@@ -170,7 +170,7 @@ class MemoryStore:
             )
             self._conn.commit()
             rowid = int(cur.lastrowid)
-        # Backup immediately for deployments that opt into HF Hub restore.
+        # Backup immediately for deployments that opt into remote storage restore.
         self._backup_to_hub()
         return rowid
 

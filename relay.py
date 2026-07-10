@@ -12,7 +12,7 @@ SPACE_URL = os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space").rstrip("/")
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", "")
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1"))
 MAX_RETRIES = 3
-POLL_TIMEOUT = int(os.getenv("POLL_TIMEOUT", "25"))  # must cover HF cold-boot
+POLL_TIMEOUT = int(os.getenv("POLL_TIMEOUT", "25"))  # must cover cold-boot delay
 POLLING_MODE = os.getenv("POLLING_MODE", "true").lower() in ("true", "1", "yes")
 
 TELEGRAM_METHODS = {
@@ -63,7 +63,7 @@ def send_telegram(msg: dict, retry: int = 0) -> bool:
 
 
 # -- Inbound: getUpdates long-polling ----------------------------------------
-# Avoids HF Space cold-boot issue: Telegram holds the update queue (up to 24h).
+# Avoids cold-boot issue: Telegram holds the update queue (up to 24h).
 # We poll with a 30s long-poll timeout; even if Space cold-boots, the update
 # stays in Telegram's queue and arrives on the next poll cycle.
 
@@ -121,9 +121,9 @@ def forward_to_space(update: dict) -> bool:
 # -- Outbound: poll Space outbox ---------------------------------------------
 
 def poll_outbox() -> list[dict]:
-    """Poll with backoff for transient errors (HF cold-boot 503, ECONNRESET, etc.).
+    """Poll with backoff for transient errors (cold-boot 503, ECONNRESET, etc.).
 
-    HF Space free tier cold-boots after ~15 min idle and takes 15-60s.
+    Server cold-boots after ~15 min idle and takes 15-60s.
     Nginx reverse proxy may reset connections under load. Retry with backoff.
     """
     for attempt in range(6):
