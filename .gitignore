@@ -6,3 +6,5 @@ __pycache__/
 logs/
 .hermes-tokens.env
 data/
+.claude/
+docs/superpowers/plans/
