@@ -1115,7 +1115,7 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
     """Show open tasks from configured JIRA_EPICS via Composio workbench."""
     epics = getattr(bot, "jira_epics", [])
     if not epics:
-        bot._send_message(chat_id, "⚠️ JIRA_EPICS not configured.\n\nAdd a HF Space secret:\nJIRA_EPICS = PROJ-123,PROJ-456")
+        bot._send_message(chat_id, "⚠️ JIRA_EPICS not configured.\n\nSet the env var:\nJIRA_EPICS = PROJ-123,PROJ-456")
         return
     epic_list = ",".join(f'"{e}"' for e in epics)
     jql = f'"Epic Link" IN ({epic_list}) AND status IN ("To Do","In Progress") ORDER BY status DESC, priority DESC'
