@@ -1215,22 +1215,18 @@ async def _action_jira_open_tasks(bot: TelegramBot, chat_id: int) -> None:
         return
     # Build inline keyboard rows — max 25 tasks, one per row
     kb_rows = []
-    lines = [f"📋 Open Tasks ({len(issues)} total)\n"]
     for issue in issues[:25]:
         key = issue.get("key", "?")
         summary = issue.get("summary") or key
         status_obj = issue.get("status") or {}
         status = status_obj.get("name") if isinstance(status_obj, dict) else str(status_obj)
         icon = "🟡" if status == "In Progress" else "🔵"
-        lines.append(f"{icon} {key}: {summary[:60]} [{status}]")
         kb_rows.append([{"text": f"{icon} {key}: {summary[:30]}", "callback_data": f"ac:jira_task:{key}"}])
-    if len(issues) > 25:
-        lines.append(f"\n...and {len(issues) - 25} more.")
     kb_rows.append([
         {"text": "🔄 Refresh", "callback_data": "ac:jira_open_tasks"},
         {"text": "🔙 Back", "callback_data": "mn:main"},
     ])
-    bot._send_message(chat_id, "\n".join(lines), reply_markup={"inline_keyboard": kb_rows})
+    bot._send_message(chat_id, f"📋 Open Tasks ({len(issues)} total)", reply_markup={"inline_keyboard": kb_rows})
 
 
 async def _action_jira_subtasks(bot: TelegramBot, chat_id: int, issue_key: str) -> None:
