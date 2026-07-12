@@ -1311,7 +1311,13 @@ async def _action_jira_show(bot: TelegramBot, chat_id: int, issue_key: str) -> N
             if isinstance(parsed, dict):
                 desc = _adf_to_plaintext(parsed)
         except json.JSONDecodeError:
-            pass
+            try:
+                import ast
+                parsed = ast.literal_eval(desc)
+                if isinstance(parsed, dict):
+                    desc = _adf_to_plaintext(parsed)
+            except (ValueError, SyntaxError):
+                pass
     if not desc:
         desc = "*No description.*"
     status_obj = issue.get("status") or {}

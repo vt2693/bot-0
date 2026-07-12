@@ -48,9 +48,15 @@ class ComposioMCP:
         for line in text.splitlines():
             line = line.strip()
             if line.startswith("data: "):
-                data = json.loads(line[6:])
-                return data.get("result")
-        return json.loads(text).get("result")
+                try:
+                    data = json.loads(line[6:])
+                    return data.get("result")
+                except json.JSONDecodeError:
+                    continue  # skip non-JSON lines (warnings, partial chunks)
+        try:
+            return json.loads(text).get("result")
+        except json.JSONDecodeError:
+            return {"error": f"unparseable response: {text[:200]}"}
 
     def get_openai_tools(self) -> list[dict]:
         tools = []
