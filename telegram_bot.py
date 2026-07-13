@@ -645,7 +645,12 @@ class TelegramBot:
 
     def _send_message(self, chat_id: int, text: str, **extra) -> None:
         with self._outbox_lock:
-            self.outbox.append({"_method": "sendMessage", "chat_id": chat_id, "text": (text or "")[:4096], **extra})
+            text = (text or "")[:4096 * 10]  # hard safety cap (10 messages max)
+            while text:
+                chunk = text[:4096]
+                text = text[4096:]
+                self.outbox.append({"_method": "sendMessage", "chat_id": chat_id, "text": chunk, **extra})
+                extra.pop("reply_markup", None)  # only first chunk gets keyboard
 
     def _send_callback_answer(self, callback_query_id: str, text: str = "") -> None:
         with self._outbox_lock:
