@@ -143,9 +143,24 @@ class HermesBridge:
 
         max_rounds = self.settings.TOOL_LOOP_MAX_ROUNDS
         for round_i in range(max_rounds):
-            resp = httpx.post(url, json=body, headers=headers, timeout=self.settings.LLM_TIMEOUT)
-            resp.raise_for_status()
-            data = resp.json()
+            # Retry HTTP call on transient errors (ECONNRESET, 5xx, etc)
+            last_err = None
+            for attempt in range(3):
+                try:
+                    resp = httpx.post(url, json=body, headers=headers, timeout=self.settings.LLM_TIMEOUT)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    last_err = None
+                    break
+                except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException,
+                        httpx.HTTPStatusError) as e:
+                    last_err = e
+                    if attempt < 2:
+                        import time as _time
+                        _time.sleep(1.5 ** attempt)
+                    continue
+            if last_err:
+                raise last_err
             choice = data["choices"][0]
             msg = choice["message"]
             content = msg.get("content") or ""

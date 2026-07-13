@@ -673,17 +673,23 @@ class TelegramBot:
         msg = dict(msg)
         method = msg.pop("_method", "sendMessage")
         path = self._TELEGRAM_PATHS.get(method, "/sendMessage")
-        try:
-            req = urllib.request.Request(
-                "https://api.telegram.org/bot" + self.token + path,
-                data=json.dumps(msg).encode(),
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                return json.loads(resp.read().decode()).get("ok", False)
-        except Exception:
-            return False
+        body = json.dumps(msg).encode()
+        for attempt in range(3):
+            try:
+                req = urllib.request.Request(
+                    "https://api.telegram.org/bot" + self.token + path,
+                    data=body,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    return json.loads(resp.read().decode()).get("ok", False)
+            except Exception:
+                if attempt < 2:
+                    import time as _time
+                    _time.sleep(1.5 ** attempt)
+                continue
+        return False
 
     async def drain_outbox(self) -> list[dict]:
         with self._outbox_lock:
