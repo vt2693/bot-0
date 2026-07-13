@@ -1435,6 +1435,13 @@ async def _action_jira_run(bot: TelegramBot, chat_id: int, issue_key: str) -> No
             await refresh
         except asyncio.CancelledError:
             pass
+    # Strip auto-learn skill wrapper if present (same pattern as _handle_message)
+    if isinstance(response, str) and response.startswith('{"_skill_detected'):
+        try:
+            parsed = json.loads(response)
+            response = parsed.get("response", "")
+        except (json.JSONDecodeError, TypeError):
+            pass
     history.extend([{"role": "user", "content": prompt}, {"role": "assistant", "content": response}])
     if len(history) > bot._history_max:
         bot._chat_history[key] = history[-bot._history_max:]
