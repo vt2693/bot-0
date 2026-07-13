@@ -111,6 +111,7 @@ class SchedulerEngine:
         chat_id = job["chat_id"]
         prompt = job["prompt"]
         scope = job.get("scope", "sched_global")
+        mode = job.get("mode", "interval")
         now = time.time()
         interval = job["interval_minutes"]
 
@@ -119,13 +120,21 @@ class SchedulerEngine:
                 self._bridge.chat_with_memory, prompt, [], scope
             )
             self._bot._send_message(chat_id, result[:4000])
-            next_run = max(now, now + interval * 60)
-            self._conn.execute(
-                "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=0, last_result=? WHERE id=?",
-                (now, next_run, result[:500], job_id),
-            )
+            now = time.time()
+            if mode == "once":
+                self._conn.execute(
+                    "UPDATE scheduled_jobs SET last_run_at=?, status='completed', error_count=0, last_result=? WHERE id=?",
+                    (now, result[:500], job_id),
+                )
+                self._bot._send_message(chat_id, f"One-time job '{prompt[:60]}' completed.")
+            else:
+                next_run = max(now, now + interval * 60)
+                self._conn.execute(
+                    "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=0, last_result=? WHERE id=?",
+                    (now, next_run, result[:500], job_id),
+                )
             self._conn.commit()
-            logger.info("Job %s: OK (chat %s)", job_id[:8], chat_id)
+            logger.info("Job %s: OK (chat %s, mode=%s)", job_id[:8], chat_id, mode)
         except Exception as e:
             logger.exception("Job %s failed: %s", job_id[:8], e)
             cur = self._conn.execute(
@@ -133,7 +142,8 @@ class SchedulerEngine:
             )
             row = cur.fetchone()
             err_count = (row["error_count"] if row else 0) + 1
-            next_run = max(now, now + interval * 60)
+            # 5-min backoff for once mode (interval=0 would give now+0=now)
+            next_run = now + 300 if mode == "once" else max(now, now + interval * 60)
             if err_count >= MAX_ERRORS:
                 self._conn.execute(
                     "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=?, status='errored', last_result=? WHERE id=?",
@@ -165,6 +175,9 @@ class SchedulerEngine:
         )
         for row in cur:
             job = self._row_to_dict(row)
+            mode = job.get("mode", "interval")
+            if mode == "once":
+                continue  # skip once-mode (interval=0 would ZeroDivisionError)
             interval_s = job["interval_minutes"] * 60
             next_run = job["next_run_at"]
             # How many intervals behind?
@@ -189,12 +202,13 @@ class SchedulerEngine:
 
     # -- CRUD ----------------------------------------------------------------
 
-    def add_job(self, chat_id: int, prompt: str, interval_minutes: float) -> dict:
+    def add_job(self, chat_id: int, prompt: str, interval_minutes: float,
+                 mode: str = "interval", absolute_epoch: float | None = None) -> dict:
         """Create a new scheduled job. Returns {'success': True, 'id': ...} or {'error': ...}."""
         prompt = (prompt or "").strip()
         if not prompt:
             return {"error": "Prompt cannot be empty"}
-        if interval_minutes < 1:
+        if mode == "interval" and interval_minutes < 1:
             return {"error": "Interval must be at least 1 minute"}
 
         # Enforce per-chat limit
@@ -208,14 +222,19 @@ class SchedulerEngine:
 
         job_id = uuid.uuid4().hex[:12]
         now = time.time()
-        next_run = now + interval_minutes * 60
+        if mode in ("once", "daily"):
+            if absolute_epoch is None:
+                return {"error": "absolute_epoch required for once/daily mode"}
+            next_run = absolute_epoch
+        else:
+            next_run = now + interval_minutes * 60
         self._conn.execute(
-            "INSERT INTO scheduled_jobs(id,chat_id,prompt,interval_minutes,status,created_at,next_run_at,scope) VALUES(?,?,?,?,'active',?,?,'sched_global')",
-            (job_id, chat_id, prompt, interval_minutes, now, next_run),
+            "INSERT INTO scheduled_jobs(id,chat_id,prompt,interval_minutes,mode,status,created_at,next_run_at,scope) VALUES(?,?,?,?,?,'active',?,?,'sched_global')",
+            (job_id, chat_id, prompt, interval_minutes, mode, now, next_run),
         )
         self._conn.commit()
         self._memory_store.sync()
-        logger.info("Job %s created: chat %s, every %s min", job_id[:8], chat_id, interval_minutes)
+        logger.info("Job %s created: chat %s, mode=%s", job_id[:8], chat_id, mode)
         return {"success": True, "id": job_id, "next_run_at": next_run}
 
     def remove_job(self, job_id: str) -> dict:

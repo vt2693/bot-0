@@ -364,7 +364,7 @@ class TelegramBot:
         # Sweep expired pending confirmations
         now = time.time()
         self._pending_schedule = {k: v for k, v in self._pending_schedule.items() if v.get("expires_at", 0) > now}
-        # Structured: text starts with a number
+        # Structured: text starts with a number (always interval)
         interval = None
         prompt = text
         parts = text.split(maxsplit=1)
@@ -382,6 +382,28 @@ class TelegramBot:
                     "Example: /schedule add 15 check my gmail",
                 )
                 return
+            # Check for absolute_epoch (new) vs interval (existing)
+            if "absolute_epoch" in parsed:
+                absolute_epoch = parsed["absolute_epoch"]
+                prompt = parsed.get("prompt", text)
+                import uuid as _uuid
+                token = _uuid.uuid4().hex[:8]
+                self._pending_schedule[token] = {
+                    "chat_id": chat_id,
+                    "prompt": prompt,
+                    "absolute_epoch": absolute_epoch,
+                    "interval_minutes": 0,
+                    "mode": "once",  # default, overridden by button
+                    "expires_at": time.time() + 300,
+                }
+                time_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(absolute_epoch))
+                kb = {"inline_keyboard": [[
+                    {"text": "✅ Run Once", "callback_data": f"ac:schedule_cfm:{token}:once"},
+                    {"text": "🔁 Daily", "callback_data": f"ac:schedule_cfm:{token}:daily"},
+                    {"text": "❌ Cancel", "callback_data": f"ac:schedule_del:{token}"},
+                ]]}
+                self._send_message(chat_id, f"Run '{prompt}' at {time_str}", reply_markup=kb)
+                return
             interval = parsed.get("interval_minutes")
             prompt = parsed.get("prompt", text)
         if not interval or interval < 1 or not prompt:
@@ -394,6 +416,7 @@ class TelegramBot:
             "chat_id": chat_id,
             "prompt": prompt,
             "interval_minutes": interval,
+            "mode": "interval",
             "expires_at": time.time() + 300,
         }
         # Show confirmation
@@ -453,7 +476,12 @@ class TelegramBot:
             if model:
                 await _action_model_switch(self, chat_id, model)
         elif data.startswith("ac:schedule_cfm:"):
-            token = data[16:]
+            suffix = data[16:]
+            mode = None  # backward compat: no :mode suffix
+            if ":" in suffix:
+                token, mode = suffix.split(":", 1)
+            else:
+                token = suffix
             pending = self._pending_schedule.pop(token, None)
             if not pending or pending.get("chat_id") != chat_id:
                 self._send_message(chat_id, "Confirmation expired or invalid. Try /schedule add again.")
@@ -464,12 +492,26 @@ class TelegramBot:
             if not self.scheduler:
                 self._send_message(chat_id, "Scheduler not available.")
                 return
-            r = self.scheduler.add_job(chat_id, pending["prompt"], pending["interval_minutes"])
+            # Priority: callback mode > pending.mode > "interval"
+            if mode is None:
+                mode = pending.get("mode", "interval")
+            absolute_epoch = pending.get("absolute_epoch")
+            interval = pending.get("interval_minutes", 0)
+            if mode == "daily":
+                interval = 1440
+            elif mode == "once":
+                interval = 0
+            r = self.scheduler.add_job(chat_id, pending["prompt"], interval, mode=mode, absolute_epoch=absolute_epoch)
             if "error" in r:
                 self._send_message(chat_id, "Failed: " + r["error"])
             else:
                 next_s = time.strftime("%H:%M", time.localtime(r["next_run_at"]))
-                self._send_message(chat_id, f"✅ Job created! ID: {r['id']}\nNext run at {next_s}, then every {pending['interval_minutes']:.0f} min.")
+                if mode == "once":
+                    self._send_message(chat_id, f"✅ One-time job created! ID: {r['id']}\nRuns at {next_s}.")
+                elif mode == "daily":
+                    self._send_message(chat_id, f"✅ Daily job created! ID: {r['id']}\nRuns daily at {next_s}.")
+                else:
+                    self._send_message(chat_id, f"✅ Job created! ID: {r['id']}\nNext run at {next_s}, then every {pending['interval_minutes']:.0f} min.")
         elif data.startswith("ac:schedule_del:"):
             token = data[16:]
             self._pending_schedule.pop(token, None)
@@ -916,7 +958,7 @@ async def _action_system_composio(bot: TelegramBot, chat_id: int) -> None:
 # -- Schedule action handlers ------------------------------------------------
 
 async def _action_schedule_add(bot: TelegramBot, chat_id: int) -> None:
-    bot._send_message(chat_id, "Describe your recurring task.\n\nExample: /schedule add check gmail every 15 minutes\n\nYou can also use: /schedule add N <description>\n(where N = interval in minutes)")
+    bot._send_message(chat_id, "Schedule a task.\n\n- Recurring: /schedule add check gmail every 15 minutes\n- One-shot: /schedule add check gmail at 12:00 am tomorrow\n- Structured: /schedule add 15 check gmail (interval only)")
 
 
 async def _action_schedule_list(bot: TelegramBot, chat_id: int) -> None:
@@ -933,24 +975,34 @@ async def _action_schedule_list(bot: TelegramBot, chat_id: int) -> None:
     lines.append(f"Scheduled Tasks ({active_count} active, {len(jobs)} total)\n")
     for j in jobs:
         sid = j["id"]
-        interval_str = f"{j['interval_minutes']:.0f}m"
+        mode = j.get("mode", "interval")
         next_s = time.strftime("%H:%M", time.localtime(j["next_run_at"])) if j.get("next_run_at") else "—"
         last_s = time.strftime("%H:%M", time.localtime(j["last_run_at"])) if j.get("last_run_at") else "—"
         err = j.get("error_count", 0)
-        status_icon = "⏸️" if j["status"] == "paused" else ("⏱️" if j["status"] == "active" else "❌")
-        status_tag = " [PAUSED]" if j["status"] == "paused" else (" [ERRORED]" if j["status"] == "errored" else "")
-        lines.append(f"{status_icon} {sid[:8]}: {j['prompt'][:50]} every {interval_str}{status_tag}")
+        if mode == "once":
+            freq_str = "once"
+        elif mode == "daily":
+            freq_str = f"daily at {next_s}"
+        else:
+            freq_str = f"every {j['interval_minutes']:.0f}m"
+        status_icon = "✅" if j["status"] == "completed" else ("⏸️" if j["status"] == "paused" else ("⏱️" if j["status"] == "active" else "❌"))
+        status_tag = " [COMPLETED]" if j["status"] == "completed" else (" [PAUSED]" if j["status"] == "paused" else (" [ERRORED]" if j["status"] == "errored" else ""))
+        lines.append(f"{status_icon} {sid[:8]}: {j['prompt'][:50]} ({freq_str}){status_tag}")
         lines.append(f"   Next: {next_s} | Last: {last_s} | Errors: {err}")
-        # Inline buttons for this job (full 12-char ID in callback_data, well under 64-byte limit)
+        # Inline buttons for this job
         sid_full = sid
         rm_btn = {"text": "❌", "callback_data": f"ac:schedule_rmv:{sid_full}"}
-        if j["status"] == "active":
+        if j["status"] == "completed":
+            kb_rows.append([rm_btn])
+        elif j["status"] == "active":
             toggle_btn = {"text": "⏸️", "callback_data": f"ac:schedule_ps:{sid_full}"}
+            kb_rows.append([rm_btn, toggle_btn])
         elif j["status"] == "paused":
             toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid_full}"}
+            kb_rows.append([rm_btn, toggle_btn])
         else:
             toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid_full}"}
-        kb_rows.append([rm_btn, toggle_btn])
+            kb_rows.append([rm_btn, toggle_btn])
     text = "\n".join(lines)
     kb = {"inline_keyboard": kb_rows} if kb_rows else None
     bot._send_message(chat_id, text, reply_markup=kb)

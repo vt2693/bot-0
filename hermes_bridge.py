@@ -318,21 +318,31 @@ class HermesBridge:
     def parse_schedule(self, text: str) -> dict:
         """Parse natural-language scheduling intent via constrained LLM call.
 
-        Returns {\"interval_minutes\": int, \"prompt\": str} or {\"error\": str}.
+        Returns {"interval_minutes": int, "prompt": str},
+                {"absolute_epoch": float, "prompt": str},
+                or {"error": str}.
         """
+        now = time.time()
+        date_str = time.strftime("%Y-%m-%d %A", time.localtime(now))
         sys_prompt = (
-            "Extract scheduling intent from the user's text. "
-            "Return ONLY valid JSON (no other text) with one of these shapes:\n"
-            '{"interval_minutes": number, "prompt": string}\n'
-            '{"error": "reason"}\n\n'
+            "Extract scheduling intent from the user's text.\n"
+            f"Today's date/time for reference: {date_str} (Unix epoch: {now:.0f}).\n\n"
+            "Return ONLY valid JSON (no other text) with EXACTLY ONE of these shapes:\n"
+            '{"interval_minutes": <number>, "prompt": "<string>"}\n'
+            '{"absolute_epoch": <unix_timestamp>, "prompt": "<string>"}\n'
+            '{"error": "<reason>"}\n\n'
             "Examples:\n"
             '- "check gmail every 15 minutes" -> {"interval_minutes": 15, "prompt": "check my gmail"}\n'
             '- "every 2 hours, summarize news" -> {"interval_minutes": 120, "prompt": "summarize news"}\n'
+            '- "check gmail at 12:00 am tomorrow" -> {"absolute_epoch": <computed_epoch>, "prompt": "check my gmail"}\n'
+            '- "scan website at 3pm on friday" -> {"absolute_epoch": <computed_epoch>, "prompt": "scan website"}\n'
             '- "hello" -> {"error": "no scheduling intent found"}\n\n'
             "Rules:\n"
-            '- interval_minutes is how often to run the task, in minutes\n'
-            '- prompt is the task description without timing words\n'
-            '- If no recurring schedule is described, return an error'
+            '- If user says "every X" or "in X hours/minutes" -> interval_minutes\n'
+            '- If user says "at <time>" or "<time> tomorrow/on <day>" -> absolute_epoch (compute next occurrence as Unix timestamp)\n'
+            '- absolute_epoch is seconds since 1970-01-01 00:00 UTC\n'
+            '- prompt is the task description WITHOUT timing words\n'
+            '- If no scheduling intent found, return {"error": "..."}'
         )
         try:
             body = self.chat(text, [], sys_prompt)

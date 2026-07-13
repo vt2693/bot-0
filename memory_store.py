@@ -131,6 +131,7 @@ class MemoryStore:
                 chat_id INTEGER NOT NULL,
                 prompt TEXT NOT NULL,
                 interval_minutes REAL NOT NULL,
+                mode TEXT DEFAULT 'interval',
                 status TEXT NOT NULL DEFAULT 'active',
                 created_at REAL NOT NULL,
                 last_run_at REAL,
@@ -140,6 +141,11 @@ class MemoryStore:
                 scope TEXT DEFAULT 'sched_global'
             )
         """)
+        # Migration: add mode column for DBs created before schema update
+        try:
+            self._conn.execute("ALTER TABLE scheduled_jobs ADD COLUMN mode TEXT DEFAULT 'interval'")
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
         self._ready = True
 
