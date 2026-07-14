@@ -90,10 +90,10 @@ Confidence: 100% — Validated end-to-end with live Telegram message delivery. H
 Confidence: 100% — 8 provider names including `router_0`. Provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter` → `google` → `nvidia` → `groq` → `openai` → `anthropic`. Settings immutable, cached via `@lru_cache()`.
 
 ### Provider fallback chain
-Confidence: 100% — 3 retries with 1.5x exponential backoff on transient errors (ECONNRESET, 5xx); `chat()` wraps final failure in `f"Error: {e}"`.
+Confidence: 100% — 3 retries with 1.5x exponential backoff on transient errors (ECONNRESET, 5xx, JSONDecodeError from proxy cold-start HTML); `chat()` wraps final failure in `f"Error: {e}"`.
 
 ### Provider switching (/model + inline menu)
-Confidence: 100% — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing).
+Confidence: 100% — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing). Menu dynamically shows ✅ on active model, ⭐ on provider default.
 
 ### Router-0 provider
 Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `oc/deepseek-v4-flash-free`. Default base: `vt2693-router-0.hf.space/v1`.
