@@ -204,7 +204,7 @@ bash start_android.sh   # starts in tmux
 - Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`, `python-numpy` (pre-built)
 - Installs: `httpx` via pip (no openai SDK needed — bot uses direct httpx calls)
 - Verifies: `python -c "import httpx, numpy"`
-- Prompts for all 11 tokens interactively with existing-value defaults
+- Prompts for all 10 tokens interactively with existing-value defaults
 - Writes `$HOME/.hermes-tokens.env` with `PROVIDER="router_0"`
 
 ### Step 3: Start Script (start_android.sh)
