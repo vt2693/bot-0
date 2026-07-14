@@ -450,12 +450,40 @@ class TelegramBot:
         menu = MENUS.get(menu_name)
         if not menu:
             return
-        kb = {"inline_keyboard": menu["buttons"]}
+        # Patch model menu with active/default indicators
+        if menu_name == "model" and self.bridge:
+            active = self.bridge._model
+            default = self.bridge._resolve_model()
+            provider = self.bridge._provider
+            text = (
+                f"Switch Model ({provider})\n\n"
+                f"✅ Active: {active}\n"
+                f"⭐ Default: {default}\n\n"
+                f"Pick a model below."
+            )
+            buttons = []
+            for row in menu["buttons"]:
+                btn = row[0]
+                data = btn["callback_data"]
+                if data.startswith("ac:model:"):
+                    model_name = data[9:]
+                    prefix = ""
+                    if model_name == active:
+                        prefix += "✅ "
+                    if model_name == default and model_name != active:
+                        prefix += "⭐ "
+                    if prefix:
+                        btn = dict(btn, text=prefix + btn["text"].lstrip("✅⭐ "))
+                buttons.append([btn])
+            kb = {"inline_keyboard": buttons}
+        else:
+            kb = {"inline_keyboard": menu["buttons"]}
+            text = menu["text"]
         msg_id = self._menu_msg_id.get(chat_id)
         if msg_id:
-            self._edit_message(chat_id, msg_id, menu["text"], reply_markup=kb)
+            self._edit_message(chat_id, msg_id, text, reply_markup=kb)
         else:
-            self._send_message(chat_id, menu["text"], reply_markup=kb)
+            self._send_message(chat_id, text, reply_markup=kb)
 
     async def _handle_callback(self, cb: dict) -> None:
         """Route callback_query: navigation (mn:*) or action (ac:*)."""
@@ -795,7 +823,7 @@ MENUS = {
         ],
     },
     "model": {
-        "text": "Switch Model (router_0)\n\nPick a model below. The new model loads immediately.",
+        "text": "Switch Model",  # placeholder, overridden dynamically in _show_menu
         "buttons": [
             [{"text": "⚡ oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
             [{"text": "⬡ ollama/minimax-m3", "callback_data": "ac:model:ollama/minimax-m3"}],
@@ -952,7 +980,7 @@ async def _action_model_switch(bot: TelegramBot, chat_id: int, model: str) -> No
         return
     r = bot.bridge.switch_model(model)
     if r.get("success"):
-        bot._send_message(chat_id, "Model switched to: " + model)
+        await bot._show_menu(chat_id, "model")
     else:
         bot._send_message(chat_id, "Failed: " + r.get("error", "unknown"))
 
