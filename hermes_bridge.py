@@ -153,7 +153,7 @@ class HermesBridge:
                     last_err = None
                     break
                 except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException,
-                        httpx.HTTPStatusError) as e:
+                        httpx.HTTPStatusError, json.JSONDecodeError) as e:
                     last_err = e
                     if attempt < 2:
                         import time as _time
