@@ -119,7 +119,8 @@ Confidence: 100% — 30s async poll loop. SQLite persistence. NL+structured `/sc
 |-------|----------|--------|-------|
 | `TELEGRAM_BOT_TOKEN` | Yes | BotFather | Bot authentication |
 | `GROQ_API_KEY` | Yes | Groq console | Voice transcription + primary provider |
-| `ROUTER_0_API_KEY` | Yes | Router-0 dashboard | LLM proxy (set via env) |
+| `ROUTER_0_API_KEY` | No | Router-0 dashboard | LLM proxy (empty OK, passes `""` to httpx) |
+| `ROUTER_0_BASE_URL` | No | — | Router-0 base URL override (empty OK, uses default) |
 | `TELEGRAM_ALLOWED_USERS` | No | — | Comma-separated Telegram user IDs to restrict access |
 | `NVIDIA_API_KEY` | For voice fallback | NVIDIA build API | Voice transcription fallback |
 | `COMPOSIO_CONSUMER_API_KEY` | For tools | Composio dashboard | Jira, Firecrawl, etc. |
@@ -204,7 +205,7 @@ bash start_android.sh   # starts in tmux
 - Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`, `python-numpy` (pre-built)
 - Installs: `httpx` via pip (no openai SDK needed — bot uses direct httpx calls)
 - Verifies: `python -c "import httpx, numpy"`
-- Prompts for all 10 tokens interactively with existing-value defaults
+- Prompts for 10 API keys + 2 optional configs (TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults
 - Writes `$HOME/.hermes-tokens.env` with `PROVIDER="router_0"`
 
 ### Step 3: Start Script (start_android.sh)
