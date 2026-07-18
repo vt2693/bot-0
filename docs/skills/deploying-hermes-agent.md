@@ -96,7 +96,7 @@ Confidence: 100% — 3 retries with 1.5x exponential backoff on transient errors
 Confidence: 100% — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing). Menu dynamically shows ✅ on active model, ⭐ on provider default.
 
 ### Router-0 provider
-Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `oc/deepseek-v4-flash-free`. Default base: `vt2693-router-0.hf.space/v1`. Model-switch menu options include `combo-high`, `combo-medium`, and `combo-low` (routed via `ac:model:combo-*`).
+Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `oc/deepseek-v4-flash-free`. Default base: `vt2693-router-0.hf.space/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
 
 ### Telegram bot + polling
 Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task. 7 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`. Inline keyboard menu (10 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.

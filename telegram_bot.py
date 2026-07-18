@@ -826,14 +826,16 @@ MENUS = {
         "text": "Switch Model",  # placeholder, overridden dynamically in _show_menu
         "buttons": [
             [{"text": "⚡ oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
-            [{"text": "⬡ ollama/minimax-m3", "callback_data": "ac:model:ollama/minimax-m3"}],
             [{"text": "🌱 oc/hy3-free", "callback_data": "ac:model:oc/hy3-free"}],
+            [{"text": "⬡ ollama/minimax-m3", "callback_data": "ac:model:ollama/minimax-m3"}],
             [{"text": "🆓 openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", "callback_data": "ac:model:openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"}],
             [{"text": "🆕 openrouter/openrouter/free", "callback_data": "ac:model:openrouter/openrouter/free"}],
             [{"text": "🤖 cx/gpt-5.4-mini", "callback_data": "ac:model:cx/gpt-5.4-mini"}],
             [{"text": "🔀 combo-high", "callback_data": "ac:model:combo-high"}],
             [{"text": "🔀 combo-medium", "callback_data": "ac:model:combo-medium"}],
             [{"text": "🔀 combo-low", "callback_data": "ac:model:combo-low"}],
+            [{"text": "🔀 combo-xlow", "callback_data": "ac:model:combo-xlow"}],
+            [{"text": "🔀 combo-xxlow", "callback_data": "ac:model:combo-xxlow"}],
             [{"text": "🔙 Back", "callback_data": "mn:system"}],
         ],
     },
