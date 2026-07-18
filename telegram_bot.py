@@ -827,7 +827,7 @@ MENUS = {
         "buttons": [
             [{"text": "⚡ oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
             [{"text": "⬡ ollama/minimax-m3", "callback_data": "ac:model:ollama/minimax-m3"}],
-            [{"text": "🌱 mmf/mimo-auto", "callback_data": "ac:model:mmf/mimo-auto"}],
+            [{"text": "🌱 oc/hy3-free", "callback_data": "ac:model:oc/hy3-free"}],
             [{"text": "🆓 openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", "callback_data": "ac:model:openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"}],
             [{"text": "🆕 openrouter/openrouter/free", "callback_data": "ac:model:openrouter/openrouter/free"}],
             [{"text": "🤖 cx/gpt-5.4-mini", "callback_data": "ac:model:cx/gpt-5.4-mini"}],
