@@ -831,6 +831,7 @@ MENUS = {
             [{"text": "🆓 openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", "callback_data": "ac:model:openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"}],
             [{"text": "🆕 openrouter/openrouter/free", "callback_data": "ac:model:openrouter/openrouter/free"}],
             [{"text": "🤖 cx/gpt-5.4-mini", "callback_data": "ac:model:cx/gpt-5.4-mini"}],
+            [{"text": "🔀 combo-medium", "callback_data": "ac:model:combo-medium"}],
             [{"text": "🔙 Back", "callback_data": "mn:system"}],
         ],
     },
