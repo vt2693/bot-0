@@ -6,7 +6,7 @@ import subprocess
 import urllib.request
 from pathlib import Path
 
-STT_URL = "http://localhost:20128/v1/audio/transcriptions"
+STT_URL = "http://192.168.1.6:20128/v1/audio/transcriptions"
 STT_MODEL = "groq/whisper-large-v3"
 
 
@@ -46,6 +46,7 @@ def multipart_transcribe(url: str, api_key: str, model: str, wav: Path) -> str:
             f"{value}\r\n".encode()
         )
     field("model", model)
+    field("response_format", "json")
     parts.append(
         f"--{boundary}\r\n"
         f'Content-Disposition: form-data; name="file"; filename="{wav.name}"\r\n'
