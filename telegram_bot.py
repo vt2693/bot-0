@@ -866,33 +866,31 @@ class TelegramBot:
             time.sleep(1.5 ** attempt)
         return False
 
-    def _send_video_direct(self, chat_id: int, video_bytes: bytes) -> bool:
-        """Send MP4 as a video via Telegram API directly.
+    def _send_video_note_direct(self, chat_id: int, video_bytes: bytes) -> bool:
+        """Send MP4 as a video note via Telegram API directly.
 
-        Same pattern as _send_voice_direct but calls sendVideo with
-        MP4 payload. sendVideo plays with sound (unlike sendVideoNote
-        which is always muted on mobile). Has a play button, does not
-        auto-play.
+        Same pattern as _send_voice_direct but calls sendVideoNote with
+        MP4 payload. Video notes auto-play in Telegram chats.
         """
         try:
             with self._outbox_lock:
-                self.outbox.append({"_method": "sendChatAction", "chat_id": chat_id, "action": "upload_video"})
+                self.outbox.append({"_method": "sendChatAction", "chat_id": chat_id, "action": "record_video_note"})
         except Exception:
             pass
         for attempt in range(3):
             try:
                 resp = httpx.post(
-                    f"https://api.telegram.org/bot{self.token}/sendVideo",
-                    files={"video": ("video.mp4", video_bytes, "video/mp4")},
+                    f"https://api.telegram.org/bot{self.token}/sendVideoNote",
+                    files={"video_note": ("video_note.mp4", video_bytes, "video/mp4")},
                     data={"chat_id": chat_id},
                     timeout=120,
                 )
                 data = resp.json()
                 if data.get("ok", False):
                     return True
-                logger.warning("sendVideo direct attempt %d returned !ok: %s", attempt + 1, data)
+                logger.warning("sendVideoNote direct attempt %d returned !ok: %s", attempt + 1, data)
             except Exception as exc:
-                logger.warning("sendVideo direct attempt %d failed for chat %s: %s", attempt + 1, chat_id, exc)
+                logger.warning("sendVideoNote direct attempt %d failed for chat %s: %s", attempt + 1, chat_id, exc)
             time.sleep(1.5 ** attempt)
         return False
 
@@ -921,7 +919,7 @@ class TelegramBot:
             if self._tts_autoplay.get(chat_id, False):
                 from tg_tts import to_video_note as _tts_to_video_note
                 video = await asyncio.to_thread(_tts_to_video_note, mp3)
-                self._send_video_direct(chat_id, video)
+                self._send_video_note_direct(chat_id, video)
             else:
                 from tg_tts import to_opus as _tts_to_opus
                 opus = await asyncio.to_thread(_tts_to_opus, mp3)
