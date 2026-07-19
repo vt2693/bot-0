@@ -286,7 +286,7 @@ class TelegramBot:
             model = self._tts_models.get(chat_id, "")
             asyncio.create_task(self._send_tts_async(chat_id, response, model))
         if skill_info:
-            await self._show_skill_confirmation(chat_id, skill_info)
+            self._show_skill_confirmation(chat_id, skill_info)
 
     def _show_skill_confirmation(self, chat_id: int, skill: dict) -> None:
         """Send inline confirmation for a detected skill."""
@@ -297,18 +297,18 @@ class TelegramBot:
             "skill": skill,
             "expires_at": time.time() + 300,
         }
-        title = skill.get("title", "?")[:80]
-        problem = skill.get("problem", "?")[:200]
-        procedure = skill.get("procedure", "?")[:300]
+        title = skill.get("title", "?") or "?"
+        problem = skill.get("problem", "?") or "?"
+        procedure = skill.get("procedure", "?") or "?"
         text = (
             f"📘 Potential skill learned:\n\n"
             f"Title: {title}\n"
             f"Trigger: {problem}\n"
             f"Steps: {procedure}\n"
         )
-        failure = skill.get("failure_pattern", "")
+        failure = skill.get("failure_pattern", "") or ""
         if failure:
-            text += f"Avoid: {failure[:200]}\n"
+            text += f"Avoid: {failure}\n"
         kb = {
             "inline_keyboard": [
                 [
