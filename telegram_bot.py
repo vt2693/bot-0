@@ -38,6 +38,7 @@ class TelegramBot:
         self._pending_skills: dict[str, dict] = {}
         self._tts_chats: set[int] = set()    # chat_ids with TTS enabled
         self._tts_models: dict[int, str] = {}  # chat_id -> model name override
+        self._tts_autoplay: dict[int, bool] = {}  # chat_id -> auto-play video note enabled
         self._subtask_parents: dict[int, str] = {}  # chat_id -> parent issue key for back button
         epics_raw = os.getenv("JIRA_EPICS", "")
         self.jira_epics = [e.strip() for e in epics_raw.split(",") if e.strip()]
@@ -97,6 +98,27 @@ class TelegramBot:
                         if model:
                             try:
                                 self._tts_models[int(scope)] = model
+                            except (ValueError, TypeError):
+                                pass
+            except Exception:
+                pass
+        # Restore tts_autoplay from memory_store
+        if self.bridge and self.bridge.memory_store:
+            try:
+                results = self.bridge.memory_store.search("tts_autoplay", "", 500)
+                latest_by_scope: dict[str, dict] = {}
+                for r in results:
+                    scope = r.get("scope", "")
+                    rid = r.get("id", 0)
+                    if scope not in latest_by_scope or rid > latest_by_scope[scope]["id"]:
+                        latest_by_scope[scope] = r
+                for scope, r in latest_by_scope.items():
+                    content = r["content"].strip()
+                    if content.startswith("tts_autoplay="):
+                        val = content[13:].strip()
+                        if val in ("true", "false"):
+                            try:
+                                self._tts_autoplay[int(scope)] = val == "true"
                             except (ValueError, TypeError):
                                 pass
             except Exception:
@@ -551,6 +573,18 @@ class TelegramBot:
                         btn = dict(btn, text=prefix + btn["text"].lstrip("✅⭐ "))
                 buttons.append([btn])
             kb = {"inline_keyboard": buttons}
+        elif menu_name == "voice":
+            autoplay = self._tts_autoplay.get(chat_id, False)
+            status = "✅ ON" if autoplay else "❌ OFF"
+            text = (
+                f"Voice & Minutes\n\n"
+                f"Send a voice memo for transcription and minutes.\n"
+                f"Toggle TTS to have text replies spoken aloud.\n\n"
+                f"▶️ Auto-Play: {status}\n"
+                f"      ON — TTS plays automatically (video note).\n"
+                f"      OFF — TTS sent as voice message (tap to play)."
+            )
+            kb = {"inline_keyboard": menu["buttons"]}
         else:
             kb = {"inline_keyboard": menu["buttons"]}
             text = menu["text"]
@@ -582,6 +616,8 @@ class TelegramBot:
             model = data[13:]
             if model:
                 await _action_tts_model_switch(self, chat_id, model)
+        elif data.startswith("ac:tts_autoplay_toggle"):
+            await _action_tts_autoplay_toggle(self, chat_id)
         elif data.startswith("ac:schedule_cfm:"):
             suffix = data[16:]
             mode = None  # backward compat: no :mode suffix
@@ -830,11 +866,44 @@ class TelegramBot:
             time.sleep(1.5 ** attempt)
         return False
 
+    def _send_video_note_direct(self, chat_id: int, video_bytes: bytes) -> bool:
+        """Send MP4 as a video note via Telegram API directly.
+
+        Same pattern as _send_voice_direct but calls sendVideoNote with
+        MP4 payload. Video notes auto-play in Telegram chats.
+        """
+        try:
+            with self._outbox_lock:
+                self.outbox.append({"_method": "sendChatAction", "chat_id": chat_id, "action": "record_video_note"})
+        except Exception:
+            pass
+        for attempt in range(3):
+            try:
+                resp = httpx.post(
+                    f"https://api.telegram.org/bot{self.token}/sendVideoNote",
+                    files={"video_note": ("video_note.mp4", video_bytes, "video/mp4")},
+                    data={"chat_id": chat_id},
+                    timeout=30,
+                )
+                data = resp.json()
+                if data.get("ok", False):
+                    return True
+                logger.warning("sendVideoNote direct attempt %d returned !ok: %s", attempt + 1, data)
+            except Exception as exc:
+                logger.warning("sendVideoNote direct attempt %d failed for chat %s: %s", attempt + 1, chat_id, exc)
+            time.sleep(1.5 ** attempt)
+        return False
+
+
     async def _send_tts_async(self, chat_id: int, text: str, model: str = "") -> None:
-        """Background task: synthesize TTS, send voice message.
+        """Background task: synthesize TTS, send voice message or video note.
 
         Called via asyncio.create_task — errors are caught and logged.
-        Text reply already sent by caller; this is best-effort voice.
+        Text reply already sent by caller; this is best-effort audio.
+
+        When auto-play is ON: send as video note (round video, auto-plays)
+        When auto-play is OFF: send as voice message (tap to play)
+
         Max 4000 chars sent to TTS (router-0 limit).
         """
         if not text or not text.strip():
@@ -842,9 +911,15 @@ class TelegramBot:
         text = text.strip()[:4000]
         try:
             from tg_tts import synthesize as _tts_synthesize
-            from tg_tts import to_opus as _tts_to_opus
             mp3 = await asyncio.to_thread(_tts_synthesize, text, "", model)
-            if mp3:
+            if not mp3:
+                return
+            if self._tts_autoplay.get(chat_id, False):
+                from tg_tts import to_video_note as _tts_to_video_note
+                video = await asyncio.to_thread(_tts_to_video_note, mp3)
+                self._send_video_note_direct(chat_id, video)
+            else:
+                from tg_tts import to_opus as _tts_to_opus
                 opus = await asyncio.to_thread(_tts_to_opus, mp3)
                 self._send_voice_direct(chat_id, opus)
         except Exception as exc:
@@ -941,13 +1016,14 @@ MENUS = {
             [{"text": "📊 Queue Status", "callback_data": "ac:voice_queue"}],
             [{"text": "🔊 TTS On/Off", "callback_data": "ac:tts_toggle"}],
             [{"text": "🎤 TTS Model", "callback_data": "mn:tts_model"}],
+            [{"text": "▶️ Auto-Play TTS", "callback_data": "ac:tts_autoplay_toggle"}],
             [{"text": "🔙 Back", "callback_data": "mn:main"}],
         ],
     },
     "tts_model": {
         "text": "TTS Model\n\nPick a TTS voice model.",
         "buttons": [
-            [{"text": "edge-tts/en-US-ChristopherNeural", "callback_data": "ac:tts_model:edge-tts/en-US-ChristopherNeural"}],
+            [{"text": "edge-tts/en-US-AndrewMultilingualNeural", "callback_data": "ac:tts_model:edge-tts/en-US-AndrewMultilingualNeural"}],
             [{"text": "edge-tts/en-US-EmmaMultilingualNeural", "callback_data": "ac:tts_model:edge-tts/en-US-EmmaMultilingualNeural"}],
             [{"text": "🔙 Back", "callback_data": "mn:voice"}],
         ],
@@ -1136,6 +1212,26 @@ async def _action_tts_toggle(bot: TelegramBot, chat_id: int) -> None:
     if ms:
         state = "false" if currently_enabled else "true"
         ms.add(f"tts_enabled={state}", str(chat_id))
+
+
+async def _action_tts_autoplay_toggle(bot: TelegramBot, chat_id: int) -> None:
+    """Toggle auto-play (video note) for TTS in this chat.
+
+    When ON: TTS is sent as a video note (round video, auto-plays).
+    When OFF: TTS is sent as a voice message (requires tap).
+    Default: OFF. Persists to memory_store.
+    """
+    current = bot._tts_autoplay.get(chat_id, False)
+    bot._tts_autoplay[chat_id] = not current
+    new_status = "ON" if not current else "OFF"
+    bot._send_message(chat_id, f"▶️ Auto-Play TTS: {new_status}")
+    ms = bot.bridge.memory_store if bot.bridge else None
+    if ms:
+        try:
+            ms.add(f"tts_autoplay={'true' if not current else 'false'}", str(chat_id))
+        except Exception as exc:
+            logger.warning("failed to persist tts_autoplay for chat %s: %s", chat_id, exc)
+    await bot._show_menu(chat_id, "voice")
 
 
 async def _action_tts_model_switch(bot: TelegramBot, chat_id: int, model: str) -> None:

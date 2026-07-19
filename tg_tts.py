@@ -8,7 +8,7 @@ import httpx
 
 _BASE = os.getenv("ROUTER_0_AUDIO_URL") or os.getenv("TTS_URL") or ""
 TTS_URL = _BASE.rstrip("/") + "/audio/speech" if _BASE else ""
-TTS_MODEL = os.getenv("TTS_MODEL", "edge-tts/en-US-ChristopherNeural")
+TTS_MODEL = os.getenv("TTS_MODEL", "edge-tts/en-US-AndrewMultilingualNeural")
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +51,41 @@ def to_opus(mp3_bytes: bytes) -> bytes:
     """
     proc = subprocess.run(
         ["ffmpeg", "-y", "-i", "pipe:0", "-f", "ogg", "-codec:a", "libopus", "pipe:1"],
+        input=mp3_bytes,
+        capture_output=True,
+        timeout=30,
+    )
+    proc.check_returncode()
+    return proc.stdout
+
+
+def to_video_note(mp3_bytes: bytes) -> bytes:
+    """Convert MP3 bytes to a video note MP4 (360×360 black canvas + audio).
+
+    Telegram video notes auto-play on arrival. Uses ffmpeg with an infinite
+    color source; -shortest clips the video to the audio length so the
+    result is a static black frame that plays for the full audio duration.
+
+    Args:
+        mp3_bytes: Raw MP3 audio bytes.
+
+    Returns:
+        Raw fast-start MP4 bytes suitable for Telegram sendVideoNote.
+
+    Raises:
+        subprocess.CalledProcessError: On ffmpeg failure.
+    """
+    proc = subprocess.run(
+        [
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", "color=c=black:s=360x360",
+            "-i", "pipe:0",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-shortest",
+            "-movflags", "+faststart",
+            "pipe:1",
+        ],
         input=mp3_bytes,
         capture_output=True,
         timeout=30,
