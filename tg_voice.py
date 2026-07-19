@@ -1,6 +1,7 @@
 """Voice helpers for Hermes Agent — download Telegram audio, transcribe via local router-0."""
 
 import json
+import os
 import subprocess
 import urllib.request
 from pathlib import Path
@@ -33,7 +34,7 @@ def to_wav(src: Path) -> Path:
     return dst
 
 
-def multipart_transcribe(url: str, model: str, wav: Path) -> str:
+def multipart_transcribe(url: str, api_key: str, model: str, wav: Path) -> str:
     """Transcribe WAV via multipart POST to an OpenAI-compatible ASR endpoint."""
     boundary = "----HermesVoiceBoundary"
     audio = wav.read_bytes()
@@ -53,12 +54,15 @@ def multipart_transcribe(url: str, model: str, wav: Path) -> str:
     parts.append(audio)
     parts.append(b"\r\n")
     parts.append(f"--{boundary}--\r\n".encode())
+    headers = {
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+    }
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     req = urllib.request.Request(
         url,
         data=b"".join(parts),
-        headers={
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-        },
+        headers=headers,
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=120) as resp:
@@ -68,4 +72,5 @@ def multipart_transcribe(url: str, model: str, wav: Path) -> str:
 
 def transcribe(wav: Path) -> str:
     """Transcribe WAV via local router-0 STT endpoint."""
-    return multipart_transcribe(STT_URL, STT_MODEL, wav)
+    api_key = os.getenv("ROUTER_0_API_KEY", "")
+    return multipart_transcribe(STT_URL, api_key, STT_MODEL, wav)
