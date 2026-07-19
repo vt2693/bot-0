@@ -907,12 +907,14 @@ class TelegramBot:
         Max 4000 chars sent to TTS (router-0 limit).
         """
         if not text or not text.strip():
+            logger.warning("TTS skipped for chat %s: response text is empty", chat_id)
             return
         text = text.strip()[:4000]
         try:
             from tg_tts import synthesize as _tts_synthesize
             mp3 = await asyncio.to_thread(_tts_synthesize, text, "", model)
             if not mp3:
+                logger.warning("TTS synthesize returned empty bytes for chat %s (response length %d)", chat_id, len(text))
                 return
             if self._tts_autoplay.get(chat_id, False):
                 from tg_tts import to_video_note as _tts_to_video_note
