@@ -37,6 +37,7 @@ class TelegramBot:
         self._pending_schedule: dict[str, dict] = {}
         self._pending_skills: dict[str, dict] = {}
         self._tts_chats: set[int] = set()    # chat_ids with TTS enabled
+        self._tts_models: dict[int, str] = {}  # chat_id -> model name override
         self._subtask_parents: dict[int, str] = {}  # chat_id -> parent issue key for back button
         epics_raw = os.getenv("JIRA_EPICS", "")
         self.jira_epics = [e.strip() for e in epics_raw.split(",") if e.strip()]
@@ -77,6 +78,27 @@ class TelegramBot:
                             self._tts_chats.add(int(scope))
                         except (ValueError, TypeError):
                             pass
+            except Exception:
+                pass
+        # Restore TTS model from memory_store
+        if self.bridge and self.bridge.memory_store:
+            try:
+                results = self.bridge.memory_store.search("tts_model", "", 500)
+                latest_by_scope: dict[str, dict] = {}
+                for r in results:
+                    scope = r.get("scope", "")
+                    rid = r.get("id", 0)
+                    if scope not in latest_by_scope or rid > latest_by_scope[scope]["id"]:
+                        latest_by_scope[scope] = r
+                for scope, r in latest_by_scope.items():
+                    content = r["content"].strip()
+                    if content.startswith("tts_model="):
+                        model = content[10:]
+                        if model:
+                            try:
+                                self._tts_models[int(scope)] = model
+                            except (ValueError, TypeError):
+                                pass
             except Exception:
                 pass
         return True
@@ -260,7 +282,8 @@ class TelegramBot:
         self._send_message(chat_id, response)
         # Auto-TTS if enabled for this chat
         if chat_id in self._tts_chats:
-            asyncio.create_task(self._send_tts_async(chat_id, response))
+            model = self._tts_models.get(chat_id, "")
+            asyncio.create_task(self._send_tts_async(chat_id, response, model))
         if skill_info:
             await self._show_skill_confirmation(chat_id, skill_info)
 
@@ -504,6 +527,18 @@ class TelegramBot:
                         btn = dict(btn, text=prefix + btn["text"].lstrip("✅⭐ "))
                 buttons.append([btn])
             kb = {"inline_keyboard": buttons}
+        elif menu_name == "tts_model":
+            active = self._tts_models.get(chat_id, "")
+            text = "TTS Model\n\nPick a TTS voice model."
+            buttons = []
+            for row in menu["buttons"]:
+                btn = row[0]
+                data = btn["callback_data"]
+                if data.startswith("ac:tts_model:"):
+                    mdl = data[13:]
+                    btn = dict(btn, text=("✅ " if mdl == active else "") + btn["text"].lstrip("✅ "))
+                buttons.append([btn])
+            kb = {"inline_keyboard": buttons}
         else:
             kb = {"inline_keyboard": menu["buttons"]}
             text = menu["text"]
@@ -530,6 +565,11 @@ class TelegramBot:
         elif data.startswith("ac:model:"):
             model = data[9:]
             if model:
+                await _action_model_switch(self, chat_id, model)
+        elif data.startswith("ac:tts_model:"):
+            model = data[13:]
+            if model:
+                await _action_tts_model_switch(self, chat_id, model)
                 await _action_model_switch(self, chat_id, model)
         elif data.startswith("ac:schedule_cfm:"):
             suffix = data[16:]
@@ -779,7 +819,7 @@ class TelegramBot:
             time.sleep(1.5 ** attempt)
         return False
 
-    async def _send_tts_async(self, chat_id: int, text: str) -> None:
+    async def _send_tts_async(self, chat_id: int, text: str, model: str = "") -> None:
         """Background task: synthesize TTS, send voice message.
 
         Called via asyncio.create_task — errors are caught and logged.
@@ -792,7 +832,7 @@ class TelegramBot:
         try:
             from tg_tts import synthesize as _tts_synthesize
             from tg_tts import to_opus as _tts_to_opus
-            mp3 = await asyncio.to_thread(_tts_synthesize, text)
+            mp3 = await asyncio.to_thread(_tts_synthesize, text, "", model)
             if mp3:
                 opus = await asyncio.to_thread(_tts_to_opus, mp3)
                 self._send_voice_direct(chat_id, opus)
@@ -889,7 +929,16 @@ MENUS = {
         "buttons": [
             [{"text": "📊 Queue Status", "callback_data": "ac:voice_queue"}],
             [{"text": "🔊 TTS On/Off", "callback_data": "ac:tts_toggle"}],
+            [{"text": "🎤 TTS Model", "callback_data": "mn:tts_model"}],
             [{"text": "🔙 Back", "callback_data": "mn:main"}],
+        ],
+    },
+    "tts_model": {
+        "text": "TTS Model\n\nPick a TTS voice model.",
+        "buttons": [
+            [{"text": "edge-tts/en-US-ChristopherNeural", "callback_data": "ac:tts_model:edge-tts/en-US-ChristopherNeural"}],
+            [{"text": "edge-tts/en-US-EmmaMultilingualNeural", "callback_data": "ac:tts_model:edge-tts/en-US-EmmaMultilingualNeural"}],
+            [{"text": "🔙 Back", "callback_data": "mn:voice"}],
         ],
     },
     "system": {
@@ -1076,6 +1125,16 @@ async def _action_tts_toggle(bot: TelegramBot, chat_id: int) -> None:
     if ms:
         state = "false" if currently_enabled else "true"
         ms.add(f"tts_enabled={state}", str(chat_id))
+
+
+async def _action_tts_model_switch(bot: TelegramBot, chat_id: int, model: str) -> None:
+    """Switch TTS model for this chat. Persists to memory_store."""
+    bot._tts_models[chat_id] = model
+    bot._send_message(chat_id, f"🎤 TTS model switched to {model}")
+    ms = bot.bridge.memory_store if bot.bridge else None
+    if ms:
+        ms.add(f"tts_model={model}", str(chat_id))
+    await bot._show_menu(chat_id, "tts_model")
 
 
 async def _action_model_switch(bot: TelegramBot, chat_id: int, model: str) -> None:

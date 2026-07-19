@@ -13,12 +13,13 @@ TTS_MODEL = os.getenv("TTS_MODEL", "edge-tts")
 logger = logging.getLogger(__name__)
 
 
-def synthesize(text: str, voice: str = "") -> bytes:
-    """Synthesize text to MP3 audio via router-0 TTS endpoint (google-tts/en).
+def synthesize(text: str, voice: str = "", model: str = "") -> bytes:
+    """Synthesize text to MP3 audio via router-0 TTS endpoint.
 
     Args:
         text: Text to speak (max ~4096 chars recommended).
-        voice: Ignored for google-tts/en model. Kept for compatibility.
+        voice: Ignored for most models. Kept for compatibility.
+        model: Override TTS_MODEL for this call.
 
     Returns:
         Raw MP3 audio bytes.
@@ -33,7 +34,7 @@ def synthesize(text: str, voice: str = "") -> bytes:
         headers["Authorization"] = f"Bearer {api_key}"
 
     body = {
-        "model": TTS_MODEL,
+        "model": model or TTS_MODEL,
         "input": text,
     }
 
