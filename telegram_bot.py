@@ -7,6 +7,7 @@ import threading
 import urllib.request
 import urllib.error
 from typing import Callable
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class TelegramBot:
         self.scheduler = None
         self._pending_schedule: dict[str, dict] = {}
         self._pending_skills: dict[str, dict] = {}
+        self._tts_chats: set[int] = set()    # chat_ids with TTS enabled
         self._subtask_parents: dict[int, str] = {}  # chat_id -> parent issue key for back button
         epics_raw = os.getenv("JIRA_EPICS", "")
         self.jira_epics = [e.strip() for e in epics_raw.split(",") if e.strip()]
@@ -54,6 +56,29 @@ class TelegramBot:
         # The relay polls /api/tg_outbox for outbound, and runs getUpdates
         # polling for inbound delivery to /webhook/telegram.
         self.enqueue_webhook()
+        # Restore TTS state from memory_store (all scopes)
+        if self.bridge and self.bridge.memory_store:
+            try:
+                results = self.bridge.memory_store.search("tts_enabled", "", 500)
+                tts_by_scope: dict[str, int] = {}
+                for r in results:
+                    content = r["content"].strip().lower()
+                    if content in ("tts_enabled=true", "tts_enabled=false"):
+                        scope = r.get("scope", "")
+                        rid = r.get("id", 0)
+                        # latest fact per scope wins
+                        if scope not in tts_by_scope or rid > tts_by_scope[scope]:
+                            tts_by_scope[scope] = rid
+                for r in results:
+                    scope = r.get("scope", "")
+                    rid = r.get("id", 0)
+                    if tts_by_scope.get(scope) == rid and r["content"].strip().lower() == "tts_enabled=true":
+                        try:
+                            self._tts_chats.add(int(scope))
+                        except (ValueError, TypeError):
+                            pass
+            except Exception:
+                pass
         return True
 
     def enqueue_webhook(self) -> None:
@@ -233,6 +258,9 @@ class TelegramBot:
         self._chat_history[key].extend([{"role": "user", "content": text}, {"role": "assistant", "content": response}])
         self._chat_history[key] = self._chat_history[key][-self._history_max:]
         self._send_message(chat_id, response)
+        # Auto-TTS if enabled for this chat
+        if chat_id in self._tts_chats:
+            asyncio.create_task(self._send_tts_async(chat_id, response))
         if skill_info:
             await self._show_skill_confirmation(chat_id, skill_info)
 
@@ -719,6 +747,56 @@ class TelegramBot:
                 continue
         return False
 
+    def _send_voice_direct(self, chat_id: int, audio_bytes: bytes) -> bool:
+        """Send Opus audio as a voice message directly to Telegram API.
+
+        Uses httpx multipart upload (cannot go through JSON-only relay).
+        Shows record_voice action first via outbox. Retries with backoff
+        on failure (same pattern as _send_direct).
+
+        Returns True if Telegram returned {"ok": true}.
+        """
+        try:
+            with self._outbox_lock:
+                self.outbox.append({"_method": "sendChatAction", "chat_id": chat_id, "action": "record_voice"})
+        except Exception:
+            pass
+        for attempt in range(3):
+            try:
+                resp = httpx.post(
+                    f"https://api.telegram.org/bot{self.token}/sendVoice",
+                    files={"voice": ("voice.ogg", audio_bytes, "audio/ogg")},
+                    data={"chat_id": chat_id},
+                    timeout=30,
+                )
+                ok = resp.json().get("ok", False)
+                if ok:
+                    return True
+            except Exception as exc:
+                logger.warning("sendVoice direct attempt %d failed for chat %s: %s", attempt + 1, chat_id, exc)
+            time.sleep(1.5 ** attempt)
+        return False
+
+    async def _send_tts_async(self, chat_id: int, text: str) -> None:
+        """Background task: synthesize TTS, send voice message.
+
+        Called via asyncio.create_task — errors are caught and logged.
+        Text reply already sent by caller; this is best-effort voice.
+        Max 4000 chars sent to TTS (router-0 limit).
+        """
+        if not text or not text.strip():
+            return
+        text = text.strip()[:4000]
+        try:
+            from tg_tts import synthesize as _tts_synthesize
+            from tg_tts import to_opus as _tts_to_opus
+            mp3 = await asyncio.to_thread(_tts_synthesize, text)
+            if mp3:
+                opus = await asyncio.to_thread(_tts_to_opus, mp3)
+                self._send_voice_direct(chat_id, opus)
+        except Exception as exc:
+            logger.warning("TTS failed for chat %s: %s", chat_id, exc)
+
     async def drain_outbox(self) -> list[dict]:
         with self._outbox_lock:
             out = list(self.outbox)
@@ -804,9 +882,11 @@ MENUS = {
         ],
     },
     "voice": {
-        "text": "Voice & Minutes\n\nSend a voice memo for transcription and minutes.",
+        "text": "Voice & Minutes\n\nSend a voice memo for transcription and minutes.\n"
+                "Toggle TTS to have text replies spoken aloud.",
         "buttons": [
             [{"text": "📊 Queue Status", "callback_data": "ac:voice_queue"}],
+            [{"text": "🔊 TTS On/Off", "callback_data": "ac:tts_toggle"}],
             [{"text": "🔙 Back", "callback_data": "mn:main"}],
         ],
     },
@@ -978,6 +1058,22 @@ async def _action_system_uptime(bot: TelegramBot, chat_id: int) -> None:
 async def _action_system_queue(bot: TelegramBot, chat_id: int) -> None:
     tg = bot.status()
     bot._send_message(chat_id, "Queue Stats\n\nPending: " + str(tg["queue_size"]) + "\nProcessed: " + str(tg["queue_processed"]) + "\nError: " + (str(tg["queue_error"]) if tg["queue_error"] else "none"))
+
+
+async def _action_tts_toggle(bot: TelegramBot, chat_id: int) -> None:
+    """Toggle TTS on/off for this chat. Persists to memory_store."""
+    currently_enabled = chat_id in bot._tts_chats
+    if currently_enabled:
+        bot._tts_chats.discard(chat_id)
+        bot._send_message(chat_id, "🔇 TTS turned OFF. Text replies will not be spoken.")
+    else:
+        bot._tts_chats.add(chat_id)
+        bot._send_message(chat_id, "🔊 TTS turned ON. Text replies will also arrive as voice.")
+    # Persist
+    ms = bot.bridge.memory_store if bot.bridge else None
+    if ms:
+        state = "false" if currently_enabled else "true"
+        ms.add(f"tts_enabled={state}", str(chat_id))
 
 
 async def _action_model_switch(bot: TelegramBot, chat_id: int, model: str) -> None:
@@ -1490,6 +1586,7 @@ MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "memory_cleanup": _action_memory_cleanup,
     "chat_summarize": _action_chat_summarize,
     "voice_queue": _action_voice_queue,
+    "tts_toggle": _action_tts_toggle,
     "system_status": _action_system_status,
     "system_provider": _action_system_provider,
     "system_uptime": _action_system_uptime,
