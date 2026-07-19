@@ -753,10 +753,10 @@ class TelegramBot:
 
     def _send_message(self, chat_id: int, text: str, **extra) -> None:
         with self._outbox_lock:
-            raw = (text or "")[:4096 * 10]  # hard safety cap (10 messages max, 40960 chars)
+            raw = (text or "")[:4096 * 25]  # hard safety cap (25 messages max, 102400 chars)
             if not raw:
                 return
-            chunks = _split_tts_text(raw, 4096)[:10]
+            chunks = _split_tts_text(raw, 4096)[:25]
             for i, chunk in enumerate(chunks):
                 if not chunk.strip():
                     continue
