@@ -5,7 +5,6 @@ import sqlite3
 import logging
 import threading
 from typing import Optional
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -16,77 +15,11 @@ class MemoryStore:
         self._lock = threading.Lock()
         self._ready = False
         self._conn: Optional[sqlite3.Connection] = None
-        self._restore_backup()
         self._init_db()
 
     @property
     def ready(self) -> bool:
         return self._ready
-
-    @staticmethod
-    def _space_id() -> str:
-        return os.getenv("MEMORY_SPACE_ID", "") or os.getenv("SPACE_ID", "") or "vt2693/bot-0"
-
-    @staticmethod
-    def _token() -> str:
-        return os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_TOKEN", "")
-
-    def _restore_backup(self) -> None:
-        """Download memory.db from remote backup when explicitly enabled."""
-        if os.getenv("MEMORY_RESTORE_ON_STARTUP", "false").lower() not in ("true", "1", "yes"):
-            logger.info("Memory: startup restore disabled")
-            return
-        dbp = Path(self.db_path)
-        if dbp.exists() and dbp.stat().st_size > 0:
-            logger.info("Memory: existing db %s (%d bytes)", dbp, dbp.stat().st_size)
-            return
-        space = self._space_id()
-        token = self._token()
-        if not token or "/" not in space:
-            return
-        try:
-            from huggingface_hub import hf_hub_download
-            path = hf_hub_download(repo_id=space, repo_type="space", filename="data/memory.db", revision="memory-backups", token=token)
-            if path and Path(path).stat().st_size > 0:
-                import shutil
-                shutil.copy2(path, str(dbp))
-                logger.info("Memory: restored %d bytes from remote backup", Path(path).stat().st_size)
-        except Exception:
-            logger.info("Memory: no remote backup available")
-
-    def _backup_to_hub(self) -> None:
-        """Upload memory.db snapshot to remote storage."""
-        try:
-            db = Path(self.db_path)
-            if not db.exists() or db.stat().st_size == 0:
-                return
-            space = self._space_id()
-            token = self._token()
-            if not token or "/" not in space:
-                return
-            # VACUUM INTO temp for consistent snapshot
-            import tempfile
-            tmpname = tempfile.mktemp(suffix=".db")
-            try:
-                with self._lock:
-                    self._conn.execute(f"VACUUM INTO '{tmpname}'")
-                # Upload via remote storage
-                from huggingface_hub import HfApi
-                api = HfApi()
-                api.upload_file(
-                    path_or_fileobj=tmpname,
-                    path_in_repo="data/memory.db",
-                    repo_id=space,
-                    repo_type="space",
-                    token=token,
-                    revision="memory-backups",
-                )
-                logger.info("Memory: backed up %d bytes to remote storage", db.stat().st_size)
-            finally:
-                try: os.unlink(tmpname)
-                except: pass
-        except Exception as e:
-            logger.error("Memory backup failed: %s", e)
 
     def _init_db(self) -> None:
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -176,8 +109,6 @@ class MemoryStore:
             )
             self._conn.commit()
             rowid = int(cur.lastrowid)
-        # Backup immediately for deployments that opt into remote storage restore.
-        self._backup_to_hub()
         return rowid
 
     def search(self, query: str, scope: str | None = "global", limit: int = 5) -> list[dict]:
@@ -243,7 +174,6 @@ class MemoryStore:
             else:
                 self._conn.execute("DELETE FROM facts")
             self._conn.commit()
-        self._backup_to_hub()
 
     def cleanup_low_trust(self) -> int:
         with self._lock:
@@ -268,7 +198,6 @@ class MemoryStore:
 
     def close(self) -> None:
         if self._conn:
-            self._backup_to_hub()
             self._conn.close()
             self._conn = None
             self._ready = False
@@ -319,7 +248,6 @@ class MemoryStore:
             )
             self._conn.commit()
             rowid = int(cur.lastrowid)
-        self._backup_to_hub()
         return {"id": rowid, "error": ""}
 
     def skill_search(self, query: str, scope: str | None = "global",
@@ -388,8 +316,6 @@ class MemoryStore:
             rc = self._conn.execute(
                 "SELECT changes()"
             ).fetchone()[0]
-        if rc:
-            self._backup_to_hub()
         return rc > 0
 
     def skill_remove(self, skill_id: int) -> bool:

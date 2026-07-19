@@ -12,7 +12,7 @@ from tg_voice import transcribe as _transcribe
 
 print = lambda *a, **kw: __builtins__.print(*a, **kw, flush=True)  # noqa
 
-SPACE_URL = os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space").rstrip("/")
+SPACE_URL = os.getenv("SPACE_URL", "").rstrip("/")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN", "")
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1"))
 WORK_DIR = Path(os.getenv("WORK_DIR", tempfile.gettempdir()))

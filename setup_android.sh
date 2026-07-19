@@ -109,8 +109,7 @@ export TELEGRAM_ALLOWED_USERS="${TELEGRAM_ALLOWED_USERS}"
 export PROVIDER="router_0"
 export BROADCAST_CHAT_ID=""
 export JIRA_EPICS="${JIRA_EPICS}"
-# Leave HF_TOKEN env var unset to prevent memory_store.py from attempting
-# backup to a deleted remote repo. MEMORY_SPACE_ID is set to "none"
+# MEMORY_SPACE_ID left unset — remote memory backup removed.
 # so the backup guard ("/" in path) skips.
 export MEMORY_SPACE_ID="none"
 EOF

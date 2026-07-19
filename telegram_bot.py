@@ -106,7 +106,7 @@ class TelegramBot:
 
     def enqueue_webhook(self) -> None:
         """Re-enqueue webhook config (callable from /reconfigure)."""
-        self.enqueue_config("setWebhook", {"url": os.getenv("TELEGRAM_WEBHOOK_URL", os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space") + "/webhook/telegram"), "allowed_updates": ["message", "edited_message", "callback_query"]})
+        self.enqueue_config("setWebhook", {"url": os.getenv("TELEGRAM_WEBHOOK_URL", "") + "/webhook/telegram", "allowed_updates": ["message", "edited_message", "callback_query"]})
 
     def enqueue_config(self, method: str, payload: dict) -> None:
         item = {"_method": method, **payload}
