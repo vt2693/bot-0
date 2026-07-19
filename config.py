@@ -29,8 +29,8 @@ class Settings:
     OPENCODE_ZEN_MODEL = os.getenv("OPENCODE_ZEN_MODEL", "deepseek-v4-flash-free")
     OPENCODE_ZEN_BASE_URL = os.getenv("OPENCODE_ZEN_BASE_URL", "https://opencode.ai/zen/v1")
     ROUTER_0_MODEL = os.getenv("ROUTER_0_MODEL", "oc/deepseek-v4-flash-free")
-    ROUTER_0_BASE_URL = os.getenv("ROUTER_0_BASE_URL", "https://vt2693-router-0.hf.space/v1")
-    ROUTER_0_AUDIO_URL = os.getenv("ROUTER_0_AUDIO_URL", "http://localhost:20128")
+    ROUTER_0_BASE_URL = os.getenv("ROUTER_0_BASE_URL", "http://192.168.1.6:20128/v1")
+    ROUTER_0_AUDIO_URL = os.getenv("ROUTER_0_AUDIO_URL", "http://192.168.1.6:20128")
 
     COMPOSIO_CONSUMER_API_KEY: Optional[str] = os.getenv("COMPOSIO_CONSUMER_API_KEY")
     COMPOSIO_APPS = os.getenv("COMPOSIO_APPS", "")
