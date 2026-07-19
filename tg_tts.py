@@ -8,7 +8,7 @@ import httpx
 
 _BASE = os.getenv("ROUTER_0_AUDIO_URL") or os.getenv("TTS_URL") or ""
 TTS_URL = _BASE.rstrip("/") + "/audio/speech" if _BASE else ""
-TTS_MODEL = os.getenv("TTS_MODEL", "google-tts/en")
+TTS_MODEL = os.getenv("TTS_MODEL", "edge-tts")
 
 logger = logging.getLogger(__name__)
 
