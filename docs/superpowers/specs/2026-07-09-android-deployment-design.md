@@ -110,7 +110,7 @@ async def main():
 Inline in `android_bot.py`. Reuses existing `voice_relay.py` helpers:
 1. Telegram `getFile` → download `.oga`
 2. `ffmpeg -y -i src -ar 16000 -ac 1 out.wav`
-3. Groq Whisper (`whisper-large-v3`) or NVIDIA fallback
+3. Local router-0 STT (`groq/whisper-large-v3`)
 4. Returns transcript text
 
 Helpers (download_file, to_wav, transcribe, multipart_transcribe) extracted from `voice_relay.py` into a small shared module `tg_voice.py`. Both `voice_relay.py` (kept for backward compat) and `android_bot.py` import from it.
@@ -118,7 +118,7 @@ Helpers (download_file, to_wav, transcribe, multipart_transcribe) extracted from
 ### Updated: `setup_android.sh`
 
 - `pkg install python ffmpeg tmux termux-api git`
-- `pip install openai httpx numpy huggingface_hub`
+- `pip install httpx numpy`
 - Prompts for secrets → saves to `~/.hermes-tokens.env`
 - No FastAPI/Gradio in install
 
@@ -148,7 +148,7 @@ getUpdates → _process_update() → TelegramBot._handle_callback()
 ### Voice
 ```
 getUpdates → _process_update() → voice detected
-→ file download → ffmpeg → Groq whisper → transcript → tg._send_message()
+→ file download → ffmpeg → router-0 STT → transcript → tg._send_message()
 → re-route transcript as text → LLM
 ```
 
@@ -176,14 +176,10 @@ SchedulerEngine (30s poll) → triggers bridge.chat()
 | Secret | Source |
 |--------|--------|
 | `TELEGRAM_BOT_TOKEN` | BotFather |
-| `GROQ_API_KEY` | Groq console (voice) |
-| `ROUTER_0_API_KEY` | Router-0 proxy |
+| `ROUTER_0_API_KEY` | Router-0 (STT & LLM) |
 | `COMPOSIO_CONSUMER_API_KEY` | Composio dashboard (optional) |
 | `OPENCODE_ZEN_API_KEY` | OpenCode (optional) |
-| `GOOGLE_API_KEY` | Google AI (optional) |
-| `ANTHROPIC_API_KEY` | Anthropic (optional) |
-| `OPENAI_API_KEY` | OpenAI (optional) |
-| `NVIDIA_API_KEY` | NVIDIA (optional, voice fallback) |
+| `OPENROUTER_API_KEY` | OpenRouter (optional) |
 
 ## Verification
 

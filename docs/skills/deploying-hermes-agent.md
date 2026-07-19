@@ -2,8 +2,8 @@
 name: deploying-hermes-agent
 description: >-
   Deploy Hermes Agent to Android/Termux (headless Telegram bot via getUpdates polling).
-  8-provider LLM config with router_0, SchedulerEngine, MemoryStore (SQLite),
-  Composio MCP tools, and in-process voice transcription.
+  3-provider LLM config with router_0, SchedulerEngine, MemoryStore (SQLite),
+  Composio MCP tools, and in-process voice transcription via local STT.
   Confidence: 100%
 ---
 
@@ -11,7 +11,7 @@ description: >-
 
 ## Purpose
 
-Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot with getUpdates polling (no webhook, no Gradio). Supports multi-provider LLM (router_0 proxy), Composio MCP tools (including Firecrawl scrape/crawl/search and Jira), voice memo transcription (Groq → NVIDIA), MemoryStore (SQLite), SchedulerEngine for periodic tasks, and inline keyboard menus.
+Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot with getUpdates polling (no webhook, no Gradio). Supports multi-provider LLM (router_0, opencode_zen, openrouter), Composio MCP tools (including Firecrawl scrape/crawl/search and Jira), voice memo transcription (local router-0 STT), MemoryStore (SQLite), SchedulerEngine for periodic tasks, and inline keyboard menus.
 
 ## Supported Environments
 
@@ -56,7 +56,7 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 
 **Key insight:** Android bot uses **direct** Telegram API calls (no relay needed). `android_bot.py` long-polls `getUpdates` for inbound messages and calls `api.telegram.org` directly for outbound via `_send_direct()`. No webhook, no relay.py.
 
-Voice is processed **in-process** (not via external relay): download → ffmpeg (16kHz WAV) → Groq whisper-large-v3.
+Voice is processed **in-process** (not via external relay): download → ffmpeg (16kHz WAV) → router-0 STT (groq/whisper-large-v3).
 
 ## Files
 
@@ -65,11 +65,11 @@ Voice is processed **in-process** (not via external relay): download → ffmpeg 
 | `android_bot.py` | Main entry point — getUpdates poll loop, outbox drain, voice handling |
 | `telegram_bot.py` | Queue, outbox, inline menus, callback routing, command handlers |
 | `hermes_bridge.py` | Multi-provider LLM bridge via httpx (no openai SDK), tool loop, memory injection |
-| `config.py` | Settings from env vars, 8-provider auto-detection |
+| `config.py` | Settings from env vars, 3-provider auto-detection |
 | `composio_mcp.py` | Composio MCP client (HTTP JSON-RPC, workbench for Jira tools) |
 | `memory_store.py` | SQLite fact + skill store (SQLite-only on Android) |
 | `scheduler.py` | SchedulerEngine (30s poll loop) |
-| `tg_voice.py` | Voice helper: download, ffmpeg, Groq/NVIDIA transcription |
+| `tg_voice.py` | Voice helper: download, ffmpeg, router-0 STT transcription |
 | `voice_relay.py` | Wrapper importing from tg_voice.py (kept for compat) |
 | `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts |
 | `start_android.sh` | tmux launcher with auto-restart, dep check, wake-lock |
@@ -87,7 +87,7 @@ All components validated end-to-end on Android/Termux with Python 3.14. Voice, m
 Confidence: 100% — Validated end-to-end with live Telegram message delivery. Headless polling, no web server needed.
 
 ### config.py provider logic
-Confidence: 100% — 8 provider names including `router_0`. Provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter` → `google` → `nvidia` → `groq` → `openai` → `anthropic`. Settings immutable, cached via `@lru_cache()`.
+Confidence: 100% — 3 provider names including `router_0`. Provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter`. Settings immutable, cached via `@lru_cache()`.
 
 ### Provider fallback chain
 Confidence: 100% — 3 retries with 1.5x exponential backoff on transient errors (ECONNRESET, 5xx, JSONDecodeError from proxy cold-start HTML); `chat()` wraps final failure in `f"Error: {e}"`.
@@ -102,7 +102,7 @@ Confidence: 100% — Auto-detected by API key or base URL. No key required (pass
 Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task. 7 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`. Inline keyboard menu (10 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
 
 ### In-process voice
-Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → Groq whisper-large-v3. No separate voice relay process needed.
+Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice relay process needed.
 
 ### MemoryStore (LIKE + SQLite)
 Confidence: 100% — LIKE-based fact search with recent-facts fallback. No FTS5, no HRR, no numpy. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync.
@@ -118,16 +118,12 @@ Confidence: 100% — 30s async poll loop. SQLite persistence. NL+structured `/sc
 | Input | Required | Source | Notes |
 |-------|----------|--------|-------|
 | `TELEGRAM_BOT_TOKEN` | Yes | BotFather | Bot authentication |
-| `GROQ_API_KEY` | Yes | Groq console | Voice transcription + primary provider |
-| `ROUTER_0_API_KEY` | No | Router-0 dashboard | LLM proxy (empty OK, passes `""` to httpx) |
-| `ROUTER_0_BASE_URL` | No | — | Router-0 base URL override (empty OK, uses default) |
+| `ROUTER_0_API_KEY` | No | Router-0 dashboard | LLM proxy + STT (empty OK, passes `""` to httpx) |
+| `ROUTER_0_BASE_URL` | No | — | Router-0 base URL override (default `http://localhost:20128`) |
 | `TELEGRAM_ALLOWED_USERS` | No | — | Comma-separated Telegram user IDs to restrict access |
-| `NVIDIA_API_KEY` | For voice fallback | NVIDIA build API | Voice transcription fallback |
 | `COMPOSIO_CONSUMER_API_KEY` | For tools | Composio dashboard | Jira, Firecrawl, etc. |
 | `OPENCODE_ZEN_API_KEY` | Optional | OpenCode | Alternative LLM provider |
-| `GOOGLE_API_KEY` | Optional | Google AI | Alternative LLM provider |
-| `ANTHROPIC_API_KEY` | Optional | Anthropic | Alternative LLM provider |
-| `OPENAI_API_KEY` | Optional | OpenAI | Alternative LLM provider |
+| `OPENROUTER_API_KEY` | Optional | OpenRouter | Alternative LLM provider |
 | `JIRA_EPICS` | For Jira menu | Jira | Comma-separated epic keys (e.g. PROJ-123,PROJ-456) |
 
 ## Environment Variables
@@ -142,26 +138,12 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `ROUTER_0_API_KEY` | — | Yes | Router-0 LLM provider |
 | `ROUTER_0_MODEL` | `oc/deepseek-v4-flash-free` | No | Router-0 model name |
 | `ROUTER_0_BASE_URL` | `https://vt2693-router-0.hf.space/v1` | No | Router-0 base URL |
-| `GROQ_API_KEY` | — | For voice | Groq whisper-large-v3 |
-| `GROQ_MODEL` | `llama-3.1-8b-instant` | No | Groq model override |
-| `GROQ_BASE_URL` | `https://api.groq.com/openai/v1` | No | Groq base URL |
-| `NVIDIA_API_KEY` | — | For voice fallback | NVIDIA parakeet-3b-asr |
-| `NVIDIA_MODEL` | `nvidia/nemotron-mini-4b-instruct` | No | NVIDIA model override |
-| `NVIDIA_BASE_URL` | `https://integrate.api.nvidia.com/v1` | No | NVIDIA base URL |
 | `OPENCODE_ZEN_API_KEY` | — | No | OpenCode Zen LLM |
 | `OPENCODE_ZEN_MODEL` | `deepseek-v4-flash-free` | No | OpenCode Zen model |
 | `OPENCODE_ZEN_BASE_URL` | `https://opencode.ai/zen/v1` | No | OpenCode Zen base URL |
 | `OPENROUTER_API_KEY` | — | No | OpenRouter LLM |
 | `OPENROUTER_MODEL` | `openrouter/free` | No | OpenRouter model |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | No | OpenRouter base URL |
-| `GOOGLE_API_KEY` | — | No | Google Gemini |
-| `GOOGLE_MODEL` | `gemini-3.1-flash-lite` | No | Google model |
-| `GOOGLE_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta/openai/` | No | Google base URL |
-| `OPENAI_API_KEY` | — | No | OpenAI provider |
-| `OPENAI_MODEL` | `gpt-4o-mini` | No | OpenAI model |
-| `OPENAI_BASE_URL` | — | No | OpenAI base URL override |
-| `ANTHROPIC_API_KEY` | — | No | Claude provider |
-| `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | No | Claude model |
 | `COMPOSIO_CONSUMER_API_KEY` | — | No | Composio MCP auth |
 | `COMPOSIO_APPS` | `""` | No | Comma-separated app slugs |
 | `JIRA_EPICS` | — | No | Comma-separated Jira epic keys |
@@ -205,7 +187,7 @@ bash start_android.sh   # starts in tmux
 - Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`, `python-numpy` (pre-built)
 - Installs: `httpx` via pip (no openai SDK needed — bot uses direct httpx calls)
 - Verifies: `python -c "import httpx, numpy"`
-- Prompts for 10 API keys + 2 optional configs (TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults
+- Prompts for 5 API keys + 2 optional configs (TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults
 - Writes `$HOME/.hermes-tokens.env` with `PROVIDER="router_0"`
 
 ### Step 3: Start Script (start_android.sh)
@@ -251,7 +233,7 @@ Main asyncio entry point. Key sections:
 
 ### Step 5: LLM Bridge (hermes_bridge.py)
 
-Multi-provider LLM bridge using **direct httpx calls** (no openai SDK). Key methods:
+3-provider LLM bridge using **direct httpx calls** (no openai SDK). Key methods:
 
 - `_call_llm()` — sends POST to `/chat/completions` with `stream: False`, handles tool calls in loop up to `TOOL_LOOP_MAX_ROUNDS`
 - `chat_with_memory()` — retrieves relevant facts + skills, injects into system prompt, calls LLM, extracts facts from response, detects skills
@@ -259,7 +241,7 @@ Multi-provider LLM bridge using **direct httpx calls** (no openai SDK). Key meth
 - `_detect_skill()` — heuristic gate + constrained JSON LLM extraction for learned skills
 - `_execute_tool()` — calls `ComposioMCP.call_tool_sync()` (sync `httpx.Client`, no event loop needed)
 
-8 provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter` → `google` → `nvidia` → `groq` → `openai` → `anthropic`.
+3 provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter`.
 
 ### Step 6: Telegram Bot (telegram_bot.py)
 
@@ -309,7 +291,7 @@ HTTP JSON-RPC client. Tools accessed via `initialize` → `tools/list` → `tool
 | Telegram API token invalid | `getMe` self-test at startup logs failure |
 | Voice download fails | User notified, no crash |
 | Mem processing fail (ffmpeg) | User notified, no crash |
-| Transcription fail | Groq → NVIDIA fallback |
+| Transcription fail | Router-0 STT error, user notified |
 | Jira tools not configured | Empty JIRA_EPICS → warning message via menu |
 | Composio not configured | Menu entry shows "not available" |
 | getUpdates queue overflow | Telegram stores 24h of updates; offset tracking prevents duplicates |
@@ -323,7 +305,7 @@ After `bash start_android.sh`:
 1. Send `/start` to bot → should respond with welcome message
 2. Send `/menu` → should show inline keyboard with menus
 3. Send text → should get LLM response
-4. Send voice memo → should transcribe and reply (requires Groq key)
+4. Send voice memo → should transcribe and reply (requires router-0 STT)
 5. Send "remember that I live in Bogor" → should store and recall on later messages
 6. Tap Jira → Open Tasks → should show issues (requires JIRA_EPICS + Composio key)
 7. Check logs: `tail -20 ~/hermes-bot/logs/bot.log`

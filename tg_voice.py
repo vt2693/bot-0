@@ -1,9 +1,12 @@
-"""Voice helpers for Hermes Agent — download Telegram audio, transcribe via Groq/NVIDIA."""
+"""Voice helpers for Hermes Agent — download Telegram audio, transcribe via local router-0."""
 
 import json
 import subprocess
 import urllib.request
 from pathlib import Path
+
+STT_URL = "http://localhost:20128/v1/audio/transcriptions"
+STT_MODEL = "groq/whisper-large-v3"
 
 
 def tg_file_path(bot_token: str, file_id: str) -> str:
@@ -64,16 +67,6 @@ def multipart_transcribe(url: str, api_key: str, model: str, wav: Path) -> str:
     return data.get("text") or data.get("transcript") or json.dumps(data)
 
 
-def transcribe(wav: Path, groq_key: str = "", nvidia_key: str = "") -> str:
-    """Transcribe WAV using Groq Whisper, fallback to NVIDIA."""
-    if groq_key:
-        return multipart_transcribe(
-            "https://api.groq.com/openai/v1/audio/transcriptions",
-            groq_key, "whisper-large-v3", wav,
-        )
-    if nvidia_key:
-        return multipart_transcribe(
-            "https://integrate.api.nvidia.com/v1/audio/transcriptions",
-            nvidia_key, "nvidia/parakeet-ctc-1.1b-asr", wav,
-        )
-    raise RuntimeError("No GROQ_API_KEY or NVIDIA_API_KEY set")
+def transcribe(wav: Path) -> str:
+    """Transcribe WAV via local router-0 STT endpoint."""
+    return multipart_transcribe(STT_URL, "", STT_MODEL, wav)

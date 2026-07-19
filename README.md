@@ -13,9 +13,9 @@ app_port: 7860
 Android/Termux Telegram bot with:
 
 - Headless Telegram polling (getUpdates)
-- 8-provider LLM routing via httpx (no openai SDK)
+- 3-provider LLM routing via httpx (no openai SDK)
 - Composio MCP tools (Jira, Firecrawl)
-- Voice memo → transcription → LLM minutes (Groq/NVIDIA)
+- Voice memo → transcription → LLM minutes (router-0 STT)
 - SQLite memory (facts + learned skills)
 - Scheduler engine (periodic tasks)
 - Inline keyboard menus
@@ -25,7 +25,6 @@ Android/Termux Telegram bot with:
 Set in `~/.hermes-tokens.env`:
 
 - `TELEGRAM_BOT_TOKEN`
-- `GROQ_API_KEY`
 - `ROUTER_0_API_KEY`
 - `COMPOSIO_CONSUMER_API_KEY` (for Jira/Firecrawl tools)
 - Optional: `JIRA_EPICS` — comma-separated epic keys
@@ -49,9 +48,9 @@ tmux attach -t hermes
 - `android_bot.py` — main entry point (poll loop)
 - `telegram_bot.py` — menus, callbacks, outbox
 - `hermes_bridge.py` — LLM bridge (httpx), tool loop
-- `config.py` — 8-provider settings
+- `config.py` — 3-provider settings
 - `composio_mcp.py` — Composio MCP client
 - `memory_store.py` — SQLite facts + skills
 - `scheduler.py` — periodic task engine
-- `tg_voice.py` — download → ffmpeg → Groq transcription
+- `tg_voice.py` — download → ffmpeg → router-0 STT transcription
 - `deploy_android.ps1` — Windows ADB/SSH deploy script

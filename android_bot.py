@@ -2,7 +2,7 @@
 
 Reuses all existing modules unchanged. getUpdates polling replaces webhook.
 Outbound messages delivered directly via urllib to api.telegram.org.
-Voice transcribes in-process via Groq/NVIDIA.
+Voice transcribes in-process via local router-0 STT.
 """
 
 import asyncio
@@ -97,9 +97,7 @@ async def _process_voice(
 
     tg._send_message(chat_id, "\U0001f3a4 Transcribing...")
     try:
-        groq_key = os.getenv("GROQ_API_KEY", "")
-        nvidia_key = os.getenv("NVIDIA_API_KEY", "")
-        text = transcribe(wav, groq_key, nvidia_key)
+        text = transcribe(wav)
     except Exception as e:
         tg._send_message(chat_id, f"❌ Transcription failed: {e}")
         return ""

@@ -14,8 +14,6 @@ print = lambda *a, **kw: __builtins__.print(*a, **kw, flush=True)  # noqa
 
 SPACE_URL = os.getenv("SPACE_URL", "https://vt2693-bot-0.hf.space").rstrip("/")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN", "")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1"))
 WORK_DIR = Path(os.getenv("WORK_DIR", tempfile.gettempdir()))
 WORK_DIR.mkdir(parents=True, exist_ok=True)
@@ -56,7 +54,7 @@ def to_wav(src: Path) -> Path:
 
 
 def transcribe(wav: Path) -> str:
-    return _transcribe(wav, GROQ_API_KEY, NVIDIA_API_KEY)
+    return _transcribe(wav)
 
 
 def process(item: dict) -> None:
