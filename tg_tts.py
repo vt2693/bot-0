@@ -77,28 +77,28 @@ def to_video_note(mp3_bytes: bytes) -> bytes:
         subprocess.CalledProcessError: On ffmpeg failure.
         OSError: On temp-file creation failure.
     """
-    # ffprobe to get audio duration — needed for color source duration
-    duration_s = 10  # safe fallback
-    try:
-        probe = subprocess.run(
-            ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-i", "pipe:0"],
-            input=mp3_bytes, capture_output=True, timeout=15,
-        )
-        import json
-        info = json.loads(probe.stdout)
-        if "format" in info and "duration" in info["format"]:
-            d = float(info["format"]["duration"])
-            if d > 0:
-                duration_s = int(d) + 1
-    except Exception:
-        pass
-
-    # Write mp3 to temp input so we can read it twice (probe + encode)
+    # Write mp3 to temp file first — needed for ffprobe (seekable) and ffmpeg input
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as fin:
         fin.write(mp3_bytes)
         mp3_path = fin.name
     mp4_path = mp3_path.replace(".mp3", ".mp4")
     try:
+        # Probe the temp file for audio duration
+        duration_s = 10  # safe fallback
+        try:
+            probe = subprocess.run(
+                ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", mp3_path],
+                capture_output=True, timeout=15,
+            )
+            import json
+            info = json.loads(probe.stdout)
+            if "format" in info and "duration" in info["format"]:
+                d = float(info["format"]["duration"])
+                if d > 0:
+                    duration_s = int(d) + 1
+        except Exception:
+            pass
+
         proc = subprocess.run(
             [
                 "ffmpeg", "-y",
