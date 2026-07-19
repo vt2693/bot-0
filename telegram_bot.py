@@ -818,7 +818,7 @@ class TelegramBot:
                     f"https://api.telegram.org/bot{self.token}/sendVoice",
                     files={"voice": ("voice.ogg", audio_bytes, "audio/ogg")},
                     data={"chat_id": chat_id},
-                    timeout=120,
+                    timeout=180,
                 )
                 data = resp.json()
                 ok = data.get("ok", False)
