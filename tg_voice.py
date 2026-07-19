@@ -66,9 +66,13 @@ def multipart_transcribe(url: str, api_key: str, model: str, wav: Path) -> str:
         headers=headers,
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        data = json.loads(resp.read().decode())
-    return data.get("text") or data.get("transcript") or json.dumps(data)
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode())
+        return data.get("text") or data.get("transcript") or json.dumps(data)
+    except urllib.request.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        raise RuntimeError(f"STT {e.code}: {body[:500]}") from e
 
 
 def transcribe(wav: Path) -> str:
