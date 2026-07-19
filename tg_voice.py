@@ -33,7 +33,7 @@ def to_wav(src: Path) -> Path:
     return dst
 
 
-def multipart_transcribe(url: str, api_key: str, model: str, wav: Path) -> str:
+def multipart_transcribe(url: str, model: str, wav: Path) -> str:
     """Transcribe WAV via multipart POST to an OpenAI-compatible ASR endpoint."""
     boundary = "----HermesVoiceBoundary"
     audio = wav.read_bytes()
@@ -57,7 +57,6 @@ def multipart_transcribe(url: str, api_key: str, model: str, wav: Path) -> str:
         url,
         data=b"".join(parts),
         headers={
-            "Authorization": f"Bearer {api_key}",
             "Content-Type": f"multipart/form-data; boundary={boundary}",
         },
         method="POST",
@@ -69,4 +68,4 @@ def multipart_transcribe(url: str, api_key: str, model: str, wav: Path) -> str:
 
 def transcribe(wav: Path) -> str:
     """Transcribe WAV via local router-0 STT endpoint."""
-    return multipart_transcribe(STT_URL, "", STT_MODEL, wav)
+    return multipart_transcribe(STT_URL, STT_MODEL, wav)
