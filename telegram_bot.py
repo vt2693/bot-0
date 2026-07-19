@@ -844,7 +844,14 @@ class TelegramBot:
         if not text or not text.strip():
             logger.warning("TTS skipped for chat %s: response text is empty", chat_id)
             return
-        chunks = _split_tts_text(text.strip(), 1200)
+        try:
+            chunks = _split_tts_text(text.strip(), 1200)
+        except Exception as exc:
+            logger.warning("TTS split failed for chat %s: %s — falling back to raw text", chat_id, exc)
+            chunks = [text.strip()[:4000]]
+        if not chunks:
+            logger.warning("TTS no chunks for chat %s", chat_id)
+            return
         from tg_tts import synthesize as _tts_synthesize
         from tg_tts import to_opus as _tts_to_opus
         for i, chunk in enumerate(chunks):
