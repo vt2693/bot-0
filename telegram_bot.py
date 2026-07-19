@@ -854,7 +854,7 @@ class TelegramBot:
                     f"https://api.telegram.org/bot{self.token}/sendVoice",
                     files={"voice": ("voice.ogg", audio_bytes, "audio/ogg")},
                     data={"chat_id": chat_id},
-                    timeout=30,
+                    timeout=120,
                 )
                 data = resp.json()
                 ok = data.get("ok", False)
@@ -883,7 +883,7 @@ class TelegramBot:
                     f"https://api.telegram.org/bot{self.token}/sendVideoNote",
                     files={"video_note": ("video_note.mp4", video_bytes, "video/mp4")},
                     data={"chat_id": chat_id},
-                    timeout=30,
+                    timeout=120,
                 )
                 data = resp.json()
                 if data.get("ok", False):
