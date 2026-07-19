@@ -6,7 +6,7 @@ import subprocess
 import urllib.request
 from pathlib import Path
 
-STT_URL = "http://192.168.1.6:20128/v1/audio/transcriptions"
+STT_URL = "http://localhost:20128/v1/audio/transcriptions"
 STT_MODEL = "groq/whisper-large-v3"
 
 
