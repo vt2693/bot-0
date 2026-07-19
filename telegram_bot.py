@@ -753,10 +753,13 @@ class TelegramBot:
 
     def _send_message(self, chat_id: int, text: str, **extra) -> None:
         with self._outbox_lock:
-            text = (text or "")[:4096 * 10]  # hard safety cap (10 messages max)
-            while text:
-                chunk = text[:4096]
-                text = text[4096:]
+            raw = (text or "")[:4096 * 10]  # hard safety cap (10 messages max, 40960 chars)
+            if not raw:
+                return
+            chunks = _split_tts_text(raw, 4096)[:10]
+            for i, chunk in enumerate(chunks):
+                if not chunk.strip():
+                    continue
                 self.outbox.append({"_method": "sendMessage", "chat_id": chat_id, "text": chunk, **extra})
                 extra.pop("reply_markup", None)  # only first chunk gets keyboard
 
