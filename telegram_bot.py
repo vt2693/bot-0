@@ -852,16 +852,19 @@ class TelegramBot:
         if not chunks:
             logger.warning("TTS no chunks for chat %s", chat_id)
             return
+        logger.info("TTS %s: %d chars → %d chunks", chat_id, len(text), len(chunks))
         from tg_tts import synthesize as _tts_synthesize
         from tg_tts import to_opus as _tts_to_opus
         for i, chunk in enumerate(chunks):
+            t0 = time.time()
             try:
                 mp3 = await asyncio.to_thread(_tts_synthesize, chunk, "", model)
                 if not mp3:
                     logger.warning("TTS chunk %d/%d returned empty for chat %s", i + 1, len(chunks), chat_id)
                     continue
                 opus = await asyncio.to_thread(_tts_to_opus, mp3)
-                self._send_voice_direct(chat_id, opus)
+                ok = self._send_voice_direct(chat_id, opus)
+                logger.info("TTS chunk %d/%d chat %s: synth=%ds send=%s", i + 1, len(chunks), chat_id, time.time() - t0, ok)
                 if i < len(chunks) - 1:
                     await asyncio.sleep(1.0)
             except Exception as exc:
