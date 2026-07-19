@@ -528,15 +528,27 @@ class TelegramBot:
                 buttons.append([btn])
             kb = {"inline_keyboard": buttons}
         elif menu_name == "tts_model":
+            from tg_tts import TTS_MODEL as _default_tts_model
             active = self._tts_models.get(chat_id, "")
-            text = "TTS Model\n\nPick a TTS voice model."
+            text = (
+                f"TTS Model\n\n"
+                f"✅ Active: {active or _default_tts_model}\n"
+                f"⭐ Default: {_default_tts_model}\n\n"
+                f"Pick a voice model below."
+            )
             buttons = []
             for row in menu["buttons"]:
                 btn = row[0]
                 data = btn["callback_data"]
                 if data.startswith("ac:tts_model:"):
                     mdl = data[13:]
-                    btn = dict(btn, text=("✅ " if mdl == active else "") + btn["text"].lstrip("✅ "))
+                    prefix = ""
+                    if mdl == active or (not active and mdl == _default_tts_model):
+                        prefix += "✅ "
+                    if mdl == _default_tts_model and mdl != (active or _default_tts_model):
+                        prefix += "⭐ "
+                    if prefix:
+                        btn = dict(btn, text=prefix + btn["text"].lstrip("✅⭐ "))
                 buttons.append([btn])
             kb = {"inline_keyboard": buttons}
         else:
