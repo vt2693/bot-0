@@ -582,7 +582,6 @@ class TelegramBot:
             model = data[13:]
             if model:
                 await _action_tts_model_switch(self, chat_id, model)
-                await _action_model_switch(self, chat_id, model)
         elif data.startswith("ac:schedule_cfm:"):
             suffix = data[16:]
             mode = None  # backward compat: no :mode suffix
