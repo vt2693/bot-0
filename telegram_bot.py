@@ -3,6 +3,7 @@ import time
 import json  # noqa: F811
 import asyncio
 import logging
+import re
 import threading
 import urllib.request
 import urllib.error
@@ -832,28 +833,32 @@ class TelegramBot:
 
 
     async def _send_tts_async(self, chat_id: int, text: str, model: str = "") -> None:
-        """Background task: synthesize TTS, send voice message.
+        """Background task: synthesize TTS, send voice messages.
 
         Called via asyncio.create_task — errors are caught and logged.
         Text reply already sent by caller; this is best-effort audio.
 
-        Max 4000 chars sent to TTS (router-0 limit).
+        Long responses are split at sentence boundaries into multiple
+        voice messages (~1200 chars per chunk max, ~80s audio each).
         """
         if not text or not text.strip():
             logger.warning("TTS skipped for chat %s: response text is empty", chat_id)
             return
-        text = text.strip()[:4000]
-        try:
-            from tg_tts import synthesize as _tts_synthesize
-            from tg_tts import to_opus as _tts_to_opus
-            mp3 = await asyncio.to_thread(_tts_synthesize, text, "", model)
-            if not mp3:
-                logger.warning("TTS synthesize returned empty bytes for chat %s (response length %d)", chat_id, len(text))
-                return
-            opus = await asyncio.to_thread(_tts_to_opus, mp3)
-            self._send_voice_direct(chat_id, opus)
-        except Exception as exc:
-            logger.warning("TTS failed for chat %s: %s", chat_id, exc)
+        chunks = _split_tts_text(text.strip(), 1200)
+        from tg_tts import synthesize as _tts_synthesize
+        from tg_tts import to_opus as _tts_to_opus
+        for i, chunk in enumerate(chunks):
+            try:
+                mp3 = await asyncio.to_thread(_tts_synthesize, chunk, "", model)
+                if not mp3:
+                    logger.warning("TTS chunk %d/%d returned empty for chat %s", i + 1, len(chunks), chat_id)
+                    continue
+                opus = await asyncio.to_thread(_tts_to_opus, mp3)
+                self._send_voice_direct(chat_id, opus)
+                if i < len(chunks) - 1:
+                    await asyncio.sleep(1.0)
+            except Exception as exc:
+                logger.warning("TTS chunk %d/%d failed for chat %s: %s", i + 1, len(chunks), chat_id, exc)
 
     async def drain_outbox(self) -> list[dict]:
         with self._outbox_lock:
@@ -1125,6 +1130,51 @@ async def _action_system_uptime(bot: TelegramBot, chat_id: int) -> None:
 async def _action_system_queue(bot: TelegramBot, chat_id: int) -> None:
     tg = bot.status()
     bot._send_message(chat_id, "Queue Stats\n\nPending: " + str(tg["queue_size"]) + "\nProcessed: " + str(tg["queue_processed"]) + "\nError: " + (str(tg["queue_error"]) if tg["queue_error"] else "none"))
+
+
+def _split_tts_text(text: str, max_chars: int = 1200) -> list[str]:
+    """Split text at sentence boundaries, each chunk ≤ max_chars.
+
+    Uses regex to split on sentence-ending punctuation (. ! ?) followed
+    by whitespace. If a single sentence exceeds max_chars, falls back
+    to a word-boundary split at max_chars.
+
+    Args:
+        text: Text to split.
+        max_chars: Maximum characters per chunk (~80s audio at 15ch/s).
+
+    Returns:
+        List of text chunks, each ≤ max_chars.
+    """
+    if len(text) <= max_chars:
+        return [text]
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    chunks: list[str] = []
+    current = ""
+    for sent in sentences:
+        if not sent.strip():
+            continue
+        if len(current) + len(sent) + 1 <= max_chars:
+            current = (current + " " + sent).strip()
+        else:
+            if current:
+                chunks.append(current)
+            if len(sent) > max_chars:
+                words = sent.split()
+                temp = ""
+                for w in words:
+                    if len(temp) + len(w) + 1 > max_chars:
+                        if temp:
+                            chunks.append(temp)
+                        temp = w
+                    else:
+                        temp = (temp + " " + w).strip()
+                current = temp
+            else:
+                current = sent
+    if current:
+        chunks.append(current)
+    return chunks
 
 
 async def _action_tts_toggle(bot: TelegramBot, chat_id: int) -> None:
