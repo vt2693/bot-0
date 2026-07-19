@@ -6,8 +6,8 @@ import subprocess
 import urllib.request
 from pathlib import Path
 
-_BASE = os.getenv("ROUTER_0_AUDIO_URL", "http://192.168.1.6:20128/v1")
-STT_URL = _BASE.rstrip("/") + "/audio/transcriptions"
+_BASE = os.getenv("ROUTER_0_AUDIO_URL") or os.getenv("STT_URL") or ""
+STT_URL = _BASE.rstrip("/") + "/audio/transcriptions" if _BASE else ""
 STT_MODEL = "groq/whisper-large-v3"
 
 
