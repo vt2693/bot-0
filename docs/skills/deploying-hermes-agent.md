@@ -167,7 +167,7 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `MEMORY_RESTORE_ON_STARTUP` | `false` | No | Restore memory from SQLite on startup |
 | `MEMORY_DB_PATH` | *see* | No | SQLite path (default: `$HOME/hermes_memory.db` on Android) |
 | `MEMORY_SPACE_ID` | `""` | No | Legacy; kept for compat (no-op on Android) |
-| `MEMORY_API_KEY` | — | No | Legacy; for HF Space memory API (not used on Android) |
+| `MEMORY_API_KEY` | — | No | Legacy; kept for compat (no-op on Android) |
 | `TOOL_LOOP_MAX_ROUNDS` | `1000` | No | Max LLM tool-call rounds |
 | `LLM_TIMEOUT` | `600` | No | LLM call timeout in seconds |
 | `BROADCAST_CHAT_ID` | — | No | Channel/group chat_id to relay tool call results |
@@ -262,12 +262,12 @@ Main asyncio entry point. Key sections:
 
 - **Queue:** Thread-safe list. `enqueue_update()` adds, `process_queue_worker()` pops and calls `process_update()`.
 - **Outbox:** Thread-safe list. Methods write `{"_method": "sendMessage", ...}`. `drain_outbox()` returns and clears.
-- **Inline menus:** `MENUS` dict with 10 menus. Callback routing via `mn:*` (menu nav), `ac:*` (action handlers).
+- **Inline menus:** `MENUS` dict with 11 menus. Callback routing via `mn:*` (menu nav), `ac:*` (action handlers).
 - **Commands (7):** `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`.
 - **Skills:** `/improve` — list/search/detail/edit/delete skills. Auto-detect via `_detect_skill()` + Save/Edit/Discard confirmation.
 - **Schedule:** NL+structured parsing, 5-min confirmation, full CRUD via inline buttons. Supports interval, absolute-time (Run Once / Daily), and once/daily modes.
 - **Jira:** `mn:jira` → `ac:jira_open_tasks` → `COMPOSIO_REMOTE_WORKBENCH` with `run_composio_tool("JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET", ...)`. Open tasks filtered to `status IN ("To Do","In Progress")`. Subtask rows: `[🔵 key: summary] [▶️ Run]`. Tapping subtask left button (`ac:jira_show:*`) fetches full issue via `JIRA_GET_ISSUE` and renders description as plain text (ADF → text converter via `json.loads` + `ast.literal_eval` fallback). `ac:jira_run:*` sends description as LLM prompt with `_skill_detected` JSON unwrap. Subtask list filtered to open statuses only (no Done items).
-- **TTS:** Per-user toggle via `ac:tts_toggle`. `_tts_chats` set tracks enabled chats. State persisted to MemoryStore (`tts_enabled=true|false`). After each text response, background task fires: `_send_tts_async()` → `tg_tts.synthesize()` (MP3) → `tg_tts.to_opus()` (OggOpus) → `_send_voice_direct()` (httpx multipart POST to api.telegram.org). 3 retries with backoff. Input truncated to 4000 chars. Defaults off.
+- **TTS:** Per-user toggle via `ac:tts_toggle`. `_tts_chats` set tracks enabled chats. State persisted to MemoryStore (`tts_enabled=true|false`). After each text response, background task fires: `_send_tts_async()` → `tg_tts.synthesize()` (MP3) → `tg_tts.to_opus()` (OggOpus) → `_send_voice_direct()` (httpx multipart POST to api.telegram.org). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
 
 ### Step 7: Memory Store (memory_store.py)
 

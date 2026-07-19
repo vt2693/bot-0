@@ -203,8 +203,7 @@ class MemoryStore:
             self._ready = False
 
     def sync(self) -> None:
-        """Explicit backup call (e.g. from a periodic timer)."""
-        self._backup_to_hub()
+        """No-op — HF Hub backup removed."""
 
     # -- Skills -------------------------------------------------------------------
 
@@ -324,7 +323,7 @@ class MemoryStore:
             self._conn.commit()
             rc = self._conn.execute("SELECT changes()").fetchone()[0]
         if rc:
-            self._backup_to_hub()
+            pass  # HF Hub backup removed
         return rc > 0
 
     def skill_inject(self, query: str, scope: str = "global",
