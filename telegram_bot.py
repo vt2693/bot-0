@@ -1149,8 +1149,9 @@ def _split_tts_text(text: str, max_chars: int = 1200) -> list[str]:
     """Split text at sentence boundaries, each chunk ≤ max_chars.
 
     Uses regex to split on sentence-ending punctuation (. ! ?) followed
-    by whitespace. If a single sentence exceeds max_chars, falls back
-    to a word-boundary split at max_chars.
+    by whitespace and a capital letter (avoids splitting on abbreviations
+    like Dr. or config.). If a single sentence exceeds max_chars, falls
+    back to a word-boundary split at max_chars.
 
     Args:
         text: Text to split.
@@ -1161,7 +1162,7 @@ def _split_tts_text(text: str, max_chars: int = 1200) -> list[str]:
     """
     if len(text) <= max_chars:
         return [text]
-    sentences = re.split(r'(?<=[.!?])\s+', text)
+    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
     chunks: list[str] = []
     current = ""
     for sent in sentences:
