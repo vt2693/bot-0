@@ -119,7 +119,7 @@ Confidence: 100% — 30s async poll loop. SQLite persistence. NL+structured `/sc
 |-------|----------|--------|-------|
 | `TELEGRAM_BOT_TOKEN` | Yes | BotFather | Bot authentication |
 | `ROUTER_0_API_KEY` | No | Router-0 dashboard | LLM proxy + STT (empty OK, passes `""` to httpx) |
-| `ROUTER_0_BASE_URL` | No | — | Router-0 base URL override (default `http://localhost:20128`) |
+| `ROUTER_0_BASE_URL` | No | — | Router-0 base URL override (default `https://vt2693-router-0.hf.space/v1`) |
 | `TELEGRAM_ALLOWED_USERS` | No | — | Comma-separated Telegram user IDs to restrict access |
 | `COMPOSIO_CONSUMER_API_KEY` | For tools | Composio dashboard | Jira, Firecrawl, etc. |
 | `OPENCODE_ZEN_API_KEY` | Optional | OpenCode | Alternative LLM provider |
@@ -187,7 +187,7 @@ bash start_android.sh   # starts in tmux
 - Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`, `python-numpy` (pre-built)
 - Installs: `httpx` via pip (no openai SDK needed — bot uses direct httpx calls)
 - Verifies: `python -c "import httpx, numpy"`
-- Prompts for 5 API keys + 2 optional configs (TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults
+- Prompts for 5 API keys + 3 optional configs (ROUTER_0_BASE_URL, TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults
 - Writes `$HOME/.hermes-tokens.env` with `PROVIDER="router_0"`
 
 ### Step 3: Start Script (start_android.sh)
@@ -346,7 +346,7 @@ start_android.sh
 | **COMPOSIO_REMOTE_WORKBENCH** | Code execution tool for Jira access (not direct tools/call RPC) |
 | **Learned skills** | SQLite skills table: title/problem/procedure/status lifecycle |
 | **Auto-learn** | Detect reusable procedures via heuristic → LLM extraction → Save/Edit/Discard |
-| **Router-0** | LLM proxy at vt2693-router-0.hf.space/v1, OpenAI-compatible |
+| **Router-0** | LLM proxy at `vt2693-router-0.hf.space/v1`; STT at `localhost:20128`, both OpenAI-compatible |
 | **Telegram offset** | In-memory `update_id + 1` tracking; on crash ~1 batch may be lost |
 
 ## Deploy Commands
