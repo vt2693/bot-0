@@ -6,7 +6,8 @@ import logging
 
 import httpx
 
-TTS_URL = os.getenv("TTS_URL", "http://localhost:20128/v1/audio/speech")
+_BASE = os.getenv("ROUTER_0_AUDIO_URL", "http://localhost:20128")
+TTS_URL = os.getenv("TTS_URL", _BASE + "/v1/audio/speech")
 TTS_MODEL = os.getenv("TTS_MODEL", "google-tts/en")
 
 logger = logging.getLogger(__name__)

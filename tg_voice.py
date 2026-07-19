@@ -6,7 +6,8 @@ import subprocess
 import urllib.request
 from pathlib import Path
 
-STT_URL = "http://localhost:20128/v1/audio/transcriptions"
+_BASE = os.getenv("ROUTER_0_AUDIO_URL", "http://localhost:20128")
+STT_URL = _BASE + "/v1/audio/transcriptions"
 STT_MODEL = "groq/whisper-large-v3"
 
 

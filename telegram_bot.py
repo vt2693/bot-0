@@ -769,9 +769,11 @@ class TelegramBot:
                     data={"chat_id": chat_id},
                     timeout=30,
                 )
-                ok = resp.json().get("ok", False)
+                data = resp.json()
+                ok = data.get("ok", False)
                 if ok:
                     return True
+                logger.warning("sendVoice direct attempt %d returned !ok: %s", attempt + 1, data)
             except Exception as exc:
                 logger.warning("sendVoice direct attempt %d failed for chat %s: %s", attempt + 1, chat_id, exc)
             time.sleep(1.5 ** attempt)
