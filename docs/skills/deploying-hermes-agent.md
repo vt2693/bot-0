@@ -3,7 +3,7 @@ name: deploying-hermes-agent
 description: >-
   Deploy Hermes Agent to Android/Termux (headless Telegram bot via getUpdates polling).
   3-provider LLM config with router_0, SchedulerEngine, MemoryStore (SQLite),
-  Composio MCP tools, and in-process voice transcription via local STT.
+  Composio MCP tools, TTS and in-process voice transcription via local router-0.
   Confidence: 100%
 ---
 
@@ -11,7 +11,7 @@ description: >-
 
 ## Purpose
 
-Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot with getUpdates polling (no webhook, no Gradio). Supports multi-provider LLM (router_0, opencode_zen, openrouter), Composio MCP tools (including Firecrawl scrape/crawl/search and Jira), voice memo transcription (local router-0 STT), MemoryStore (SQLite), SchedulerEngine for periodic tasks, and inline keyboard menus.
+Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot with getUpdates polling (no webhook, no Gradio). Supports multi-provider LLM (router_0, opencode_zen, openrouter), Composio MCP tools (including Firecrawl scrape/crawl/search and Jira), voice memo transcription (local router-0 STT), text-to-speech (TTS, local router-0), MemoryStore (SQLite), SchedulerEngine for periodic tasks, and inline keyboard menus.
 
 ## Supported Environments
 
@@ -51,37 +51,43 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
     │  ── download──┤           │ Scheduler   │
     │  ── ffmpeg ───┤           │ Engine      │
     │  ── transcribe│           │ (30s poll)  │
-    └───────────────┘           └─────────────┘
+    │               │           └─────────────┘
+    │  tg_tts.py    │
+    │  ── synthesize│
+    │  ── to_opus ──┤──▶ sendVoice (httpx multipart POST to api.telegram.org)
+    └───────────────┘
 ```
 
 **Key insight:** Android bot uses **direct** Telegram API calls (no relay needed). `android_bot.py` long-polls `getUpdates` for inbound messages and calls `api.telegram.org` directly for outbound via `_send_direct()`. No webhook, no relay.py.
 
-Voice is processed **in-process** (not via external relay): download → ffmpeg (16kHz WAV) → router-0 STT (groq/whisper-large-v3).
+Voice is processed **in-process** (not via external relay): download → ffmpeg (16kHz WAV) → router-0 STT (groq/whisper-large-v3). TTS: text → `synthesize()` (MP3) → `to_opus()` (OggOpus) → `sendVoice`.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `android_bot.py` | Main entry point — getUpdates poll loop, outbox drain, voice handling |
-| `telegram_bot.py` | Queue, outbox, inline menus, callback routing, command handlers |
+| `telegram_bot.py` | Queue, outbox, inline menus, callback routing, command handlers, TTS toggle |
 | `hermes_bridge.py` | Multi-provider LLM bridge via httpx (no openai SDK), tool loop, memory injection |
 | `config.py` | Settings from env vars, 3-provider auto-detection |
 | `composio_mcp.py` | Composio MCP client (HTTP JSON-RPC, workbench for Jira tools) |
 | `memory_store.py` | SQLite fact + skill store (SQLite-only on Android) |
 | `scheduler.py` | SchedulerEngine (30s poll loop) |
 | `tg_voice.py` | Voice helper: download, ffmpeg, router-0 STT transcription |
+| `tg_tts.py` | TTS helper: synthesize via router-0 (google-tts/en), ffmpeg to OggOpus |
 | `voice_relay.py` | Wrapper importing from tg_voice.py (kept for compat) |
-| `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts |
+| `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts, ROUTER_0_AUDIO_URL |
 | `start_android.sh` | tmux launcher with auto-restart, dep check, wake-lock |
 | `deploy_android.ps1` | Windows script: ADB push or SSH/rsync to phone (non-interactive) |
 | `requirements.txt` | pip deps list (for reference; phone uses `pip install httpx` directly) |
+| `.hermes-tokens.env.example` | Environment variable template for reference |
 | `relay.py` | Legacy (not used on Android) |
 | `app.py` | Legacy (not used on Android) |
 | `healthcheck.py` | Legacy (not used on Android) |
 
 ## Confidence: 100%
 
-All components validated end-to-end on Android/Termux with Python 3.14. Voice, memory, scheduler, Jira, menus, provider switching all verified live.
+All components validated end-to-end on Android/Termux with Python 3.14. Voice, TTS, memory, scheduler, Jira, menus, provider switching all verified live.
 
 ### Architecture & deployment
 Confidence: 100% — Validated end-to-end with live Telegram message delivery. Headless polling, no web server needed.
@@ -90,19 +96,22 @@ Confidence: 100% — Validated end-to-end with live Telegram message delivery. H
 Confidence: 100% — 3 provider names including `router_0`. Provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter`. Settings immutable, cached via `@lru_cache()`.
 
 ### Provider fallback chain
-Confidence: 100% — 3 retries with 1.5x exponential backoff on transient errors (ECONNRESET, 5xx, JSONDecodeError from proxy cold-start HTML); `chat()` wraps final failure in `f"Error: {e}"`.
+Confidence: 100% — 3 attempts with 1.5x exponential backoff on transient errors (ECONNRESET, 5xx, JSONDecodeError from proxy cold-start HTML); `chat()` wraps final failure in `f"Error: {e}"`.
 
 ### Provider switching (/model + inline menu)
 Confidence: 100% — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing). Menu dynamically shows ✅ on active model, ⭐ on provider default.
 
 ### Router-0 provider
-Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `oc/deepseek-v4-flash-free`. Default base: `vt2693-router-0.hf.space/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
+Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `oc/deepseek-v4-flash-free`. Default base: `http://192.168.1.6:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
 
 ### Telegram bot + polling
-Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task. 7 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`. Inline keyboard menu (10 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
+Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 7 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`. Inline keyboard menu (10 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
 
-### In-process voice
+### In-process voice (STT)
 Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice relay process needed.
+
+### Text-to-Speech (TTS)
+Confidence: 100% — Toggleable per-user from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` per chat_id. On each text response, background task: `tg_tts.synthesize()` → router-0 google-tts/en (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Input truncated to 4000 chars. Defaults off.
 
 ### MemoryStore (LIKE + SQLite)
 Confidence: 100% — LIKE-based fact search with recent-facts fallback. No FTS5, no HRR, no numpy. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync.
@@ -118,8 +127,9 @@ Confidence: 100% — 30s async poll loop. SQLite persistence. NL+structured `/sc
 | Input | Required | Source | Notes |
 |-------|----------|--------|-------|
 | `TELEGRAM_BOT_TOKEN` | Yes | BotFather | Bot authentication |
-| `ROUTER_0_API_KEY` | No | Router-0 dashboard | LLM proxy + STT (empty OK, passes `""` to httpx) |
-| `ROUTER_0_BASE_URL` | No | — | Router-0 base URL override (default `https://vt2693-router-0.hf.space/v1`) |
+| `ROUTER_0_API_KEY` | No | Router-0 dashboard | LLM proxy + STT/TTS (empty OK, passes `""` to httpx) |
+| `ROUTER_0_BASE_URL` | No | — | Router-0 LLM base URL (default `http://192.168.1.6:20128/v1`) |
+| `ROUTER_0_AUDIO_URL` | No | — | Router-0 audio base URL for TTS/STT (default none; set to e.g. `http://192.168.1.6:20128/v1`) |
 | `TELEGRAM_ALLOWED_USERS` | No | — | Comma-separated Telegram user IDs to restrict access |
 | `COMPOSIO_CONSUMER_API_KEY` | For tools | Composio dashboard | Jira, Firecrawl, etc. |
 | `OPENCODE_ZEN_API_KEY` | Optional | OpenCode | Alternative LLM provider |
@@ -137,7 +147,11 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `PROVIDER` | *auto-detect* | No | Override LLM provider |
 | `ROUTER_0_API_KEY` | — | Yes | Router-0 LLM provider |
 | `ROUTER_0_MODEL` | `oc/deepseek-v4-flash-free` | No | Router-0 model name |
-| `ROUTER_0_BASE_URL` | `https://vt2693-router-0.hf.space/v1` | No | Router-0 base URL |
+| `ROUTER_0_BASE_URL` | `http://192.168.1.6:20128/v1` | No | Router-0 LLM base URL |
+| `ROUTER_0_AUDIO_URL` | — | No | Router-0 audio base URL for TTS/STT (e.g. `http://192.168.1.6:20128/v1`) |
+| `TTS_URL` | from `ROUTER_0_AUDIO_URL` | No | Override full TTS endpoint URL |
+| `STT_URL` | from `ROUTER_0_AUDIO_URL` | No | Override full STT endpoint URL (in tg_voice.py, not config.py) |
+| `TTS_MODEL` | `google-tts/en` | No | TTS model name for router-0 |
 | `OPENCODE_ZEN_API_KEY` | — | No | OpenCode Zen LLM |
 | `OPENCODE_ZEN_MODEL` | `deepseek-v4-flash-free` | No | OpenCode Zen model |
 | `OPENCODE_ZEN_BASE_URL` | `https://opencode.ai/zen/v1` | No | OpenCode Zen base URL |
@@ -152,7 +166,8 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `AUTO_LEARN` | `true` | No | Detect reusable procedures and ask before saving |
 | `MEMORY_RESTORE_ON_STARTUP` | `false` | No | Restore memory from SQLite on startup |
 | `MEMORY_DB_PATH` | *see* | No | SQLite path (default: `$HOME/hermes_memory.db` on Android) |
-| `MEMORY_SPACE_ID` | `none` | No | Legacy; kept for compat (no-op on Android) |
+| `MEMORY_SPACE_ID` | `""` | No | Legacy; kept for compat (no-op on Android) |
+| `MEMORY_API_KEY` | — | No | Legacy; for HF Space memory API (not used on Android) |
 | `TOOL_LOOP_MAX_ROUNDS` | `1000` | No | Max LLM tool-call rounds |
 | `LLM_TIMEOUT` | `600` | No | LLM call timeout in seconds |
 | `BROADCAST_CHAT_ID` | — | No | Channel/group chat_id to relay tool call results |
@@ -187,7 +202,7 @@ bash start_android.sh   # starts in tmux
 - Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`, `python-numpy` (pre-built)
 - Installs: `httpx` via pip (no openai SDK needed — bot uses direct httpx calls)
 - Verifies: `python -c "import httpx, numpy"`
-- Prompts for 5 API keys + 3 optional configs (ROUTER_0_BASE_URL, TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults
+- Prompts for 6 API keys + 3 optional configs (ROUTER_0_BASE_URL, ROUTER_0_AUDIO_URL, TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults
 - Writes `$HOME/.hermes-tokens.env` with `PROVIDER="router_0"`
 
 ### Step 3: Start Script (start_android.sh)
@@ -252,6 +267,7 @@ Main asyncio entry point. Key sections:
 - **Skills:** `/improve` — list/search/detail/edit/delete skills. Auto-detect via `_detect_skill()` + Save/Edit/Discard confirmation.
 - **Schedule:** NL+structured parsing, 5-min confirmation, full CRUD via inline buttons. Supports interval, absolute-time (Run Once / Daily), and once/daily modes.
 - **Jira:** `mn:jira` → `ac:jira_open_tasks` → `COMPOSIO_REMOTE_WORKBENCH` with `run_composio_tool("JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET", ...)`. Open tasks filtered to `status IN ("To Do","In Progress")`. Subtask rows: `[🔵 key: summary] [▶️ Run]`. Tapping subtask left button (`ac:jira_show:*`) fetches full issue via `JIRA_GET_ISSUE` and renders description as plain text (ADF → text converter via `json.loads` + `ast.literal_eval` fallback). `ac:jira_run:*` sends description as LLM prompt with `_skill_detected` JSON unwrap. Subtask list filtered to open statuses only (no Done items).
+- **TTS:** Per-user toggle via `ac:tts_toggle`. `_tts_chats` set tracks enabled chats. State persisted to MemoryStore (`tts_enabled=true|false`). After each text response, background task fires: `_send_tts_async()` → `tg_tts.synthesize()` (MP3) → `tg_tts.to_opus()` (OggOpus) → `_send_voice_direct()` (httpx multipart POST to api.telegram.org). 3 retries with backoff. Input truncated to 4000 chars. Defaults off.
 
 ### Step 7: Memory Store (memory_store.py)
 
@@ -281,7 +297,9 @@ HTTP JSON-RPC client. Tools accessed via `initialize` → `tools/list` → `tool
 | 3 consecutive scheduler failures | Auto-pause job with user notification |
 | Tool loop stalls | Capped at `TOOL_LOOP_MAX_ROUNDS` (default 1000), returns summary |
 | Module not found | `start_android.sh` verifies deps before launching |
-| Outbox send fails | 3 retries with 1.5x exponential backoff inside `_send_direct` |
+| Outbox send fails | 3 attempts with 1.5x exponential backoff inside `_send_direct` |
+| TTS synthesis fails (router-0 down) | Error logged, no voice sent. User still got text reply. |
+| Telegram API blocks voice send | Logged warning, text reply delivered via outbox (separate path) |
 
 ## Edge Cases Covered
 
@@ -292,6 +310,8 @@ HTTP JSON-RPC client. Tools accessed via `initialize` → `tools/list` → `tool
 | Voice download fails | User notified, no crash |
 | Mem processing fail (ffmpeg) | User notified, no crash |
 | Transcription fail | Router-0 STT error, user notified |
+| TTS synthesis fails | Error logged, text reply still sent |
+| Telegram API unreachable for voice | `_send_voice_direct` retries 3× and logs |
 | Jira tools not configured | Empty JIRA_EPICS → warning message via menu |
 | Composio not configured | Menu entry shows "not available" |
 | getUpdates queue overflow | Telegram stores 24h of updates; offset tracking prevents duplicates |
@@ -308,7 +328,8 @@ After `bash start_android.sh`:
 4. Send voice memo → should transcribe and reply (requires router-0 STT)
 5. Send "remember that I live in Bogor" → should store and recall on later messages
 6. Tap Jira → Open Tasks → should show issues (requires JIRA_EPICS + Composio key)
-7. Check logs: `tail -20 ~/hermes-bot/logs/bot.log`
+7. Tap Menu → Voice & Minutes → TTS On/Off → toggle on, send text → should reply with text + voice message
+8. Check logs: `tail -20 ~/hermes-bot/logs/bot.log`
 
 ## Quick Reference
 
@@ -336,6 +357,7 @@ start_android.sh
 |------|-----------|
 | **getUpdates polling** | Long-poll Telegram API for inbound updates (30s timeout, no webhook) |
 | **_send_direct** | `urllib` call to `api.telegram.org/bot<token>/<method>` for outbound delivery |
+| **_send_voice_direct** | `httpx` multipart POST to `api.telegram.org/bot<token>/sendVoice` for voice message upload |
 | **Queue** | Thread-safe list in TelegramBot; `process_queue_worker` pops and dispatches |
 | **Outbox** | Thread-safe list of `{_method, ...}` dicts; `drain_outbox` returns to caller |
 | **`_method` dispatch** | Field in outbox dicts mapping to Telegram API method (sendMessage, etc.) |
@@ -346,8 +368,9 @@ start_android.sh
 | **COMPOSIO_REMOTE_WORKBENCH** | Code execution tool for Jira access (not direct tools/call RPC) |
 | **Learned skills** | SQLite skills table: title/problem/procedure/status lifecycle |
 | **Auto-learn** | Detect reusable procedures via heuristic → LLM extraction → Save/Edit/Discard |
-| **Router-0** | LLM proxy at `vt2693-router-0.hf.space/v1`; STT at `localhost:20128`, both OpenAI-compatible |
+| **Router-0** | LLM proxy at configurable `ROUTER_0_BASE_URL`; TTS/STT at configurable `ROUTER_0_AUDIO_URL`, both OpenAI-compatible |
 | **Telegram offset** | In-memory `update_id + 1` tracking; on crash ~1 batch may be lost |
+| **TTS toggle** | Per-user TTS enable/disable state persisted in MemoryStore as `tts_enabled=true\|false` |
 
 ## Deploy Commands
 
