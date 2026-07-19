@@ -111,7 +111,7 @@ Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-pol
 Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice relay process needed.
 
 ### Text-to-Speech (TTS)
-Confidence: 100% — Toggleable per-user from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` per chat_id. On each text response, background task: `tg_tts.synthesize()` → router-0 google-tts/en (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Input truncated to 4000 chars. Defaults off.
+Confidence: 100% — Toggleable per-user from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` per chat_id. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` per chat_id with default `edge-tts/en-US-ChristopherNeural`. Menu shows ✅ active and ⭐ default indicators. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Input truncated to 4000 chars. Defaults off.
 
 ### MemoryStore (LIKE + SQLite)
 Confidence: 100% — LIKE-based fact search with recent-facts fallback. No FTS5, no HRR, no numpy. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync.
@@ -151,7 +151,7 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `ROUTER_0_AUDIO_URL` | — | No | Router-0 audio base URL for TTS/STT (e.g. `http://192.168.1.6:20128/v1`) |
 | `TTS_URL` | from `ROUTER_0_AUDIO_URL` | No | Override full TTS endpoint URL |
 | `STT_URL` | from `ROUTER_0_AUDIO_URL` | No | Override full STT endpoint URL (in tg_voice.py, not config.py) |
-| `TTS_MODEL` | `google-tts/en` | No | TTS model name for router-0 |
+| `TTS_MODEL` | `edge-tts/en-US-ChristopherNeural` | No | TTS model name for router-0 |
 | `OPENCODE_ZEN_API_KEY` | — | No | OpenCode Zen LLM |
 | `OPENCODE_ZEN_MODEL` | `deepseek-v4-flash-free` | No | OpenCode Zen model |
 | `OPENCODE_ZEN_BASE_URL` | `https://opencode.ai/zen/v1` | No | OpenCode Zen base URL |
