@@ -102,7 +102,7 @@ def to_video_note(mp3_bytes: bytes) -> bytes:
         proc = subprocess.run(
             [
                 "ffmpeg", "-y",
-                "-f", "lavfi", "-i", f"color=c=black:s=50x50:r=1:duration={duration_s}",
+                "-f", "lavfi", "-i", f"color=c=black:s=25x25:r=1:duration={duration_s}",
                 "-i", mp3_path,
                 "-c:v", "libx264", "-pix_fmt", "yuv420p",
                 "-c:a", "aac",
