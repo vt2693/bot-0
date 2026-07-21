@@ -24,7 +24,7 @@ class Settings:
     OPENCODE_ZEN_API_KEY: Optional[str] = os.getenv("OPENCODE_ZEN_API_KEY")
     ROUTER_0_API_KEY: Optional[str] = os.getenv("ROUTER_0_API_KEY")
 
-    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/auto")
     OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     OPENCODE_ZEN_MODEL = os.getenv("OPENCODE_ZEN_MODEL", "deepseek-v4-flash-free")
     OPENCODE_ZEN_BASE_URL = os.getenv("OPENCODE_ZEN_BASE_URL", "https://opencode.ai/zen/v1")

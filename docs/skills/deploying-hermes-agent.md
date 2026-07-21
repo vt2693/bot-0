@@ -156,7 +156,7 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `OPENCODE_ZEN_MODEL` | `deepseek-v4-flash-free` | No | OpenCode Zen model |
 | `OPENCODE_ZEN_BASE_URL` | `https://opencode.ai/zen/v1` | No | OpenCode Zen base URL |
 | `OPENROUTER_API_KEY` | — | No | OpenRouter LLM |
-| `OPENROUTER_MODEL` | `openrouter/free` | No | OpenRouter model |
+| `OPENROUTER_MODEL` | `openrouter/auto` | No | OpenRouter model |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | No | OpenRouter base URL |
 | `COMPOSIO_CONSUMER_API_KEY` | — | No | Composio MCP auth |
 | `COMPOSIO_APPS` | `""` | No | Comma-separated app slugs |
