@@ -257,41 +257,6 @@ class HermesBridge:
             new_count += 1
         return json.dumps({"stored": new_count})
 
-    def _extract_facts(self, message: str, response: str, scope: str) -> None:
-        if not self.memory_store or not self.settings.MEMORY_AUTO_EXTRACT:
-            return
-        explicit = re.search(r"\b(?:remember|save|store|note|don'?t\s+forget)\b", message or "", re.I)
-        # Explicit memory commands should be trusted as the source of truth. Do
-        # not scan the assistant response, which often paraphrases the same fact.
-        texts = (message,) if explicit else (message, response)
-        for text in texts:
-            self._scan_for_facts(text, scope)
-
-    def _scan_for_facts(self, text: str, scope: str) -> None:
-        explicit_pattern = r"(?:remember|save|store|note|don'?t\s+forget)\s+(?:that\s+)?(.+?)(?:\.|$|\n)"
-        patterns = [
-            explicit_pattern,
-            r"\bmy name(?:\s+is)?\s+(.+?)(?:\.|$|\n)",
-            r"\bi (?:like|love|enjoy|hate|dislike)\s+(.+?)(?:\.|$|\n)",
-            r"\bi (?:work|study)(?:\s+at|\s+for|\s+as)?\s+(.+?)(?:\.|$|\n)",
-            r"\bi live\s+(?:in|at|near)\s+(.+?)(?:\.|$|\n)",
-            r"\bi (?:am|was)\s+(?:a\s+|an\s+)?(.+?)(?:\.|$|\n)",
-            r"\bmy (?:email|phone|address|website)\s+(?:is\s+)?(.+?)(?:\.|$|\n)",
-        ]
-        for pat in patterns:
-            matches = re.findall(pat, text, re.I)
-            for m in matches:
-                fact = m.strip()
-                if len(fact) > 2:
-                    if not re.search(r"^(user|my|i )", fact, re.I):
-                        fact = "User: " + fact
-                    existing = [x for x in self.memory_store.search(fact, scope, 3) if x["content"].strip().lower() == fact.lower()]
-                    if not existing:
-                        self.memory_store.add(fact, scope)
-                        self._memory_stats["extractions"] += 1
-            if pat == explicit_pattern and matches:
-                return
-
     def _auto_learn_enabled(self, scope: str) -> bool:
         env_on = self.settings.AUTO_LEARN
         if not self.memory_store:
@@ -321,14 +286,14 @@ class HermesBridge:
             skills = self.memory_store.skill_inject(message, scope, 10)
             if skills:
                 injected_skills = skills
-        response = self.chat(message, history or [], mem_block, injected_skills)
+        response = self.chat(message, history or [], mem_block, injected_skills,
+                             scope=scope, enable_extraction=True)
         if injected_skills and re.search(r"skill|procedure|steps|here.?s how", response or "", re.I):
             for s in injected_skills:
                 try:
                     self.memory_store.skill_record_usage(s["id"])
                 except Exception:
                     pass
-        self._extract_facts(message, response, scope)
         # Skill detection (only for Telegram scope with AUTO_LEARN enabled)
         if self._auto_learn_enabled(scope) and scope != "gradio":
             skill = self._detect_skill(message, response, history or [])
