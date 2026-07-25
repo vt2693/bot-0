@@ -115,9 +115,9 @@ class HermesBridge:
             "function": {
                 "name": "extract_facts",
                 "description": (
-                    "Extract fact-worthy information about the user from the "
-                    "conversation. Call this whenever the user shares personal "
-                    "info, preferences, or facts worth remembering."
+                    "Extract durable facts about the user useful across future "
+                    "conversations (e.g. name, occupation, preferences, location, "
+                    "skills). Avoid transient states."
                 ),
                 "parameters": {
                     "type": "object",
