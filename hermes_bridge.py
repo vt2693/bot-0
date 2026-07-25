@@ -146,18 +146,28 @@ class HermesBridge:
             }
         }
 
-    def chat(self, message: str, history: list | None = None, memory_context: str | None = None, injected_skills: list | None = None) -> str:
+    def chat(self, message: str, history: list | None = None,
+             memory_context: str | None = None,
+             injected_skills: list | None = None,
+             scope: str = "global",
+             enable_extraction: bool = False) -> str:
         if not self._ready:
             return "Hermes Agent is not configured. Add a provider API key."
         try:
-            return self._call_llm(message, history or [], memory_context, injected_skills)
+            return self._call_llm(message, history or [], memory_context,
+                                  injected_skills, scope=scope,
+                                  enable_extraction=enable_extraction)
         except Exception as e:
             logger.exception("Chat failed")
             return f"Error: {e}"
 
-    def _call_llm(self, message: str, history: list, memory_context: str | None = None, injected_skills: list | None = None) -> str:
+    def _call_llm(self, message: str, history: list,
+                  memory_context: str | None = None,
+                  injected_skills: list | None = None,
+                  scope: str = "global",
+                  enable_extraction: bool = False) -> str:
         messages = self._build_messages(message, history, memory_context, injected_skills)
-        tools = self._get_tools()
+        tools = self._get_tools(enable_extraction=enable_extraction)
         body = {
             "model": self._model,
             "messages": messages,
@@ -206,7 +216,7 @@ class HermesBridge:
             for c in calls:
                 name = c["function"]["name"]
                 args = json.loads(c["function"]["arguments"] or "{}")
-                result = self._execute_tool(name, args)
+                result = self._execute_tool(name, args, scope=scope)
                 messages.append({"role": "tool", "tool_call_id": c["id"], "content": result[:12000]})
                 if self.broadcast_fn:
                     try:
