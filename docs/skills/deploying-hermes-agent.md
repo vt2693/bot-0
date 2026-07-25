@@ -245,7 +245,7 @@ Main asyncio entry point. Key sections:
 3-provider LLM bridge using **direct httpx calls** (no openai SDK). Key methods:
 
 - `_call_llm()` — sends POST to `/chat/completions` with `stream: False`, handles tool calls in loop up to `TOOL_LOOP_MAX_ROUNDS`
-- `chat_with_memory()` — retrieves relevant facts + skills, injects into system prompt, calls LLM, extracts facts from response, detects skills
+- `chat_with_memory()` — retrieves relevant facts + skills, injects into system prompt, calls LLM with `extract_facts` tool, detects skills
 - `_build_messages()` — constructs message list from history (dict or tuple format), injected skills/facts
 - `_detect_skill()` — heuristic gate + constrained JSON LLM extraction for learned skills
 - `_execute_tool()` — calls `ComposioMCP.call_tool_sync()` (sync `httpx.Client`, no event loop needed)
