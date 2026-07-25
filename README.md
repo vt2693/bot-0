@@ -1,13 +1,3 @@
----
-title: Bot 0
-emoji: 👁
-colorFrom: red
-colorTo: indigo
-sdk: docker
-pinned: false
-app_port: 7860
----
-
 # Hermes Agent Bot 0
 
 Android/Termux Telegram bot with:

@@ -14,7 +14,6 @@ class Settings:
     HOST = os.getenv("HOST", "0.0.0.0")
     PORT = int(os.getenv("PORT", "7860"))
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-    SPACE_URL = os.getenv("SPACE_URL", "")
 
     TELEGRAM_BOT_TOKEN: Optional[str] = os.getenv("TELEGRAM_BOT_TOKEN")
     TELEGRAM_ALLOWED_USERS = os.getenv("TELEGRAM_ALLOWED_USERS", "")

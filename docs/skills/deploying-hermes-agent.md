@@ -11,7 +11,7 @@ description: >-
 
 ## Purpose
 
-Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot with getUpdates polling (no webhook, no Gradio). Supports multi-provider LLM (router_0, opencode_zen, openrouter), Composio MCP tools (including Firecrawl scrape/crawl/search and Jira), voice memo transcription (local router-0 STT), text-to-speech (TTS, local router-0), MemoryStore (SQLite), SchedulerEngine for periodic tasks, and inline keyboard menus.
+Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot with getUpdates polling. Supports multi-provider LLM (router_0, opencode_zen, openrouter), Composio MCP tools (including Firecrawl scrape/crawl/search and Jira), voice memo transcription (local router-0 STT), text-to-speech (TTS, local router-0), MemoryStore (SQLite), SchedulerEngine for periodic tasks, and inline keyboard menus.
 
 ## Supported Environments
 
@@ -20,7 +20,6 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 
 ### Non-Goals
 
-- Running a Gradio or FastAPI web UI (Telegram-only interaction)
 - Remote memory persistence — SQLite-only, no cloud sync
 
 ## Architecture
@@ -58,9 +57,9 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
     └───────────────┘
 ```
 
-**Key insight:** Android bot uses **direct** Telegram API calls (no relay needed). `android_bot.py` long-polls `getUpdates` for inbound messages and calls `api.telegram.org` directly for outbound via `_send_direct()`. No webhook, no relay.py.
+**Key insight:** Android bot uses **direct** Telegram API calls. `android_bot.py` long-polls `getUpdates` for inbound messages and calls `api.telegram.org` directly for outbound via `_send_direct()`. No webhook.
 
-Voice is processed **in-process** (not via external relay): download → ffmpeg (16kHz WAV) → router-0 STT (groq/whisper-large-v3). TTS: text → `synthesize()` (MP3) → `to_opus()` (OggOpus) → `sendVoice`.
+Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 STT (groq/whisper-large-v3). TTS: text → `synthesize()` (MP3) → `to_opus()` (OggOpus) → `sendVoice`.
 
 ## Files
 
@@ -75,15 +74,11 @@ Voice is processed **in-process** (not via external relay): download → ffmpeg 
 | `scheduler.py` | SchedulerEngine (30s poll loop) |
 | `tg_voice.py` | Voice helper: download, ffmpeg, router-0 STT transcription |
 | `tg_tts.py` | TTS helper: synthesize via router-0 (google-tts/en), ffmpeg to OggOpus |
-| `voice_relay.py` | Wrapper importing from tg_voice.py (kept for compat) |
 | `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts, ROUTER_0_AUDIO_URL |
 | `start_android.sh` | tmux launcher with auto-restart, dep check, wake-lock |
 | `deploy_android.ps1` | Windows script: ADB push or SSH/rsync to phone (non-interactive) |
 | `requirements.txt` | pip deps list (for reference; phone uses `pip install httpx` directly) |
 | `.hermes-tokens.env.example` | Environment variable template for reference |
-| `relay.py` | Legacy (not used on Android) |
-| `app.py` | Legacy (not used on Android) |
-| `healthcheck.py` | Legacy (not used on Android) |
 
 ## Confidence: 100%
 
@@ -108,7 +103,7 @@ Confidence: 100% — Auto-detected by API key or base URL. No key required (pass
 Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 7 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`. Inline keyboard menu (10 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
 
 ### In-process voice (STT)
-Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice relay process needed.
+Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice process needed.
 
 ### Text-to-Speech (TTS)
 Confidence: 100% — Toggleable per-user from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` per chat_id. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` per chat_id with default `edge-tts/en-US-AndrewMultilingualNeural`. Menu shows ✅ active and ⭐ default indicators. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
@@ -169,7 +164,7 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `MEMORY_API_KEY` | — | No | Legacy; kept for compat (no-op on Android) |
 | `TOOL_LOOP_MAX_ROUNDS` | `1000` | No | Max LLM tool-call rounds |
 | `LLM_TIMEOUT` | `600` | No | LLM call timeout in seconds |
-| `BROADCAST_CHAT_ID` | — | No | Channel/group chat_id to relay tool call results |
+| `BROADCAST_CHAT_ID` | — | No | Channel/group chat_id to broadcast tool call results |
 | `SYSTEM_PROMPT` | *Hermes Agent default* | No | Override system prompt |
 | `MAX_TOKENS` | `2048` | No | Max output tokens |
 | `TEMPERATURE` | `0.7` | No | LLM temperature |

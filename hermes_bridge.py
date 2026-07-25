@@ -295,7 +295,7 @@ class HermesBridge:
                 except Exception:
                     pass
         # Skill detection (only for Telegram scope with AUTO_LEARN enabled)
-        if self._auto_learn_enabled(scope) and scope != "gradio":
+        if self._auto_learn_enabled(scope):
             skill = self._detect_skill(message, response, history or [])
             if skill:
                 return json.dumps({"_skill_detected": skill, "response": response})

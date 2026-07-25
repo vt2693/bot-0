@@ -53,11 +53,6 @@ class TelegramBot:
         self._initialized = True
         self._start_time = time.time()
         self.configure_commands()
-        # Webhook registration + outbound delivery go through the relay
-        # (server on free tier blocks api.telegram.org — SSL handshake times out).
-        # The relay polls /api/tg_outbox for outbound, and runs getUpdates
-        # polling for inbound delivery to /webhook/telegram.
-        self.enqueue_webhook()
         # Restore TTS state from memory_store (all scopes)
         if self.bridge and self.bridge.memory_store:
             try:
@@ -103,10 +98,6 @@ class TelegramBot:
             except Exception:
                 pass
         return True
-
-    def enqueue_webhook(self) -> None:
-        """Re-enqueue webhook config (callable from /reconfigure)."""
-        self.enqueue_config("setWebhook", {"url": os.getenv("TELEGRAM_WEBHOOK_URL", "") + "/webhook/telegram", "allowed_updates": ["message", "edited_message", "callback_query"]})
 
     def enqueue_config(self, method: str, payload: dict) -> None:
         item = {"_method": method, **payload}
@@ -490,7 +481,7 @@ class TelegramBot:
     # -- Inline Menu System -------------------------------------------------
 
     def _edit_message(self, chat_id: int, message_id: int, text: str, reply_markup: dict = None) -> None:
-        """Enqueue an editMessageText to the outbox for relay delivery."""
+        """Enqueue an editMessageText to the outbox."""
         entry = {"_method": "editMessageText", "chat_id": chat_id, "message_id": message_id, "text": text[:4096]}
         if reply_markup:
             entry["reply_markup"] = reply_markup
@@ -774,7 +765,6 @@ class TelegramBot:
         "sendMessage": "/sendMessage",
         "editMessageText": "/editMessageText",
         "answerCallbackQuery": "/answerCallbackQuery",
-        "setWebhook": "/setWebhook",
         "setMyCommands": "/setMyCommands",
         "setChatMenuButton": "/setChatMenuButton",
     }
@@ -805,7 +795,7 @@ class TelegramBot:
     def _send_voice_direct(self, chat_id: int, audio_bytes: bytes) -> bool:
         """Send Opus audio as a voice message directly to Telegram API.
 
-        Uses httpx multipart upload (cannot go through JSON-only relay).
+        Uses httpx multipart upload (cannot go through JSON-only outbox).
         Shows record_voice action first via outbox. Retries with backoff
         on failure (same pattern as _send_direct).
 
@@ -893,9 +883,7 @@ class TelegramBot:
             self._voice_queue.clear()
             return out
 
-    # -- Inbound via webhook only (relay registers webhook externally) -----
-    # Server on free tier cannot reach api.telegram.org (SSL handshake may time out).
-    # polling -> /webhook/telegram and outbox draining -> api.telegram.org.
+    # -- Inbound via getUpdates polling (android_bot.py) -----
 
     async def stop(self) -> None:
         self._initialized = False
