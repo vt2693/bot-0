@@ -101,10 +101,50 @@ class HermesBridge:
         msgs.append({"role": "user", "content": message})
         return msgs
 
-    def _get_tools(self) -> list[dict]:
+    def _get_tools(self, enable_extraction: bool = False) -> list[dict]:
+        tools = []
         if self._composio and self._composio.status().get("ready"):
-            return self._composio.get_openai_tools()
-        return []
+            tools.extend(self._composio.get_openai_tools())
+        if enable_extraction and self.settings.MEMORY_AUTO_EXTRACT:
+            tools.append(self._build_extract_tool())
+        return tools
+
+    def _build_extract_tool(self) -> dict:
+        return {
+            "type": "function",
+            "function": {
+                "name": "extract_facts",
+                "description": (
+                    "Extract fact-worthy information about the user from the "
+                    "conversation. Call this whenever the user shares personal "
+                    "info, preferences, or facts worth remembering."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "facts": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "description": "The fact about the user, written as a clear statement"
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "enum": ["bio", "preference", "fact", "context"],
+                                        "description": "Type of fact"
+                                    }
+                                },
+                                "required": ["content"]
+                            }
+                        }
+                    },
+                    "required": ["facts"]
+                }
+            }
+        }
 
     def chat(self, message: str, history: list | None = None, memory_context: str | None = None, injected_skills: list | None = None) -> str:
         if not self._ready:
