@@ -220,13 +220,32 @@ class HermesBridge:
             body["messages"] = messages
         return f"Tool loop stopped after {max_rounds} rounds. The task may need more steps or the tools are failing. Try a simpler request."
 
-    def _execute_tool(self, name: str, args: dict) -> str:
+    def _execute_tool(self, name: str, args: dict, scope: str = "global") -> str:
+        if name == "extract_facts":
+            return self._handle_extract_facts(args, scope)
         try:
             if self._composio:
                 return json.dumps(self._composio.call_tool_sync(name, args), default=str)
         except Exception as e:
             return f"Tool {name} failed: {e}"
         return f"Unknown tool: {name}"
+
+    def _handle_extract_facts(self, args: dict, scope: str) -> str:
+        if not self.memory_store:
+            return json.dumps({"stored": 0, "error": "no memory store"})
+        new_count = 0
+        for fact in args.get("facts", []):
+            content = fact.get("content", "").strip()[:1000]
+            if not content:
+                continue
+            existing = self.memory_store.search(content, scope, 3)
+            if any(e["content"].strip().lower() == content.lower() for e in existing):
+                continue
+            metadata = {"category": fact.get("category", "fact"), "source": "llm_extraction"}
+            self.memory_store.add(content, scope, metadata)
+            self._memory_stats["extractions"] += 1
+            new_count += 1
+        return json.dumps({"stored": new_count})
 
     def _extract_facts(self, message: str, response: str, scope: str) -> None:
         if not self.memory_store or not self.settings.MEMORY_AUTO_EXTRACT:
