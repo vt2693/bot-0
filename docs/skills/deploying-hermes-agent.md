@@ -21,7 +21,7 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 ### Non-Goals
 
 - Running a Gradio or FastAPI web UI (Telegram-only interaction)
-- Remote memory persistence (disabled by config — SQLite-only on Android)
+- Remote memory persistence — SQLite-only, no cloud sync
 
 ## Architecture
 
@@ -166,7 +166,6 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `AUTO_LEARN` | `true` | No | Detect reusable procedures and ask before saving |
 | `MEMORY_RESTORE_ON_STARTUP` | `false` | No | Restore memory from SQLite on startup |
 | `MEMORY_DB_PATH` | *see* | No | SQLite path (default: `$HOME/hermes_memory.db` on Android) |
-| `MEMORY_SPACE_ID` | `""` | No | Legacy; kept for compat (no-op on Android) |
 | `MEMORY_API_KEY` | — | No | Legacy; kept for compat (no-op on Android) |
 | `TOOL_LOOP_MAX_ROUNDS` | `1000` | No | Max LLM tool-call rounds |
 | `LLM_TIMEOUT` | `600` | No | LLM call timeout in seconds |
@@ -316,7 +315,6 @@ HTTP JSON-RPC client. Tools accessed via `initialize` → `tools/list` → `tool
 | Composio not configured | Menu entry shows "not available" |
 | getUpdates queue overflow | Telegram stores 24h of updates; offset tracking prevents duplicates |
 | Work dir missing | Created at startup via `mkdir` |
-| Remote memory backup attempted | No-op (backup methods are stubs on Android) |
 
 ## Verification
 

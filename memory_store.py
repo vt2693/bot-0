@@ -203,7 +203,7 @@ class MemoryStore:
             self._ready = False
 
     def sync(self) -> None:
-        """No-op — HF Hub backup removed."""
+        """No-op — remote backup removed."""
 
     # -- Skills -------------------------------------------------------------------
 
@@ -322,8 +322,6 @@ class MemoryStore:
             self._conn.execute("DELETE FROM skills WHERE id=?", (skill_id,))
             self._conn.commit()
             rc = self._conn.execute("SELECT changes()").fetchone()[0]
-        if rc:
-            pass  # HF Hub backup removed
         return rc > 0
 
     def skill_inject(self, query: str, scope: str = "global",

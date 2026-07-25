@@ -109,9 +109,6 @@ export TELEGRAM_ALLOWED_USERS="${TELEGRAM_ALLOWED_USERS}"
 export PROVIDER="router_0"
 export BROADCAST_CHAT_ID=""
 export JIRA_EPICS="${JIRA_EPICS}"
-# MEMORY_SPACE_ID left unset — remote memory backup removed.
-# so the backup guard ("/" in path) skips.
-export MEMORY_SPACE_ID="none"
 EOF
 chmod 600 "$ENV_FILE"
 echo "Saved $ENV_FILE"
