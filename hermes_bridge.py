@@ -385,31 +385,77 @@ class HermesBridge:
         """
         now = time.time()
         date_str = time.strftime("%Y-%m-%d %A", time.localtime(now))
-        sys_prompt = (
+
+        system_override = (
             "Extract scheduling intent from the user's text.\n"
-            f"Today's date/time for reference: {date_str} (Unix epoch: {now:.0f}).\n\n"
-            "Return ONLY valid JSON (no other text) with EXACTLY ONE of these shapes:\n"
+            f"Today is {date_str} (Unix epoch: {now:.0f}).\n\n"
+            "Return ONLY valid JSON. Exactly one of these shapes:\n"
             '{"interval_minutes": <number>, "prompt": "<string>"}\n'
             '{"absolute_epoch": <unix_timestamp>, "prompt": "<string>"}\n'
             '{"error": "<reason>"}\n\n'
-            "Examples:\n"
-            '- "check gmail every 15 minutes" -> {"interval_minutes": 15, "prompt": "check my gmail"}\n'
-            '- "every 2 hours, summarize news" -> {"interval_minutes": 120, "prompt": "summarize news"}\n'
-            '- "check gmail at 12:00 am tomorrow" -> {"absolute_epoch": <computed_epoch>, "prompt": "check my gmail"}\n'
-            '- "scan website at 3pm on friday" -> {"absolute_epoch": <computed_epoch>, "prompt": "scan website"}\n'
-            '- "hello" -> {"error": "no scheduling intent found"}\n\n'
             "Rules:\n"
-            '- If user says "every X" or "in X hours/minutes" -> interval_minutes\n'
-            '- If user says "at <time>" or "<time> tomorrow/on <day>" -> absolute_epoch (compute next occurrence as Unix timestamp)\n'
-            '- absolute_epoch is seconds since 1970-01-01 00:00 UTC\n'
+            '- "every X", "in X hours/minutes", "hourly", "daily" -> interval_minutes\n'
+            '- "at <time>", "<time> tomorrow/on <day>" -> absolute_epoch (Unix seconds, compute as seconds since 1970-01-01 UTC)\n'
             '- prompt is the task description WITHOUT timing words\n'
-            '- If no scheduling intent found, return {"error": "..."}'
+            '- If no scheduling intent, return {"error": "..."}\n\n'
+            "Examples:\n"
+            '- "check gmail every 15 minutes" -> {"interval_minutes": 15, "prompt": "check gmail"}\n'
+            '- "every 2 hours, summarize news" -> {"interval_minutes": 120, "prompt": "summarize news"}\n'
+            '- "check gmail at 12:00 am tomorrow" -> {"absolute_epoch": <epoch>, "prompt": "check gmail"}\n'
+            '- "scan at 3pm on friday" -> {"absolute_epoch": <epoch>, "prompt": "scan"}\n'
+            '- "remind me in 30 minutes" -> {"interval_minutes": 30, "prompt": "remind me"}\n'
+            '- "hello" -> {"error": "no scheduling intent found"}'
         )
-        try:
-            body = self.chat(text, [], sys_prompt)
-            return json.loads(body)
-        except (json.JSONDecodeError, Exception) as e:
-            return {"error": f"Parse failed: {e}"}
+
+        for attempt in range(3):
+            body = self.chat(text, [], system_override=system_override,
+                             response_format={"type": "json_object"})
+            try:
+                result = json.loads(body)
+            except json.JSONDecodeError:
+                if attempt < 2:
+                    system_override += (
+                        f"\n\nPrevious attempt returned invalid JSON: '{body[:200]}'. "
+                        "Return ONLY valid JSON, no other text."
+                    )
+                    continue
+                return {"error": "parse_schedule: failed to produce valid JSON after 3 attempts"}
+            has_interval = "interval_minutes" in result
+            has_epoch = "absolute_epoch" in result
+            has_error = "error" in result
+            if not (has_interval or has_epoch or has_error):
+                if attempt < 2:
+                    system_override += (
+                        f"\n\nResponse missing required key. Got: {json.dumps(result)[:200]}. "
+                        "Must have interval_minutes, absolute_epoch, or error."
+                    )
+                    continue
+                return {"error": "parse_schedule: response missing required key"}
+            if has_error:
+                return result
+            if has_interval:
+                if not isinstance(result["interval_minutes"], (int, float)) or result["interval_minutes"] < 1:
+                    if attempt < 2:
+                        system_override += (
+                            f"\n\ninterval_minutes must be >= 1. Got: {result['interval_minutes']}."
+                        )
+                        continue
+                    return {"error": "parse_schedule: invalid interval"}
+                return result
+            if has_epoch:
+                epoch = result["absolute_epoch"]
+                if epoch < now - 86400:
+                    if attempt < 2:
+                        system_override += (
+                            f"\n\nabsolute_epoch {epoch:.0f} is in the past (now={now:.0f}). "
+                            "Compute the NEXT occurrence of the specified day/time."
+                        )
+                        continue
+                    return {"error": f"parse_schedule: epoch {epoch:.0f} is in the past"}
+                if epoch > now + 86400 * 365 * 5:
+                    return {"error": "parse_schedule: epoch too far in the future"}
+                return result
+        return {"error": "parse_schedule: unexpected fallthrough"}
 
     def generate_minutes(self, transcript: str) -> str:
         prompt = "Summarize this voice memo into concise meeting minutes with key points, decisions, action items, and next steps.\n\nTranscript:\n" + transcript[:12000]
