@@ -39,7 +39,6 @@ class HermesBridge:
     def _resolve_api_key(self) -> Optional[str]:
         s = self.settings
         key = {"opencode_zen": s.OPENCODE_ZEN_API_KEY, "openrouter": s.OPENROUTER_API_KEY, "router_0": s.ROUTER_0_API_KEY}.get(self._provider)
-        # router_0 proxy works without an API key; pass empty string to satisfy OpenAI client
         if not key and self._provider == "router_0":
             return ""
         return key
@@ -205,7 +204,6 @@ class HermesBridge:
 
         max_rounds = self.settings.TOOL_LOOP_MAX_ROUNDS
         for round_i in range(max_rounds):
-            # Retry HTTP call on transient errors (ECONNRESET, 5xx, etc)
             last_err = None
             for attempt in range(3):
                 try:
@@ -299,7 +297,6 @@ class HermesBridge:
                 mem_block = "\n".join("- " + m["content"] for m in mems)
             else:
                 self._memory_stats["misses"] += 1
-            # Skill injection
             skills = self.memory_store.skill_inject(message, scope, 10)
             if skills:
                 injected_skills = skills
@@ -311,7 +308,6 @@ class HermesBridge:
                     self.memory_store.skill_record_usage(s["id"])
                 except Exception:
                     pass
-        # Skill detection (only for Telegram scope with AUTO_LEARN enabled)
         if self._auto_learn_enabled(scope):
             skill = self._detect_skill(message, response, history or [])
             if skill:
@@ -319,23 +315,18 @@ class HermesBridge:
         return response
 
     def _detect_skill(self, message: str, response: str, history: list) -> dict | None:
-        """Two-tier detection. Tier 1: heuristic. Tier 2: LLM extraction.
-        Returns extracted skill dict or None."""
         import re as _re
         if not self.memory_store:
             return None
-        # Tier 1: heuristic gate
         user_success = bool(_re.search(r"thanks|works|fixed|got it|solved|that did it|perfect", message, _re.I))
         hist_pairs = len([m for m in history if isinstance(m, dict) and m.get("role") == "user"])
         correction = hist_pairs >= 3 and bool(_re.search(r"(send|error|token|key|reset|reconfig|relay|timeout)", message, _re.I))
         explicit = bool(_re.search(r"(?:save|create|remember|note|learn|store)\s+(?:this|a|that|the)?\s*(?:skill|procedure|workflow|process|technique)?", message, _re.I))
         if not (user_success or correction or explicit):
             return None
-        # Tier 2: LLM extraction
         last_user = message[:800]
         last_asst = response[:800]
         if explicit:
-            # User explicitly asked to save — extract from conversation history
             hist_ctx = []
             for item in (history or [])[-15:]:
                 if isinstance(item, dict):
@@ -376,13 +367,222 @@ class HermesBridge:
             pass
         return None
 
+    # ──────────────────────────────────────────────
+    # Deterministic schedule parsing (no LLM call)
+    # ──────────────────────────────────────────────
+
+    # Priority-ordered patterns for time expression extraction.
+    # Each is (name, regex) — first match wins.
+    _TIME_PATTERNS = [
+        ("every_day_at", re.compile(
+            r'(?:every\s+day|daily)\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)?', re.I)),
+        ("every_day_at_nomin", re.compile(
+            r'(?:every\s+day|daily)\s+at\s+(\d{1,2})\s*(am|pm)\b', re.I)),
+        ("at_time_with_daily_prefix", re.compile(
+            r'(?:every\s+day|daily)\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?', re.I)),
+        ("every_weekday_at", re.compile(
+            r'(?:every\s+weekdays?|weekdays?)\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)?', re.I)),
+        ("every_weekday_at_nomin", re.compile(
+            r'(?:every\s+weekdays?|weekdays?)\s+at\s+(\d{1,2})\s*(am|pm)\b', re.I)),
+        ("every_day_naked", re.compile(
+            r'(?:every\s+day|\bdaily\b)(?!\s+at)', re.I)),
+        ("every_n_min", re.compile(
+            r'every\s+(\d+)\s*(?:min(?:ute)?s?)\b', re.I)),
+        ("every_n_hour", re.compile(
+            r'every\s+(\d+)\s*(?:hours?|hrs?)\b', re.I)),
+        ("hourly", re.compile(
+            r'\b(hourly|every\s+hour)\b', re.I)),
+        ("in_n_min", re.compile(
+            r'in\s+(\d+)\s*(?:min(?:ute)?s?)\b', re.I)),
+        ("in_n_hour", re.compile(
+            r'in\s+(\d+)\s*(?:hours?|hrs?)\b', re.I)),
+        ("in_n_sec", re.compile(
+            r'in\s+(\d+)\s*(?:sec(?:ond)?s?)\b', re.I)),
+        ("tomorrow_at_time", re.compile(
+            r'tomorrow\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)?', re.I)),
+        ("tomorrow_at_nomin", re.compile(
+            r'tomorrow\s+at\s+(\d{1,2})\s*(am|pm)\b', re.I)),
+        ("at_time", re.compile(
+            r'at\s+(\d{1,2}):(\d{2})\s*(am|pm)?', re.I)),
+        ("at_time_nomin", re.compile(
+            r'at\s+(\d{1,2})\s*(am|pm)\b', re.I)),
+        ("at_noon", re.compile(
+            r'\bnoon\b', re.I)),
+        ("at_midnight", re.compile(
+            r'\bmidnight\b', re.I)),
+        ("every_other_day", re.compile(
+            r'every\s+other\s+day\b', re.I)),
+        ("twice_a_day", re.compile(
+            r'twice\s+a\s+day\b', re.I)),
+    ]
+
+    def _compute_epoch(self, hour: int, minute: int, *,
+                       is_tomorrow: bool = False,
+                       next_weekday: int | None = None) -> int:
+        """Compute epoch for HH:MM today/tomorrow/next-weekday in local time."""
+        lt = time.localtime()
+        target = int(time.mktime((
+            lt.tm_year, lt.tm_mon, lt.tm_mday,
+            hour, minute, 0, 0, 0, -1
+        )))
+        now = int(time.time())
+        if next_weekday is not None:
+            days_ahead = next_weekday - lt.tm_wday
+            if days_ahead <= 0 or (days_ahead == 0 and target <= now):
+                days_ahead += 7
+            target += days_ahead * 86400
+        elif is_tomorrow:
+            target += 86400
+        elif target <= now:
+            target += 86400
+        return target
+
+    def _normalize_hour(self, hour: int, ampm: str | None) -> int:
+        """Convert 12-hour clock to 24-hour. ampm is 'am'/'pm' or None."""
+        if ampm:
+            a = ampm.strip().lower()
+            if a == "pm" and hour < 12:
+                return hour + 12
+            if a == "am" and hour == 12:
+                return 0
+            return hour
+        return hour  # 24-hour format already
+
+    def _parse_time_expr(self, match_id: str, match: re.Match, text: str) -> dict | None:
+        """Convert a matched time expression into interval_minutes or absolute_epoch."""
+        # ── Interval patterns (no hour/minute groups) ──
+        if match_id in ("every_day_naked",):
+            return {"interval_minutes": 1440}
+
+        if match_id in ("every_n_min", "in_n_min"):
+            return {"interval_minutes": int(match.group(1))}
+
+        if match_id in ("every_n_hour",):
+            return {"interval_minutes": int(match.group(1)) * 60}
+
+        if match_id in ("in_n_hour",):
+            return {"interval_minutes": int(match.group(1)) * 60}
+
+        if match_id in ("in_n_sec",):
+            return {"interval_minutes": max(1, int(match.group(1)) // 60)}
+
+        if match_id in ("hourly",):
+            return {"interval_minutes": 60}
+
+        if match_id in ("every_other_day",):
+            return {"interval_minutes": 2880}
+
+        if match_id in ("twice_a_day",):
+            return {"interval_minutes": 720}
+
+        # ── Absolute epoch with no time groups ──
+        if match_id in ("at_noon",):
+            return {"absolute_epoch": self._compute_epoch(12, 0)}
+
+        if match_id in ("at_midnight",):
+            return {"absolute_epoch": self._compute_epoch(0, 0)}
+
+        # ── All remaining: extract hour[:min][ampm] ──
+        if match_id in ("every_day_at_nomin", "every_weekday_at_nomin",
+                        "tomorrow_at_nomin", "at_time_nomin"):
+            hour = int(match.group(1))
+            minute = 0
+            ampm = match.group(2) if match.lastindex >= 2 else None
+        elif match_id == "at_time_with_daily_prefix":
+            hour = int(match.group(1))
+            minute = int(match.group(2)) if match.lastindex >= 2 and match.group(2) is not None else 0
+            ampm = match.group(3) if match.lastindex >= 3 else None
+        else:
+            # patterns with colon: group(1)=hour, group(2)=minute, group(3)=ampm?
+            hour = int(match.group(1))
+            minute = int(match.group(2)) if match.lastindex >= 2 and match.group(2) is not None else 0
+            ampm = match.group(3) if match.lastindex >= 3 else None
+
+        is_tomorrow = "tomorrow" in match_id
+        is_weekday = "weekday" in match_id
+        is_recurring = match_id.startswith("every_") or match_id.startswith("twice_")
+
+        # Infer am/pm when missing
+        if ampm is None and match_id in ("at_time", "at_time_nomin"):
+            if hour < 7:
+                hour24 = hour + 12
+            else:
+                hour24 = hour
+        else:
+            hour24 = self._normalize_hour(hour, ampm)
+
+        # Weekday logic: 0=Mon..4=Fri
+        nw = None
+        if is_weekday:
+            lt = time.localtime()
+            if lt.tm_wday < 5:
+                nw = lt.tm_wday
+            else:
+                nw = 0  # next Monday
+
+        epoch = self._compute_epoch(hour24, minute, is_tomorrow=is_tomorrow, next_weekday=nw)
+        return {"absolute_epoch": epoch}
+
+    def _parse_deterministic(self, text: str) -> dict | None:
+        """Try to extract schedule from text using regex patterns.
+        Returns {"interval_minutes": N, "prompt": S} or {"absolute_epoch": E, "prompt": S},
+        or None if no pattern matches (caller falls back to LLM)."""
+        t = text.strip()
+        if not t:
+            return None
+
+        for name, pattern in self._TIME_PATTERNS:
+            m = pattern.search(t)
+            if not m:
+                continue
+            # Extract prompt by removing the matched portion
+            prompt = (t[:m.start()] + t[m.end():]).strip()
+            # Clean up: collapse whitespace, remove leading "to"/"me"/"a"/"the"
+            prompt = re.sub(r'\s+', ' ', prompt).strip()
+            prompt = re.sub(r'^(to |me |a |the )', '', prompt)
+            # Remove trailing prepositions left by time expression removal
+            prompt = re.sub(r'\s+(at|in|on|by|for|before|after)\s*$', '', prompt)
+            if not prompt:
+                # Use whole text minus matched expression as prompt
+                raw = t[:m.start()] + t[m.end():]
+                raw = re.sub(r'\s+', ' ', raw).strip()
+                raw = re.sub(r'\s+(at|in|on|by|for|before|after)\s*$', '', raw)
+                if not raw:
+                    raw = t.replace(m.group(0), "").strip()
+                    raw = re.sub(r'\s+', ' ', raw).strip()
+                    raw = re.sub(r'\s+(at|in|on|by|for|before|after)\s*$', '', raw)
+                if not raw:
+                    return None  # LLM fallback
+                prompt = raw
+
+            # If prompt still contains remaining time-related words, it's complex → LLM fallback
+            # e.g. "scan at 3pm on friday" — "at 3pm" matches, but "on friday" stays in prompt
+            if re.search(r'\b(on|next|this|mon|tue|wed|thu|fri|sat|sun|'
+                         r'monday|tuesday|wednesday|thursday|friday|saturday|sunday|'
+                         r'tomorrow|weekday|weekdays)\b', prompt, re.I):
+                return None
+
+            parsed = self._parse_time_expr(name, m, text)
+            if parsed is None:
+                continue
+            parsed["prompt"] = prompt
+            return parsed
+
+        return None
+
     def parse_schedule(self, text: str) -> dict:
-        """Parse natural-language scheduling intent via constrained LLM call.
+        """Parse natural-language scheduling intent.
+        Tries deterministic regex first, falls back to LLM.
 
         Returns {"interval_minutes": int, "prompt": str},
                 {"absolute_epoch": float, "prompt": str},
                 or {"error": str}.
         """
+        # Try deterministic pre-processing first (no LLM call needed)
+        result = self._parse_deterministic(text)
+        if result and "prompt" in result and result["prompt"]:
+            return result
+
         now = time.time()
         date_str = time.strftime("%Y-%m-%d %A", time.localtime(now))
 
