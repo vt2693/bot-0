@@ -249,6 +249,15 @@ class TelegramBot:
                 else:
                     self._send_message(chat_id, "Edit session expired.")
             return
+        # Auto-detect scheduling intent from plain chat
+        if self.scheduler and re.search(
+            r'\b(check|scan|summarize|monitor|watch|fetch|poll|read|get|review|report|remind)\b.*?'
+            r'(?:every\s+\d+|in\s+\d+\s*(?:min|hour|day|sec)|'
+            r'at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm))',
+            text, re.I
+        ):
+            await self._handle_schedule_add(chat_id, text)
+            return
         hist = self._chat_history.get(key, [])
         self._enqueue_typing(chat_id)
         refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
