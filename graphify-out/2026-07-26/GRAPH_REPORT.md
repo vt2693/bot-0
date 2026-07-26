@@ -1,16 +1,16 @@
 # Graph Report - bot-0  (2026-07-26)
 
 ## Corpus Check
-- 16 files · ~19,020 words
+- 15 files · ~18,245 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 286 nodes · 510 edges · 21 communities (15 shown, 6 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 36 edges (avg confidence: 0.65)
+- 281 nodes · 503 edges · 21 communities (15 shown, 6 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 35 edges (avg confidence: 0.66)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `af01418a`
+- Built from commit: `687c445a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -38,7 +38,7 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `TelegramBot` - 63 edges
-2. `HermesBridge` - 32 edges
+2. `HermesBridge` - 30 edges
 3. `MemoryStore` - 30 edges
 4. `Deploying Hermes Agent` - 23 edges
 5. `SchedulerEngine` - 20 edges
@@ -51,14 +51,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `HermesBridge` --uses--> `Settings`  [INFERRED]
   hermes_bridge.py → config.py
-- `FakeSettings` --uses--> `HermesBridge`  [INFERRED]
-  test_schedule_parse.py → hermes_bridge.py
 - `_drain_outbox()` --references--> `TelegramBot`  [EXTRACTED]
   android_bot.py → telegram_bot.py
 - `_process_voice()` --references--> `TelegramBot`  [EXTRACTED]
   android_bot.py → telegram_bot.py
 - `_poll_loop()` --references--> `TelegramBot`  [EXTRACTED]
   android_bot.py → telegram_bot.py
+- `main()` --calls--> `ComposioMCP`  [EXTRACTED]
+  android_bot.py → composio_mcp.py
 
 ## Import Cycles
 - None detected.
@@ -86,8 +86,8 @@ Cohesion: 0.11
 Nodes (9): Connection, Row, Execute one job: LLM call -> send result -> update DB., Recompute next_run for jobs that fired while we were offline.          If a jo, Lightweight in-process scheduler using SQLite persistence.      Runs an async, Create a new scheduled job. Returns {'success': True, 'id': ...} or {'error': .., Open DB conn, catch up missed jobs, begin poll loop., Shut down poll loop and cancel any in-flight job executions. (+1 more)
 
 ### Community 4 - "Hermes Bridge LLM"
-Cohesion: 0.09
-Nodes (10): HermesBridge, Compute epoch for HH:MM today/tomorrow/next-weekday in local time., Convert 12-hour clock to 24-hour. ampm is 'am'/'pm' or None., Convert a matched time expression into interval_minutes or absolute_epoch., Try to extract schedule from text using regex patterns.         Returns {"interv, Parse natural-language scheduling intent.         Tries deterministic regex firs, Match, epoch_after() (+2 more)
+Cohesion: 0.10
+Nodes (7): HermesBridge, Compute epoch for HH:MM today/tomorrow/next-weekday in local time., Convert 12-hour clock to 24-hour. ampm is 'am'/'pm' or None., Convert a matched time expression into interval_minutes or absolute_epoch., Try to extract schedule from text using regex patterns.         Returns {"interv, Parse natural-language scheduling intent.         Tries deterministic regex firs, Match
 
 ### Community 5 - "Telegram Bot Actions"
 Cohesion: 0.19
@@ -134,16 +134,16 @@ Nodes (4): PATH, start_android.sh script, TEMP_DIR, WORK_DIR
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `TelegramBot` connect `Telegram Bot Callbacks & Commands` to `Android Bot Core`, `Telegram Bot Actions`, `Telegram Bot Lifecycle & Queue`, `Jira Operations`, `Message Handling`, `Jira Parsing`, `TTS Voice Output`, `._send_direct`, `.peek_outbox`?**
-  _High betweenness centrality (0.277) - this node is a cross-community bridge._
-- **Why does `HermesBridge` connect `Hermes Bridge LLM` to `Android Bot Core`?**
-  _High betweenness centrality (0.194) - this node is a cross-community bridge._
+  _High betweenness centrality (0.280) - this node is a cross-community bridge._
 - **Why does `MemoryStore` connect `Memory Store` to `Android Bot Core`?**
-  _High betweenness centrality (0.183) - this node is a cross-community bridge._
-- **Are the 2 inferred relationships involving `HermesBridge` (e.g. with `Settings` and `FakeSettings`) actually correct?**
-  _`HermesBridge` has 2 INFERRED edges - model-reasoned connections that need verification._
+  _High betweenness centrality (0.185) - this node is a cross-community bridge._
+- **Why does `HermesBridge` connect `Hermes Bridge LLM` to `Android Bot Core`?**
+  _High betweenness centrality (0.179) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `Deploying Hermes Agent` (e.g. with `README.md` and `Hermes Agent Bot 0`) actually correct?**
   _`Deploying Hermes Agent` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `setup_android.sh script`, `start_android.sh script`, `PATH` to the rest of the system?**
   _9 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Documentation & README` be split into smaller, more focused modules?**
   _Cohesion score 0.07396870554765292 - nodes in this community are weakly interconnected._
+- **Should `Memory Store` be split into smaller, more focused modules?**
+  _Cohesion score 0.08412698412698413 - nodes in this community are weakly interconnected._

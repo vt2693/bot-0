@@ -2503,61 +2503,6 @@
       "norm_label": "fetch jira issue description and run it as an llm prompt."
     },
     {
-      "label": "test_schedule_parse.py",
-      "file_type": "code",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "test_schedule_parse",
-      "community": 4,
-      "community_name": "Hermes Bridge LLM",
-      "norm_label": "test_schedule_parse.py"
-    },
-    {
-      "label": "FakeSettings",
-      "file_type": "code",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L18",
-      "_origin": "ast",
-      "id": "test_schedule_parse_fakesettings",
-      "community": 4,
-      "community_name": "Hermes Bridge LLM",
-      "norm_label": "fakesettings"
-    },
-    {
-      "label": "check()",
-      "file_type": "code",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L45",
-      "_origin": "ast",
-      "id": "test_schedule_parse_check",
-      "community": 4,
-      "community_name": "Hermes Bridge LLM",
-      "norm_label": "check()"
-    },
-    {
-      "label": "epoch_after()",
-      "file_type": "code",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L91",
-      "_origin": "ast",
-      "id": "test_schedule_parse_epoch_after",
-      "community": 4,
-      "community_name": "Hermes Bridge LLM",
-      "norm_label": "epoch_after()"
-    },
-    {
-      "label": "Compute the next occurrence of HH:MM in local time.",
-      "file_type": "rationale",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L92",
-      "_origin": "ast",
-      "id": "test_schedule_parse_rationale_92",
-      "community": 4,
-      "community_name": "Hermes Bridge LLM",
-      "norm_label": "compute the next occurrence of hh:mm in local time."
-    },
-    {
       "label": "tg_tts.py",
       "file_type": "code",
       "source_file": "tg_tts.py",
@@ -4147,18 +4092,6 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L15",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "test_schedule_parse",
-      "target": "hermes_bridge",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "hermes_bridge.py",
@@ -4443,29 +4376,6 @@
       "source": "hermes_bridge_hermesbridge",
       "target": "hermes_bridge_hermesbridge_switch_provider",
       "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L15",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "test_schedule_parse",
-      "target": "hermes_bridge_hermesbridge",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "uses",
-      "confidence": "INFERRED",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L15",
-      "weight": 0.8,
-      "_origin": "ast",
-      "source": "test_schedule_parse_fakesettings",
-      "target": "hermes_bridge_hermesbridge",
-      "confidence_score": 0.5
     },
     {
       "relation": "calls",
@@ -8321,50 +8231,6 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L45",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "test_schedule_parse",
-      "target": "test_schedule_parse_check",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L91",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "test_schedule_parse",
-      "target": "test_schedule_parse_epoch_after",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L18",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "test_schedule_parse",
-      "target": "test_schedule_parse_fakesettings",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "test_schedule_parse.py",
-      "source_location": "L92",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "test_schedule_parse_rationale_92",
-      "target": "test_schedule_parse_epoch_after",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
       "source_file": "tg_tts.py",
       "source_location": "L16",
       "weight": 1.0,
@@ -9158,5 +9024,5 @@
       "weight": 1.0
     }
   ],
-  "built_at_commit": "af01418aac585f5bccc21e48cb8ce697308301bf"
+  "built_at_commit": "687c445a9746b08ee8fa6b64fc9d0ea70b93edc3"
 }

@@ -83,10 +83,5 @@
     "mtime": 1785054423.349893,
     "ast_hash": "8a6643a420fdad6bfb583523bc6cef16",
     "semantic_hash": ""
-  },
-  "test_schedule_parse.py": {
-    "mtime": 1785064533.7982748,
-    "ast_hash": "0df001b507c87b9f11e5f0765bcc2949",
-    "semantic_hash": ""
   }
 }
