@@ -73,7 +73,13 @@ class HermesBridge:
         self._ready = True
         return {"success": True, "provider": self._provider, "model": self._model}
 
-    def _build_messages(self, message: str, history: list, memory_context: str | None = None, injected_skills: list | None = None) -> list[dict]:
+    def _build_messages(self, message: str, history: list,
+                         memory_context: str | None = None,
+                         injected_skills: list | None = None,
+                         system_override: str | None = None) -> list[dict]:
+        if system_override:
+            return [{"role": "system", "content": system_override},
+                    {"role": "user", "content": message}]
         sys = self.settings.SYSTEM_PROMPT
         if injected_skills:
             sys += "\n\n[SKILLS]\nRelevant procedures you know:\n"
@@ -150,13 +156,17 @@ class HermesBridge:
              memory_context: str | None = None,
              injected_skills: list | None = None,
              scope: str = "global",
-             enable_extraction: bool = False) -> str:
+             enable_extraction: bool = False,
+             system_override: str | None = None,
+             response_format: dict | None = None) -> str:
         if not self._ready:
             return "Hermes Agent is not configured. Add a provider API key."
         try:
             return self._call_llm(message, history or [], memory_context,
                                   injected_skills, scope=scope,
-                                  enable_extraction=enable_extraction)
+                                  enable_extraction=enable_extraction,
+                                  system_override=system_override,
+                                  response_format=response_format)
         except Exception as e:
             logger.exception("Chat failed")
             return f"Error: {e}"
@@ -165,9 +175,11 @@ class HermesBridge:
                   memory_context: str | None = None,
                   injected_skills: list | None = None,
                   scope: str = "global",
-                  enable_extraction: bool = False) -> str:
-        messages = self._build_messages(message, history, memory_context, injected_skills)
-        tools = self._get_tools(enable_extraction=enable_extraction)
+                  enable_extraction: bool = False,
+                  system_override: str | None = None,
+                  response_format: dict | None = None) -> str:
+        messages = self._build_messages(message, history, memory_context, injected_skills, system_override=system_override)
+        tools = [] if system_override else self._get_tools(enable_extraction=enable_extraction)
         body = {
             "model": self._model,
             "messages": messages,
@@ -175,6 +187,11 @@ class HermesBridge:
             "temperature": self.settings.TEMPERATURE,
             "stream": False,
         }
+        if system_override:
+            body["temperature"] = 0
+            body["max_tokens"] = 200
+        if response_format:
+            body["response_format"] = response_format
         if tools:
             body["tools"] = tools
             body["tool_choice"] = "auto"
