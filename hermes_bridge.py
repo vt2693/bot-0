@@ -408,8 +408,7 @@ class HermesBridge:
         )
 
         for attempt in range(3):
-            body = self.chat(text, [], system_override=system_override,
-                             response_format={"type": "json_object"})
+            body = self.chat(text, [], system_override=system_override)
             try:
                 result = json.loads(body)
             except json.JSONDecodeError:
