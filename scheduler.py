@@ -105,6 +105,19 @@ class SchedulerEngine:
 
     # -- Job execution -------------------------------------------------------
 
+    @staticmethod
+    def _daily_next_run(next_run_at: float, now: float | None = None) -> float:
+        """Given a daily job's anchor time, return next occurrence at same HH:MM."""
+        if now is None:
+            now = time.time()
+        lt = time.localtime(next_run_at)
+        now_lt = time.localtime(now)
+        target = int(time.mktime((
+            now_lt.tm_year, now_lt.tm_mon, now_lt.tm_mday,
+            lt.tm_hour, lt.tm_min, 0, 0, 0, -1
+        )))
+        return target + 86400 if target <= now else target
+
     async def _fire_job(self, job: dict) -> None:
         """Execute one job: LLM call -> send result -> update DB."""
         job_id = job["id"]
@@ -112,8 +125,6 @@ class SchedulerEngine:
         prompt = job["prompt"]
         scope = job.get("scope", "sched_global")
         mode = job.get("mode", "interval")
-        now = time.time()
-        interval = job["interval_minutes"]
 
         try:
             result = await asyncio.to_thread(
@@ -127,7 +138,14 @@ class SchedulerEngine:
                     (now, result[:500], job_id),
                 )
                 self._bot._send_message(chat_id, f"One-time job '{prompt[:60]}' completed.")
-            else:
+            elif mode == "daily":
+                next_run = self._daily_next_run(job["next_run_at"], now)
+                self._conn.execute(
+                    "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=0, last_result=? WHERE id=?",
+                    (now, next_run, result[:500], job_id),
+                )
+            else:  # interval
+                interval = job["interval_minutes"]
                 next_run = max(now, now + interval * 60)
                 self._conn.execute(
                     "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=0, last_result=? WHERE id=?",
@@ -142,8 +160,13 @@ class SchedulerEngine:
             )
             row = cur.fetchone()
             err_count = (row["error_count"] if row else 0) + 1
-            # 5-min backoff for once mode (interval=0 would give now+0=now)
-            next_run = now + 300 if mode == "once" else max(now, now + interval * 60)
+            if mode == "once":
+                next_run = now + 300  # 5-min backoff
+            elif mode == "daily":
+                next_run = self._daily_next_run(job["next_run_at"])
+            else:
+                interval = job["interval_minutes"]
+                next_run = max(now, now + interval * 60)
             if err_count >= MAX_ERRORS:
                 self._conn.execute(
                     "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=?, status='errored', last_result=? WHERE id=?",
@@ -168,6 +191,7 @@ class SchedulerEngine:
         If a job was due >2 intervals ago, skip the missed cycles and just
         push next_run forward.  If it was due within 2 intervals, let it fire
         on the next poll tick.
+        Daily-mode jobs always advance to the next occurrence at the same HH:MM.
         """
         now = time.time()
         cur = self._conn.execute(
@@ -177,16 +201,22 @@ class SchedulerEngine:
             job = self._row_to_dict(row)
             mode = job.get("mode", "interval")
             if mode == "once":
-                continue  # skip once-mode (interval=0 would ZeroDivisionError)
+                continue
+            if mode == "daily":
+                next_run = self._daily_next_run(job["next_run_at"], now)
+                if next_run != job["next_run_at"]:
+                    self._conn.execute(
+                        "UPDATE scheduled_jobs SET next_run_at=? WHERE id=?",
+                        (next_run, job["id"]),
+                    )
+                continue
+            # Interval mode
             interval_s = job["interval_minutes"] * 60
             next_run = job["next_run_at"]
-            # How many intervals behind?
             if next_run + interval_s * CATCHUP_SKIP_THRESHOLD < now:
-                # Way behind — skip to current cycle
                 elapsed = now - next_run
                 cycles_behind = int(elapsed / interval_s)
                 new_next = next_run + (cycles_behind * interval_s)
-                # Advance one more so it's >= now
                 while new_next < now:
                     new_next += interval_s
                 self._conn.execute(
@@ -197,7 +227,6 @@ class SchedulerEngine:
                     "Job %s was %d cycles behind, skipping to next run at %.0f",
                     job["id"][:8], cycles_behind, new_next,
                 )
-            # else: within threshold, fires on next poll tick naturally
         self._conn.commit()
 
     # -- CRUD ----------------------------------------------------------------

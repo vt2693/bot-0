@@ -502,12 +502,9 @@ class HermesBridge:
         is_weekday = "weekday" in match_id
         is_recurring = match_id.startswith("every_") or match_id.startswith("twice_")
 
-        # Infer am/pm when missing
-        if ampm is None and match_id in ("at_time", "at_time_nomin"):
-            if hour < 7:
-                hour24 = hour + 12
-            else:
-                hour24 = hour
+        # Bare hours (no am/pm) treated as 24-hour clock
+        if ampm is None:
+            hour24 = hour
         else:
             hour24 = self._normalize_hour(hour, ampm)
 
@@ -540,8 +537,9 @@ class HermesBridge:
             # Clean up: collapse whitespace, remove leading "to"/"me"/"a"/"the"
             prompt = re.sub(r'\s+', ' ', prompt).strip()
             prompt = re.sub(r'^(to |me |a |the )', '', prompt)
-            # Remove trailing prepositions left by time expression removal
-            prompt = re.sub(r'\s+(at|in|on|by|for|before|after)\s*$', '', prompt)
+            # Remove trailing prepositions only when time was at end of text
+            if m.end() >= len(t) - 3:
+                prompt = re.sub(r'\s+(at|in|on|by|for)\s*$', '', prompt)
             if not prompt:
                 # Use whole text minus matched expression as prompt
                 raw = t[:m.start()] + t[m.end():]
@@ -560,6 +558,10 @@ class HermesBridge:
             if re.search(r'\b(on|next|this|mon|tue|wed|thu|fri|sat|sun|'
                          r'monday|tuesday|wednesday|thursday|friday|saturday|sunday|'
                          r'tomorrow|weekday|weekdays)\b', prompt, re.I):
+                return None
+
+            # Check for remaining time expressions (duplicate match)
+            if re.search(r'\b(\d{1,2})\s*(am|pm)\b', prompt, re.I):
                 return None
 
             parsed = self._parse_time_expr(name, m, text)
@@ -582,6 +584,8 @@ class HermesBridge:
         result = self._parse_deterministic(text)
         if result and "prompt" in result and result["prompt"]:
             return result
+        if result and "prompt" in result and not result["prompt"]:
+            return {"error": "Describe what to do, e.g. '/schedule add check gmail every 15 minutes'"}
 
         now = time.time()
         date_str = time.strftime("%Y-%m-%d %A", time.localtime(now))

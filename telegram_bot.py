@@ -257,7 +257,7 @@ class TelegramBot:
             r'at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm))',
             text, re.I
         ):
-            await self._handle_schedule_add(chat_id, text)
+            await self._handle_schedule_add(chat_id, text, auto_detected=True)
             return
         hist = self._chat_history.get(key, [])
         self._enqueue_typing(chat_id)
@@ -408,15 +408,22 @@ class TelegramBot:
             text += f"\nUsage: {s['access_count']}× | Injected: {s['injection_count']}× | Created: {time.strftime('%Y-%m-%d', time.localtime(s['created_at']))}"
             self._send_message(chat_id, text)
 
-    async def _handle_schedule_add(self, chat_id: int, text: str) -> None:
+    async def _handle_schedule_add(self, chat_id: int, text: str, auto_detected: bool = False) -> None:
         """Parse /schedule add <text>, show confirmation with Yes/No inline."""
         text = text.strip()
         if not text:
+            if auto_detected:
+                return
             self._send_message(chat_id, "Describe your task, e.g. /schedule add check gmail every 15 minutes")
             return
         # Sweep expired pending confirmations
         now = time.time()
         self._pending_schedule = {k: v for k, v in self._pending_schedule.items() if v.get("expires_at", 0) > now}
+        # Cap pending size to prevent unbounded growth
+        if len(self._pending_schedule) > 50:
+            sorted_items = sorted(self._pending_schedule.items(),
+                                  key=lambda x: x[1].get("expires_at", 0), reverse=True)
+            self._pending_schedule = dict(sorted_items[:50])
         # Structured: text starts with a number (always interval)
         interval = None
         prompt = text
@@ -428,6 +435,8 @@ class TelegramBot:
             # NL parsing via LLM
             parsed = self.bridge.parse_schedule(text)
             if "error" in parsed:
+                if auto_detected:
+                    return
                 self._send_message(
                     chat_id,
                     "Couldn't parse a schedule from that. Try:\n"
