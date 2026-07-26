@@ -444,6 +444,14 @@ class HermesBridge:
                 return result
             if has_epoch:
                 epoch = result["absolute_epoch"]
+                if not isinstance(epoch, (int, float)):
+                    if attempt < 2:
+                        system_override += (
+                            f"\n\nabsolute_epoch must be a number. Got: {epoch}. "
+                            "Compute the next Unix timestamp as a number."
+                        )
+                        continue
+                    return {"error": "parse_schedule: absolute_epoch must be a number"}
                 if epoch < now - 86400:
                     if attempt < 2:
                         system_override += (
