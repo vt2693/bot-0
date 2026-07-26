@@ -394,7 +394,8 @@ class HermesBridge:
             '{"absolute_epoch": <unix_timestamp>, "prompt": "<string>"}\n'
             '{"error": "<reason>"}\n\n'
             "Rules:\n"
-            '- "every X", "in X hours/minutes", "hourly", "daily" -> interval_minutes\n'
+            '- "every N" (number only, e.g. every 15), "in N hours/minutes", "hourly", "daily" -> interval_minutes\n'
+            '- "every day at <time>", "daily at <time>" -> absolute_epoch (fixed daily time; NOT interval_minutes)\n'
             '- "at <time>", "<time> tomorrow/on <day>" -> absolute_epoch (Unix seconds, compute as seconds since 1970-01-01 UTC)\n'
             '- prompt is the task description WITHOUT timing words\n'
             '- If no scheduling intent, return {"error": "..."}\n\n'
@@ -404,6 +405,7 @@ class HermesBridge:
             '- "check gmail at 12:00 am tomorrow" -> {"absolute_epoch": <epoch>, "prompt": "check gmail"}\n'
             '- "scan at 3pm on friday" -> {"absolute_epoch": <epoch>, "prompt": "scan"}\n'
             '- "remind me in 30 minutes" -> {"interval_minutes": 30, "prompt": "remind me"}\n'
+            '- "provide weather forecast every day at 6 am" -> {"absolute_epoch": <epoch>, "prompt": "provide weather forecast"}\n'
             '- "hello" -> {"error": "no scheduling intent found"}'
         )
 

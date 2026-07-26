@@ -251,8 +251,9 @@ class TelegramBot:
             return
         # Auto-detect scheduling intent from plain chat
         if self.scheduler and re.search(
-            r'\b(check|scan|summarize|monitor|watch|fetch|poll|read|get|review|report|remind)\b.*?'
+            r'\b(check|scan|summarize|monitor|watch|fetch|poll|read|get|review|report|remind|provide)\b.*?'
             r'(?:every\s+\d+|in\s+\d+\s*(?:min|hour|day|sec)|'
+            r'every\s+day\s+at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)|'
             r'at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm))',
             text, re.I
         ):
