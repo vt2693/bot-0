@@ -20,10 +20,9 @@ $REPO_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PHONE_DIR = "~/hermes-bot"
 
 $FILES = @(
-    "android_bot.py", "tg_voice.py", "voice_relay.py",
+    "android_bot.py", "tg_voice.py",
     "telegram_bot.py", "config.py", "hermes_bridge.py",
     "composio_mcp.py", "memory_store.py", "scheduler.py",
-    "relay.py", "healthcheck.py", "app.py",
     "setup_android.sh", "start_android.sh"
 )
 
