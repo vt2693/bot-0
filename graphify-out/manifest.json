@@ -1,92 +1,82 @@
 {
   "android_bot.py": {
-    "mtime": 1784424958.7150998,
-    "ast_hash": "ccf9e7c21ef56e7246bafbb73e5ab171",
-    "semantic_hash": "ccf9e7c21ef56e7246bafbb73e5ab171"
+    "mtime": 1785577343.5558586,
+    "ast_hash": "3109344ebcfc4eee1241761386044b96",
+    "semantic_hash": ""
   },
   "composio_mcp.py": {
-    "mtime": 1784345995.2309155,
-    "ast_hash": "35b7a7a86327e5cf08a4ff2fe3bffc0d",
-    "semantic_hash": "35b7a7a86327e5cf08a4ff2fe3bffc0d"
+    "mtime": 1785577343.5558586,
+    "ast_hash": "ff08ecdaf25a532ba11eb06b58428468",
+    "semantic_hash": ""
   },
   "config.py": {
-    "mtime": 1784990712.331226,
-    "ast_hash": "9d1d581b3603e1d404b77ecaf6eb77ef",
-    "semantic_hash": "9d1d581b3603e1d404b77ecaf6eb77ef"
+    "mtime": 1785577343.5568588,
+    "ast_hash": "ac8795d2f817f0711017ca61f0c3df6c",
+    "semantic_hash": ""
   },
   "deploy_android.ps1": {
-    "mtime": 1785041306.1650653,
-    "ast_hash": "07417264cab189710a4fe2c9695c803b",
-    "semantic_hash": "07417264cab189710a4fe2c9695c803b"
+    "mtime": 1785577343.5568588,
+    "ast_hash": "2402d33b73f7f0ec79d42853dd862786",
+    "semantic_hash": ""
   },
   "hermes_bridge.py": {
-    "mtime": 1785074130.9439209,
+    "mtime": 1785577343.5728588,
     "ast_hash": "126f44ba07501c27f7c512d17941fcc1",
     "semantic_hash": ""
   },
   "memory_store.py": {
-    "mtime": 1784990402.3867064,
-    "ast_hash": "9358495efcafc06a1b7b4186604d94c6",
-    "semantic_hash": "9358495efcafc06a1b7b4186604d94c6"
+    "mtime": 1785577343.5738587,
+    "ast_hash": "9e06948baca06f6d3ce07fb4300d1a6a",
+    "semantic_hash": ""
   },
   "scheduler.py": {
-    "mtime": 1785074111.010362,
-    "ast_hash": "29a5fc0d441ec5da102c7940916fb0e5",
+    "mtime": 1785578396.4530275,
+    "ast_hash": "c4193125419e86839fd7abefe0a55136",
     "semantic_hash": ""
   },
   "setup_android.sh": {
-    "mtime": 1784990390.0016403,
+    "mtime": 1785577343.5738587,
     "ast_hash": "19597cb15aa28e674e3d5af9765768ba",
     "semantic_hash": "19597cb15aa28e674e3d5af9765768ba"
   },
   "start_android.sh": {
-    "mtime": 1784345995.2396195,
-    "ast_hash": "7efc3c2b1ffbb4ded32c290711a750db",
-    "semantic_hash": "7efc3c2b1ffbb4ded32c290711a750db"
+    "mtime": 1785577343.5738587,
+    "ast_hash": "041179a80621f72f05cda910b1f5598d",
+    "semantic_hash": ""
   },
   "telegram_bot.py": {
-    "mtime": 1785074157.001814,
-    "ast_hash": "18c139f49b2fa2dea60e6f116e8b7f7d",
+    "mtime": 1785578286.4718208,
+    "ast_hash": "2f911d79394975eb3f25ecfa994c8317",
     "semantic_hash": ""
   },
   "tg_tts.py": {
-    "mtime": 1784450853.379028,
+    "mtime": 1785577343.5758588,
     "ast_hash": "58c8d5bc12294d63a2eca9f6f1e84770",
     "semantic_hash": "58c8d5bc12294d63a2eca9f6f1e84770"
   },
   "tg_voice.py": {
-    "mtime": 1784438529.2094169,
+    "mtime": 1785577343.5758588,
     "ast_hash": "c3dc0a60f28e0c81993bfdae9f59e600",
     "semantic_hash": "c3dc0a60f28e0c81993bfdae9f59e600"
   },
   "README.md": {
-    "mtime": 1784990888.3782413,
-    "ast_hash": "d14c132cc0320ea80f07fe6e0fe2b190",
-    "semantic_hash": "d14c132cc0320ea80f07fe6e0fe2b190"
+    "mtime": 1785577343.5558586,
+    "ast_hash": "8a76ec42a64ab5e02a4a49e652235646",
+    "semantic_hash": ""
   },
   "docs/skills/deploying-hermes-agent.md": {
-    "mtime": 1785041495.3372674,
+    "mtime": 1785577343.5568588,
     "ast_hash": "41106db1bb7126ec1ec8f5f057a565d3",
     "semantic_hash": "41106db1bb7126ec1ec8f5f057a565d3"
   },
   "requirements.txt": {
-    "mtime": 1784990734.6533067,
-    "ast_hash": "42d23a858d35c952f2a0c6e7a66510ff",
-    "semantic_hash": "42d23a858d35c952f2a0c6e7a66510ff"
-  },
-  "UsersuserAppDataLocalTemptts_test.mp3": {
-    "mtime": 1784435907.1657865,
-    "ast_hash": "184f7a23cae165ec182cabae1aabbbea",
-    "semantic_hash": "184f7a23cae165ec182cabae1aabbbea"
-  },
-  "CLAUDE.md": {
-    "mtime": 1785054423.349893,
-    "ast_hash": "8a6643a420fdad6bfb583523bc6cef16",
+    "mtime": 1785577343.5738587,
+    "ast_hash": "1c18ac2fda49c49445d650a4f6276885",
     "semantic_hash": ""
   },
-  "test_schedule_parse.py": {
-    "mtime": 1785074185.3023105,
-    "ast_hash": "eb984abd696548a6c5fc8b7ffe1daa23",
+  "CLAUDE.md": {
+    "mtime": 1785577343.5558586,
+    "ast_hash": "82efb97a359f5c7290bf2513d14686be",
     "semantic_hash": ""
   }
 }
