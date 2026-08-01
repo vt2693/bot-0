@@ -643,6 +643,9 @@ class TelegramBot:
         elif data.startswith("ac:schedule_rs:"):
             job_id = data[15:]
             await _action_schedule_resume_by_id(self, chat_id, job_id)
+        elif data.startswith("ac:schedule_run:"):
+            job_id = data[len("ac:schedule_run:"):]
+            await _action_schedule_run_by_id(self, chat_id, job_id)
         elif data.startswith("ac:skill_save:"):
             token = data[len("ac:skill_save:"):]
             self._pending_skill_cleanup()
@@ -1277,17 +1280,18 @@ async def _action_schedule_list(bot: TelegramBot, chat_id: int) -> None:
         # Inline buttons for this job
         sid_full = sid
         rm_btn = {"text": "❌", "callback_data": f"ac:schedule_rmv:{sid_full}"}
+        run_btn = {"text": "⚡ Run Now", "callback_data": f"ac:schedule_run:{sid_full}"}
         if j["status"] == "completed":
             kb_rows.append([rm_btn])
         elif j["status"] == "active":
             toggle_btn = {"text": "⏸️", "callback_data": f"ac:schedule_ps:{sid_full}"}
-            kb_rows.append([rm_btn, toggle_btn])
+            kb_rows.append([run_btn, toggle_btn, rm_btn])
         elif j["status"] == "paused":
             toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid_full}"}
-            kb_rows.append([rm_btn, toggle_btn])
+            kb_rows.append([run_btn, toggle_btn, rm_btn])
         else:
             toggle_btn = {"text": "▶️", "callback_data": f"ac:schedule_rs:{sid_full}"}
-            kb_rows.append([rm_btn, toggle_btn])
+            kb_rows.append([run_btn, toggle_btn, rm_btn])
     text = "\n".join(lines)
     kb = {"inline_keyboard": kb_rows} if kb_rows else None
     bot._send_message(chat_id, text, reply_markup=kb)
@@ -1325,6 +1329,17 @@ async def _action_schedule_resume_by_id(bot: TelegramBot, chat_id: int, job_id: 
     else:
         next_s = time.strftime("%H:%M", time.localtime(r["next_run_at"]))
         bot._send_message(chat_id, f"▶️ Job resumed. Next run at {next_s}.")
+
+
+async def _action_schedule_run_by_id(bot: TelegramBot, chat_id: int, job_id: str) -> None:
+    if not bot.scheduler:
+        bot._send_message(chat_id, "Scheduler not available.")
+        return
+    r = bot.scheduler.run_now(job_id)
+    if "error" in r:
+        bot._send_message(chat_id, "Failed: " + r["error"])
+    else:
+        bot._send_message(chat_id, f"⚡ Running job {job_id[:8]} now. Result will follow.")
 
 
 # -- Skill action handlers ----------------------------------------------------

@@ -32,6 +32,7 @@ class SchedulerEngine:
         self._running = False
         self._poll_task: asyncio.Task | None = None
         self._running_jobs: set[asyncio.Task] = set()
+        self._running_job_ids: set[str] = set()
 
     # -- Lifecycle -----------------------------------------------------------
 
@@ -61,6 +62,7 @@ class SchedulerEngine:
             if pending:
                 logger.warning("Scheduler: %d jobs did not finish in time", len(pending))
             self._running_jobs.clear()
+            self._running_job_ids.clear()
         if self._conn:
             self._conn.close()
             self._conn = None
@@ -85,15 +87,29 @@ class SchedulerEngine:
                 self._clean_finished_jobs()
                 due = self._fetch_due_jobs()
                 for job in due:
-                    t = asyncio.create_task(self._fire_job(job))
-                    self._running_jobs.add(t)
-                    t.add_done_callback(self._running_jobs.discard)
+                    self._spawn_job(job)
             except Exception as e:
                 logger.exception("Scheduler poll loop error: %s", e)
             await asyncio.sleep(POLL_INTERVAL)
 
     def _clean_finished_jobs(self) -> None:
         self._running_jobs = {t for t in self._running_jobs if not t.done()}
+
+    def _spawn_job(self, job: dict, manual: bool = False) -> bool:
+        """Create and track a fire_job task, shared by poll loop and run_now.
+
+        Returns True if spawned, False if the job is already running (prevents
+        duplicate concurrent executions from poll+manual overlap or double taps).
+        """
+        if job["id"] in self._running_job_ids:
+            return False
+        t = asyncio.create_task(self._fire_job(job, manual=manual))
+        self._running_jobs.add(t)
+        self._running_job_ids.add(job["id"])
+        t.add_done_callback(
+            lambda _t: (self._running_jobs.discard(_t), self._running_job_ids.discard(job["id"]))
+        )
+        return True
 
     def _fetch_due_jobs(self) -> list[dict]:
         now = time.time()
@@ -118,8 +134,13 @@ class SchedulerEngine:
         )))
         return target + 86400 if target <= now else target
 
-    async def _fire_job(self, job: dict) -> None:
-        """Execute one job: LLM call -> send result -> update DB."""
+    async def _fire_job(self, job: dict, manual: bool = False) -> None:
+        """Execute one job: LLM call -> send result -> update DB.
+
+        When manual=True (triggered via Run Now), update last_run/last_result but
+        leave next_run_at (and thus the schedule) untouched. A manual run of a
+        one-time job marks it completed, since its purpose is fulfilled.
+        """
         job_id = job["id"]
         chat_id = job["chat_id"]
         prompt = job["prompt"]
@@ -132,7 +153,19 @@ class SchedulerEngine:
             )
             self._bot._send_message(chat_id, result[:4000])
             now = time.time()
-            if mode == "once":
+            if manual:
+                if mode == "once":
+                    self._conn.execute(
+                        "UPDATE scheduled_jobs SET last_run_at=?, status='completed', error_count=0, last_result=? WHERE id=?",
+                        (now, result[:500], job_id),
+                    )
+                    self._bot._send_message(chat_id, f"One-time job '{prompt[:60]}' completed.")
+                else:
+                    self._conn.execute(
+                        "UPDATE scheduled_jobs SET last_run_at=?, error_count=0, last_result=? WHERE id=?",
+                        (now, result[:500], job_id),
+                    )
+            elif mode == "once":
                 self._conn.execute(
                     "UPDATE scheduled_jobs SET last_run_at=?, status='completed', error_count=0, last_result=? WHERE id=?",
                     (now, result[:500], job_id),
@@ -155,6 +188,16 @@ class SchedulerEngine:
             logger.info("Job %s: OK (chat %s, mode=%s)", job_id[:8], chat_id, mode)
         except Exception as e:
             logger.exception("Job %s failed: %s", job_id[:8], e)
+            if manual:
+                self._conn.execute(
+                    "UPDATE scheduled_jobs SET last_run_at=?, last_result=? WHERE id=?",
+                    (time.time(), str(e)[:500], job_id),
+                )
+                self._conn.commit()
+                self._bot._send_message(
+                    chat_id, f"⚡ Manual run of '{prompt[:60]}' failed: {e}"
+                )
+                return
             cur = self._conn.execute(
                 "SELECT error_count FROM scheduled_jobs WHERE id=?", (job_id,)
             )
@@ -316,3 +359,16 @@ class SchedulerEngine:
         )
         row = cur.fetchone()
         return self._row_to_dict(row) if row else None
+
+    def run_now(self, job_id: str) -> dict:
+        """Fire a job immediately without disturbing its schedule.
+
+        Returns {'success': True} or {'error': ...}. The result is delivered
+        asynchronously to the job's chat by the spawned _fire_job task.
+        """
+        job = self.get_job(job_id)
+        if not job:
+            return {"error": "Job not found"}
+        if not self._spawn_job(job, manual=True):
+            return {"error": "Job already running"}
+        return {"success": True}
