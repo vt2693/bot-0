@@ -33,6 +33,12 @@ class SchedulerEngine:
         self._poll_task: asyncio.Task | None = None
         self._running_jobs: set[asyncio.Task] = set()
         self._running_job_ids: set[str] = set()
+        # Event-driven dispatch: job_id -> next_run_at for active jobs. A single
+        # dispatcher task wakes at the earliest next_run_at so due jobs start
+        # promptly instead of waiting for the next 30s poll tick.
+        self._timers: dict[str, float] = {}
+        self._wake: asyncio.Event = asyncio.Event()
+        self._dispatcher_task: asyncio.Task | None = None
 
     # -- Lifecycle -----------------------------------------------------------
 
@@ -41,7 +47,9 @@ class SchedulerEngine:
         self._conn = self._get_conn()
         self._catch_up_missed_jobs()
         self._running = True
+        self._refresh_timers()
         self._poll_task = asyncio.create_task(self._poll_loop())
+        self._dispatcher_task = asyncio.create_task(self._dispatcher_loop())
         logger.info("Scheduler started, polling every %ds", POLL_INTERVAL)
 
     async def stop(self) -> None:
@@ -54,6 +62,13 @@ class SchedulerEngine:
             except asyncio.CancelledError:
                 pass
             self._poll_task = None
+        if self._dispatcher_task:
+            self._dispatcher_task.cancel()
+            try:
+                await self._dispatcher_task
+            except asyncio.CancelledError:
+                pass
+            self._dispatcher_task = None
         # Cancel any running job tasks
         if self._running_jobs:
             for t in list(self._running_jobs):
@@ -94,6 +109,52 @@ class SchedulerEngine:
 
     def _clean_finished_jobs(self) -> None:
         self._running_jobs = {t for t in self._running_jobs if not t.done()}
+
+    # -- Event-driven dispatch ------------------------------------------------
+
+    def _refresh_timers(self) -> None:
+        """Load active jobs' next_run_at into the timer map (cold-boot path)."""
+        self._timers = {}
+        cur = self._conn.execute(
+            "SELECT id, next_run_at FROM scheduled_jobs WHERE status='active'"
+        )
+        for r in cur:
+            self._timers[r["id"]] = r["next_run_at"]
+        self._wake.set()
+
+    def _set_timer(self, job_id: str, next_run_at: float) -> None:
+        self._timers[job_id] = next_run_at
+        self._wake.set()
+
+    def _clear_timer(self, job_id: str) -> None:
+        self._timers.pop(job_id, None)
+        self._wake.set()
+
+    async def _dispatcher_loop(self) -> None:
+        """Wake at the earliest next_run_at and spawn due jobs promptly.
+
+        The 30s poll sweep remains as a catch-up/cleanup backstop; this loop
+        removes the coarse poll granularity for timely dispatch.
+        """
+        while self._running:
+            now = time.time()
+            for jid in [jid for jid, t in self._timers.items() if t <= now]:
+                job = self.get_job(jid)
+                if not job or job["status"] != "active":
+                    self._timers.pop(jid, None)
+                elif job["next_run_at"] <= now and self._spawn_job(job):
+                    self._timers.pop(jid, None)  # _fire_job re-arms via _set_timer
+            self._wake.clear()
+            nxt = min(self._timers.values()) if self._timers else None
+            if nxt is None:
+                await self._wake.wait()
+            else:
+                try:
+                    await asyncio.wait_for(
+                        self._wake.wait(), timeout=max(0.0, nxt - time.time())
+                    )
+                except asyncio.TimeoutError:
+                    pass
 
     def _spawn_job(self, job: dict, manual: bool = False) -> bool:
         """Create and track a fire_job task, shared by poll loop and run_now.
@@ -147,6 +208,8 @@ class SchedulerEngine:
         scope = job.get("scope", "sched_global")
         mode = job.get("mode", "interval")
 
+        logger.info("Job %s: started (manual=%s)", job_id[:8], manual)
+
         try:
             result = await asyncio.to_thread(
                 self._bridge.chat_with_memory, prompt, [], scope
@@ -160,6 +223,7 @@ class SchedulerEngine:
                         (now, result[:500], job_id),
                     )
                     self._bot._send_message(chat_id, f"One-time job '{prompt[:60]}' completed.")
+                    self._clear_timer(job_id)
                 else:
                     self._conn.execute(
                         "UPDATE scheduled_jobs SET last_run_at=?, error_count=0, last_result=? WHERE id=?",
@@ -171,12 +235,14 @@ class SchedulerEngine:
                     (now, result[:500], job_id),
                 )
                 self._bot._send_message(chat_id, f"One-time job '{prompt[:60]}' completed.")
+                self._clear_timer(job_id)
             elif mode == "daily":
                 next_run = self._daily_next_run(job["next_run_at"], now)
                 self._conn.execute(
                     "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=0, last_result=? WHERE id=?",
                     (now, next_run, result[:500], job_id),
                 )
+                self._set_timer(job_id, next_run)
             else:  # interval
                 interval = job["interval_minutes"]
                 next_run = max(now, now + interval * 60)
@@ -184,6 +250,7 @@ class SchedulerEngine:
                     "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=0, last_result=? WHERE id=?",
                     (now, next_run, result[:500], job_id),
                 )
+                self._set_timer(job_id, next_run)
             self._conn.commit()
             logger.info("Job %s: OK (chat %s, mode=%s)", job_id[:8], chat_id, mode)
         except Exception as e:
@@ -219,11 +286,13 @@ class SchedulerEngine:
                     chat_id,
                     f"Job '{prompt[:60]}' paused after {err_count} consecutive failures. Last error: {e}",
                 )
+                self._clear_timer(job_id)
             else:
                 self._conn.execute(
                     "UPDATE scheduled_jobs SET last_run_at=?, next_run_at=?, error_count=?, last_result=? WHERE id=?",
                     (now, next_run, err_count, str(e)[:500], job_id),
                 )
+                self._set_timer(job_id, next_run)
             self._conn.commit()
 
     # -- Cold-boot catch-up --------------------------------------------------
@@ -306,6 +375,7 @@ class SchedulerEngine:
         )
         self._conn.commit()
         self._memory_store.sync()
+        self._set_timer(job_id, next_run)
         logger.info("Job %s created: chat %s, mode=%s", job_id[:8], chat_id, mode)
         return {"success": True, "id": job_id, "next_run_at": next_run}
 
@@ -314,6 +384,7 @@ class SchedulerEngine:
         self._conn.commit()
         if cur.rowcount:
             self._memory_store.sync()
+            self._clear_timer(job_id)
             return {"success": True}
         return {"error": "Job not found"}
 
@@ -325,6 +396,7 @@ class SchedulerEngine:
         self._conn.commit()
         if cur.rowcount:
             self._memory_store.sync()
+            self._clear_timer(job_id)
             return {"success": True}
         return {"error": "Job not found or already paused"}
 
@@ -344,6 +416,7 @@ class SchedulerEngine:
         )
         self._conn.commit()
         self._memory_store.sync()
+        self._set_timer(job_id, next_run)
         return {"success": True, "next_run_at": next_run}
 
     def list_jobs(self, chat_id: int) -> list[dict]:

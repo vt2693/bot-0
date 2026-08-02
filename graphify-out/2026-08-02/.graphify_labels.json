@@ -4,7 +4,7 @@
   "2": "android_bot.py",
   "3": "SchedulerEngine",
   "4": "HermesBridge",
-  "5": "._edit_message",
+  "5": "telegram_bot.py",
   "6": "._send_message",
   "7": "TelegramBot",
   "8": "ComposioMCP",
@@ -18,5 +18,7 @@
   "16": "_jira_workbench_code",
   "17": "deploy_android.ps1",
   "18": "CLAUDE.md",
+  "19": "._send_direct",
+  "20": ".peek_outbox",
   "21": "_action_tts_toggle"
 }

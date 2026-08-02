@@ -1,0 +1,22 @@
+{
+  "0": "Documentation & README",
+  "1": "Memory Store",
+  "2": "Android Bot Core",
+  "3": "Scheduler Engine",
+  "4": "Hermes Bridge LLM",
+  "5": "Telegram Bot Actions",
+  "6": "Telegram Bot Callbacks & Commands",
+  "7": "Telegram Bot Lifecycle & Queue",
+  "8": "Composio MCP",
+  "9": "Jira Operations",
+  "10": "Message Handling",
+  "12": "TTS Voice Output",
+  "13": "TTS Synthesis",
+  "14": "Startup Script",
+  "15": "Setup Script",
+  "16": "Jira Workbench",
+  "17": "Deploy Script",
+  "18": "CLAUDE.md",
+  "19": "._send_direct",
+  "20": ".peek_outbox"
+}

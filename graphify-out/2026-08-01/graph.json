@@ -40,7 +40,7 @@
       "_origin": "ast",
       "id": "android_bot",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "android_bot.py"
     },
     {
@@ -51,7 +51,7 @@
       "_origin": "ast",
       "id": "android_bot_get_updates_sync",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "_get_updates_sync()"
     },
     {
@@ -62,7 +62,7 @@
       "_origin": "ast",
       "id": "android_bot_drain_outbox",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "_drain_outbox()"
     },
     {
@@ -73,7 +73,7 @@
       "_origin": "ast",
       "id": "android_bot_process_voice",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "_process_voice()"
     },
     {
@@ -84,7 +84,7 @@
       "_origin": "ast",
       "id": "android_bot_py_path",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "path"
     },
     {
@@ -95,7 +95,7 @@
       "_origin": "ast",
       "id": "android_bot_poll_loop",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "_poll_loop()"
     },
     {
@@ -106,19 +106,19 @@
       "_origin": "ast",
       "id": "android_bot_main",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "main()"
     },
     {
-      "label": "Hermes Agent \u2014 Android/Termux entry point (headless Telegram bot). Reuses all\u2026",
+      "label": "Hermes Agent \u2014 Android/Termux entry point (headless Telegram bot).  Reuses all",
       "file_type": "rationale",
       "source_file": "android_bot.py",
       "source_location": "L1",
       "_origin": "ast",
       "id": "android_bot_rationale_1",
       "community": 2,
-      "community_name": "android_bot.py",
-      "norm_label": "hermes agent \u2014 android/termux entry point (headless telegram bot). reuses all..."
+      "community_name": "Android Bot Core",
+      "norm_label": "hermes agent \u2014 android/termux entry point (headless telegram bot).  reuses all"
     },
     {
       "label": "Synchronous getUpdates call (runs in asyncio.to_thread).",
@@ -128,7 +128,7 @@
       "_origin": "ast",
       "id": "android_bot_rationale_35",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "synchronous getupdates call (runs in asyncio.to_thread)."
     },
     {
@@ -139,19 +139,19 @@
       "_origin": "ast",
       "id": "android_bot_rationale_47",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "background task: drain outbox and deliver directly to telegram api."
     },
     {
-      "label": "Download Telegram voice, transcribe, return transcript. Sends progress messages\u2026",
+      "label": "Download Telegram voice, transcribe, return transcript.      Sends progress me",
       "file_type": "rationale",
       "source_file": "android_bot.py",
       "source_location": "L72",
       "_origin": "ast",
       "id": "android_bot_rationale_72",
       "community": 2,
-      "community_name": "android_bot.py",
-      "norm_label": "download telegram voice, transcribe, return transcript. sends progress messages..."
+      "community_name": "Android Bot Core",
+      "norm_label": "download telegram voice, transcribe, return transcript.      sends progress me"
     },
     {
       "label": "Poll getUpdates, process voice inline, feed into enqueue_update.",
@@ -161,7 +161,7 @@
       "_origin": "ast",
       "id": "android_bot_rationale_116",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "poll getupdates, process voice inline, feed into enqueue_update."
     },
     {
@@ -172,7 +172,7 @@
       "_origin": "ast",
       "id": "android_bot_rationale_151",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "initialize all components and start the poll loop."
     },
     {
@@ -183,7 +183,7 @@
       "_origin": "ast",
       "id": "composio_mcp",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": "composio_mcp.py"
     },
     {
@@ -194,7 +194,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": "composiomcp"
     },
     {
@@ -205,7 +205,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_init",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": ".__init__()"
     },
     {
@@ -216,7 +216,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_configured",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": ".configured()"
     },
     {
@@ -227,7 +227,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_initialize_async",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": ".initialize_async()"
     },
     {
@@ -238,7 +238,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_rpc",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": "._rpc()"
     },
     {
@@ -249,7 +249,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_get_openai_tools",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": ".get_openai_tools()"
     },
     {
@@ -260,7 +260,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_call_tool",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": ".call_tool()"
     },
     {
@@ -271,7 +271,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_call_tool_sync",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": ".call_tool_sync()"
     },
     {
@@ -282,7 +282,7 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_close",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": ".close()"
     },
     {
@@ -293,19 +293,19 @@
       "_origin": "ast",
       "id": "composio_mcp_composiomcp_status",
       "community": 8,
-      "community_name": "ComposioMCP",
+      "community_name": "Composio MCP",
       "norm_label": ".status()"
     },
     {
-      "label": "Synchronous version \u2014 uses httpx.Client, no event loop needed. Used from\u2026",
+      "label": "Synchronous version \u2014 uses httpx.Client, no event loop needed.          Used f",
       "file_type": "rationale",
       "source_file": "composio_mcp.py",
       "source_location": "L73",
       "_origin": "ast",
       "id": "composio_mcp_rationale_73",
       "community": 8,
-      "community_name": "ComposioMCP",
-      "norm_label": "synchronous version \u2014 uses httpx.client, no event loop needed. used from..."
+      "community_name": "Composio MCP",
+      "norm_label": "synchronous version \u2014 uses httpx.client, no event loop needed.          used f"
     },
     {
       "label": "config.py",
@@ -315,7 +315,7 @@
       "_origin": "ast",
       "id": "config",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "config.py"
     },
     {
@@ -326,7 +326,7 @@
       "_origin": "ast",
       "id": "config_settings",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "settings"
     },
     {
@@ -337,7 +337,7 @@
       "_origin": "ast",
       "id": "config_settings_provider_name",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": ".provider_name()"
     },
     {
@@ -348,7 +348,7 @@
       "_origin": "ast",
       "id": "config_settings_has_api_key",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": ".has_api_key()"
     },
     {
@@ -359,7 +359,7 @@
       "_origin": "ast",
       "id": "config_get_settings",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "get_settings()"
     },
     {
@@ -370,7 +370,7 @@
       "_origin": "ast",
       "id": "deploy_android",
       "community": 17,
-      "community_name": "deploy_android.ps1",
+      "community_name": "Deploy Script",
       "norm_label": "deploy_android.ps1"
     },
     {
@@ -381,7 +381,7 @@
       "_origin": "ast",
       "id": "hermes_bridge",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "hermes_bridge.py"
     },
     {
@@ -392,7 +392,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "hermesbridge"
     },
     {
@@ -403,7 +403,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_init",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".__init__()"
     },
     {
@@ -414,7 +414,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_resolve_model",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._resolve_model()"
     },
     {
@@ -425,7 +425,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_resolve_base_url",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._resolve_base_url()"
     },
     {
@@ -436,7 +436,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_resolve_api_key",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._resolve_api_key()"
     },
     {
@@ -447,7 +447,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_memory_stats",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".memory_stats()"
     },
     {
@@ -458,7 +458,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_initialize",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".initialize()"
     },
     {
@@ -469,7 +469,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_available_providers",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".available_providers()"
     },
     {
@@ -480,7 +480,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_switch_model",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".switch_model()"
     },
     {
@@ -491,7 +491,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_switch_provider",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".switch_provider()"
     },
     {
@@ -502,7 +502,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_build_messages",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._build_messages()"
     },
     {
@@ -513,7 +513,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_get_tools",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._get_tools()"
     },
     {
@@ -524,7 +524,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_build_extract_tool",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._build_extract_tool()"
     },
     {
@@ -535,7 +535,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_chat",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".chat()"
     },
     {
@@ -546,7 +546,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_call_llm",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._call_llm()"
     },
     {
@@ -557,7 +557,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_execute_tool",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._execute_tool()"
     },
     {
@@ -568,7 +568,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_handle_extract_facts",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._handle_extract_facts()"
     },
     {
@@ -579,7 +579,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_auto_learn_enabled",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._auto_learn_enabled()"
     },
     {
@@ -590,7 +590,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_chat_with_memory",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".chat_with_memory()"
     },
     {
@@ -601,7 +601,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_detect_skill",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._detect_skill()"
     },
     {
@@ -612,7 +612,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_compute_epoch",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._compute_epoch()"
     },
     {
@@ -623,7 +623,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_normalize_hour",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._normalize_hour()"
     },
     {
@@ -634,7 +634,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_parse_time_expr",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._parse_time_expr()"
     },
     {
@@ -645,7 +645,7 @@
       "_origin": "ast",
       "id": "match",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "match"
     },
     {
@@ -656,7 +656,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_parse_deterministic",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "._parse_deterministic()"
     },
     {
@@ -667,7 +667,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_parse_schedule",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".parse_schedule()"
     },
     {
@@ -678,7 +678,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_generate_minutes",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".generate_minutes()"
     },
     {
@@ -689,7 +689,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_hermesbridge_status",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": ".status()"
     },
     {
@@ -700,7 +700,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_rationale_422",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "compute epoch for hh:mm today/tomorrow/next-weekday in local time."
     },
     {
@@ -711,7 +711,7 @@
       "_origin": "ast",
       "id": "hermes_bridge_rationale_441",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "convert 12-hour clock to 24-hour. ampm is 'am'/'pm' or none."
     },
     {
@@ -722,30 +722,30 @@
       "_origin": "ast",
       "id": "hermes_bridge_rationale_452",
       "community": 4,
-      "community_name": "HermesBridge",
+      "community_name": "Hermes Bridge LLM",
       "norm_label": "convert a matched time expression into interval_minutes or absolute_epoch."
     },
     {
-      "label": "Try to extract schedule from text using regex patterns. Returns\u2026",
+      "label": "Try to extract schedule from text using regex patterns.         Returns {\"interv",
       "file_type": "rationale",
       "source_file": "hermes_bridge.py",
       "source_location": "L524",
       "_origin": "ast",
       "id": "hermes_bridge_rationale_524",
       "community": 4,
-      "community_name": "HermesBridge",
-      "norm_label": "try to extract schedule from text using regex patterns. returns..."
+      "community_name": "Hermes Bridge LLM",
+      "norm_label": "try to extract schedule from text using regex patterns.         returns {\"interv"
     },
     {
-      "label": "Parse natural-language scheduling intent. Tries deterministic regex first,\u2026",
+      "label": "Parse natural-language scheduling intent.         Tries deterministic regex firs",
       "file_type": "rationale",
       "source_file": "hermes_bridge.py",
       "source_location": "L576",
       "_origin": "ast",
       "id": "hermes_bridge_rationale_576",
       "community": 4,
-      "community_name": "HermesBridge",
-      "norm_label": "parse natural-language scheduling intent. tries deterministic regex first,..."
+      "community_name": "Hermes Bridge LLM",
+      "norm_label": "parse natural-language scheduling intent.         tries deterministic regex firs"
     },
     {
       "label": "memory_store.py",
@@ -754,8 +754,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "memory_store",
-      "community": 2,
-      "community_name": "android_bot.py",
+      "community": 1,
+      "community_name": "Memory Store",
       "norm_label": "memory_store.py"
     },
     {
@@ -766,7 +766,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "memorystore"
     },
     {
@@ -777,7 +777,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_init",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".__init__()"
     },
     {
@@ -788,7 +788,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_ready",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".ready()"
     },
     {
@@ -799,7 +799,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_init_db",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "._init_db()"
     },
     {
@@ -810,7 +810,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_open_conn",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".open_conn()"
     },
     {
@@ -821,7 +821,7 @@
       "_origin": "ast",
       "id": "memory_store_py_connection",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "connection"
     },
     {
@@ -832,7 +832,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_row",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "._row()"
     },
     {
@@ -843,7 +843,7 @@
       "_origin": "ast",
       "id": "memory_store_py_row",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "row"
     },
     {
@@ -854,7 +854,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_add",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".add()"
     },
     {
@@ -865,7 +865,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_search",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".search()"
     },
     {
@@ -876,7 +876,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_recent_facts",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "._recent_facts()"
     },
     {
@@ -887,7 +887,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_get_relevant",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".get_relevant()"
     },
     {
@@ -898,7 +898,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_probe",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".probe()"
     },
     {
@@ -909,7 +909,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_reason",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".reason()"
     },
     {
@@ -920,7 +920,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_add_feedback",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".add_feedback()"
     },
     {
@@ -931,7 +931,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_clear",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".clear()"
     },
     {
@@ -942,7 +942,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_cleanup_low_trust",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".cleanup_low_trust()"
     },
     {
@@ -953,7 +953,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_stats",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".stats()"
     },
     {
@@ -964,7 +964,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_status",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".status()"
     },
     {
@@ -975,7 +975,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_close",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".close()"
     },
     {
@@ -986,7 +986,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_sync",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".sync()"
     },
     {
@@ -997,7 +997,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_row",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "._skill_row()"
     },
     {
@@ -1008,7 +1008,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_add",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".skill_add()"
     },
     {
@@ -1019,7 +1019,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_search",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".skill_search()"
     },
     {
@@ -1030,7 +1030,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_list",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".skill_list()"
     },
     {
@@ -1041,7 +1041,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_get",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".skill_get()"
     },
     {
@@ -1052,7 +1052,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_update",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".skill_update()"
     },
     {
@@ -1063,7 +1063,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_remove",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".skill_remove()"
     },
     {
@@ -1074,7 +1074,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_inject",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".skill_inject()"
     },
     {
@@ -1085,7 +1085,7 @@
       "_origin": "ast",
       "id": "memory_store_memorystore_skill_record_usage",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": ".skill_record_usage()"
     },
     {
@@ -1096,7 +1096,7 @@
       "_origin": "ast",
       "id": "memory_store_rationale_86",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "return a fresh connection to the same db (for schedulerengine)."
     },
     {
@@ -1107,7 +1107,7 @@
       "_origin": "ast",
       "id": "memory_store_rationale_206",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "no-op \u2014 remote backup removed."
     },
     {
@@ -1118,7 +1118,7 @@
       "_origin": "ast",
       "id": "memory_store_rationale_225",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "add a skill. upserts on normalized title match."
     },
     {
@@ -1129,7 +1129,7 @@
       "_origin": "ast",
       "id": "memory_store_rationale_254",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "like-based token match on title + problem + tags. excludes inactive."
     },
     {
@@ -1140,7 +1140,7 @@
       "_origin": "ast",
       "id": "memory_store_rationale_329",
       "community": 1,
-      "community_name": "MemoryStore",
+      "community_name": "Memory Store",
       "norm_label": "search + increment injection_count. for injection pipeline."
     },
     {
@@ -1151,7 +1151,7 @@
       "_origin": "ast",
       "id": "scheduler",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "scheduler.py"
     },
     {
@@ -1162,7 +1162,7 @@
       "_origin": "ast",
       "id": "scheduler_schedulerengine",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "schedulerengine"
     },
     {
@@ -1173,40 +1173,40 @@
       "_origin": "ast",
       "id": "scheduler_schedulerengine_init",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".__init__()"
     },
     {
       "label": ".start()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L45",
+      "source_location": "L38",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_start",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".start()"
     },
     {
       "label": ".stop()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L55",
+      "source_location": "L46",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_stop",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".stop()"
     },
     {
       "label": "._get_conn()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L88",
+      "source_location": "L71",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_get_conn",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "._get_conn()"
     },
     {
@@ -1217,18 +1217,18 @@
       "_origin": "ast",
       "id": "scheduler_py_connection",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "connection"
     },
     {
       "label": "._row_to_dict()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L94",
+      "source_location": "L77",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_row_to_dict",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "._row_to_dict()"
     },
     {
@@ -1239,327 +1239,217 @@
       "_origin": "ast",
       "id": "scheduler_py_row",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "row"
     },
     {
       "label": "._poll_loop()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L99",
+      "source_location": "L82",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_poll_loop",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "._poll_loop()"
     },
     {
       "label": "._clean_finished_jobs()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L110",
+      "source_location": "L95",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_clean_finished_jobs",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "._clean_finished_jobs()"
-    },
-    {
-      "label": "._refresh_timers()",
-      "file_type": "code",
-      "source_file": "scheduler.py",
-      "source_location": "L115",
-      "_origin": "ast",
-      "id": "scheduler_schedulerengine_refresh_timers",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "._refresh_timers()"
-    },
-    {
-      "label": "._set_timer()",
-      "file_type": "code",
-      "source_file": "scheduler.py",
-      "source_location": "L125",
-      "_origin": "ast",
-      "id": "scheduler_schedulerengine_set_timer",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "._set_timer()"
-    },
-    {
-      "label": "._clear_timer()",
-      "file_type": "code",
-      "source_file": "scheduler.py",
-      "source_location": "L129",
-      "_origin": "ast",
-      "id": "scheduler_schedulerengine_clear_timer",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "._clear_timer()"
-    },
-    {
-      "label": "._dispatcher_loop()",
-      "file_type": "code",
-      "source_file": "scheduler.py",
-      "source_location": "L133",
-      "_origin": "ast",
-      "id": "scheduler_schedulerengine_dispatcher_loop",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "._dispatcher_loop()"
-    },
-    {
-      "label": "._spawn_job()",
-      "file_type": "code",
-      "source_file": "scheduler.py",
-      "source_location": "L159",
-      "_origin": "ast",
-      "id": "scheduler_schedulerengine_spawn_job",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "._spawn_job()"
     },
     {
       "label": "._fetch_due_jobs()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L175",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_fetch_due_jobs",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "._fetch_due_jobs()"
     },
     {
       "label": "._daily_next_run()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L186",
+      "source_location": "L109",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_daily_next_run",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "._daily_next_run()"
     },
     {
       "label": "._fire_job()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L198",
+      "source_location": "L121",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_fire_job",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "._fire_job()"
     },
     {
       "label": "._catch_up_missed_jobs()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L300",
+      "source_location": "L188",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_catch_up_missed_jobs",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "._catch_up_missed_jobs()"
     },
     {
       "label": ".add_job()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L346",
+      "source_location": "L234",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_add_job",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".add_job()"
     },
     {
       "label": ".remove_job()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L382",
+      "source_location": "L269",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_remove_job",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".remove_job()"
     },
     {
       "label": ".pause_job()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L391",
+      "source_location": "L277",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_pause_job",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".pause_job()"
     },
     {
       "label": ".resume_job()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L403",
+      "source_location": "L288",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_resume_job",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".resume_job()"
     },
     {
       "label": ".list_jobs()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L422",
+      "source_location": "L306",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_list_jobs",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".list_jobs()"
     },
     {
       "label": ".get_job()",
       "file_type": "code",
       "source_file": "scheduler.py",
-      "source_location": "L429",
+      "source_location": "L313",
       "_origin": "ast",
       "id": "scheduler_schedulerengine_get_job",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": ".get_job()"
     },
     {
-      "label": ".run_now()",
-      "file_type": "code",
-      "source_file": "scheduler.py",
-      "source_location": "L436",
-      "_origin": "ast",
-      "id": "scheduler_schedulerengine_run_now",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": ".run_now()"
-    },
-    {
-      "label": "Lightweight in-process scheduler using SQLite persistence. Runs an async poll\u2026",
+      "label": "Lightweight in-process scheduler using SQLite persistence.      Runs an async",
       "file_type": "rationale",
       "source_file": "scheduler.py",
       "source_location": "L19",
       "_origin": "ast",
       "id": "scheduler_rationale_19",
       "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "lightweight in-process scheduler using sqlite persistence. runs an async poll..."
+      "community_name": "Scheduler Engine",
+      "norm_label": "lightweight in-process scheduler using sqlite persistence.      runs an async"
     },
     {
       "label": "Open DB conn, catch up missed jobs, begin poll loop.",
       "file_type": "rationale",
       "source_file": "scheduler.py",
-      "source_location": "L46",
+      "source_location": "L39",
       "_origin": "ast",
-      "id": "scheduler_rationale_46",
+      "id": "scheduler_rationale_39",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "open db conn, catch up missed jobs, begin poll loop."
     },
     {
       "label": "Shut down poll loop and cancel any in-flight job executions.",
       "file_type": "rationale",
       "source_file": "scheduler.py",
-      "source_location": "L56",
+      "source_location": "L47",
       "_origin": "ast",
-      "id": "scheduler_rationale_56",
+      "id": "scheduler_rationale_47",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "shut down poll loop and cancel any in-flight job executions."
-    },
-    {
-      "label": "Load active jobs' next_run_at into the timer map (cold-boot path).",
-      "file_type": "rationale",
-      "source_file": "scheduler.py",
-      "source_location": "L116",
-      "_origin": "ast",
-      "id": "scheduler_rationale_116",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "load active jobs' next_run_at into the timer map (cold-boot path)."
-    },
-    {
-      "label": "Wake at the earliest next_run_at and spawn due jobs promptly. The 30s poll\u2026",
-      "file_type": "rationale",
-      "source_file": "scheduler.py",
-      "source_location": "L134",
-      "_origin": "ast",
-      "id": "scheduler_rationale_134",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "wake at the earliest next_run_at and spawn due jobs promptly. the 30s poll..."
-    },
-    {
-      "label": "Create and track a fire_job task, shared by poll loop and run_now. Returns True\u2026",
-      "file_type": "rationale",
-      "source_file": "scheduler.py",
-      "source_location": "L160",
-      "_origin": "ast",
-      "id": "scheduler_rationale_160",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "create and track a fire_job task, shared by poll loop and run_now. returns true..."
     },
     {
       "label": "Given a daily job's anchor time, return next occurrence at same HH:MM.",
       "file_type": "rationale",
       "source_file": "scheduler.py",
-      "source_location": "L187",
+      "source_location": "L110",
       "_origin": "ast",
-      "id": "scheduler_rationale_187",
+      "id": "scheduler_rationale_110",
       "community": 3,
-      "community_name": "SchedulerEngine",
+      "community_name": "Scheduler Engine",
       "norm_label": "given a daily job's anchor time, return next occurrence at same hh:mm."
     },
     {
-      "label": "Execute one job: LLM call -> send result -> update DB. When manual=True\u2026",
+      "label": "Execute one job: LLM call -> send result -> update DB.",
       "file_type": "rationale",
       "source_file": "scheduler.py",
-      "source_location": "L199",
+      "source_location": "L122",
       "_origin": "ast",
-      "id": "scheduler_rationale_199",
+      "id": "scheduler_rationale_122",
       "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "execute one job: llm call -> send result -> update db. when manual=true..."
+      "community_name": "Scheduler Engine",
+      "norm_label": "execute one job: llm call -> send result -> update db."
     },
     {
-      "label": "Recompute next_run for jobs that fired while we were offline. If a job was due\u2026",
+      "label": "Recompute next_run for jobs that fired while we were offline.          If a jo",
       "file_type": "rationale",
       "source_file": "scheduler.py",
-      "source_location": "L301",
+      "source_location": "L189",
       "_origin": "ast",
-      "id": "scheduler_rationale_301",
+      "id": "scheduler_rationale_189",
       "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "recompute next_run for jobs that fired while we were offline. if a job was due..."
+      "community_name": "Scheduler Engine",
+      "norm_label": "recompute next_run for jobs that fired while we were offline.          if a jo"
     },
     {
-      "label": "Create a new scheduled job. Returns {'success': True, 'id': ...} or {'error':\u2026",
+      "label": "Create a new scheduled job. Returns {'success': True, 'id': ...} or {'error': ..",
       "file_type": "rationale",
       "source_file": "scheduler.py",
-      "source_location": "L348",
+      "source_location": "L236",
       "_origin": "ast",
-      "id": "scheduler_rationale_348",
+      "id": "scheduler_rationale_236",
       "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "create a new scheduled job. returns {'success': true, 'id': ...} or {'error':..."
-    },
-    {
-      "label": "Fire a job immediately without disturbing its schedule. Returns {'success':\u2026",
-      "file_type": "rationale",
-      "source_file": "scheduler.py",
-      "source_location": "L437",
-      "_origin": "ast",
-      "id": "scheduler_rationale_437",
-      "community": 3,
-      "community_name": "SchedulerEngine",
-      "norm_label": "fire a job immediately without disturbing its schedule. returns {'success':..."
+      "community_name": "Scheduler Engine",
+      "norm_label": "create a new scheduled job. returns {'success': true, 'id': ...} or {'error': .."
     },
     {
       "label": "setup_android.sh",
@@ -1573,7 +1463,7 @@
       "_origin": "ast",
       "id": "setup_android",
       "community": 15,
-      "community_name": "setup_android.sh",
+      "community_name": "Setup Script",
       "norm_label": "setup_android.sh"
     },
     {
@@ -1588,7 +1478,7 @@
       "_origin": "ast",
       "id": "setup_android_sh__entry",
       "community": 15,
-      "community_name": "setup_android.sh",
+      "community_name": "Setup Script",
       "norm_label": "setup_android.sh script"
     },
     {
@@ -1603,7 +1493,7 @@
       "_origin": "ast",
       "id": "start_android",
       "community": 14,
-      "community_name": "start_android.sh",
+      "community_name": "Startup Script",
       "norm_label": "start_android.sh"
     },
     {
@@ -1618,7 +1508,7 @@
       "_origin": "ast",
       "id": "start_android_sh__entry",
       "community": 14,
-      "community_name": "start_android.sh",
+      "community_name": "Startup Script",
       "norm_label": "start_android.sh script"
     },
     {
@@ -1633,7 +1523,7 @@
       "_origin": "ast",
       "id": "start_android_path",
       "community": 14,
-      "community_name": "start_android.sh",
+      "community_name": "Startup Script",
       "norm_label": "path"
     },
     {
@@ -1648,7 +1538,7 @@
       "_origin": "ast",
       "id": "start_android_temp_dir",
       "community": 14,
-      "community_name": "start_android.sh",
+      "community_name": "Startup Script",
       "norm_label": "temp_dir"
     },
     {
@@ -1663,7 +1553,7 @@
       "_origin": "ast",
       "id": "start_android_work_dir",
       "community": 14,
-      "community_name": "start_android.sh",
+      "community_name": "Startup Script",
       "norm_label": "work_dir"
     },
     {
@@ -1673,8 +1563,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "telegram_bot",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "telegram_bot.py"
     },
     {
@@ -1685,7 +1575,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": "telegrambot"
     },
     {
@@ -1696,7 +1586,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_init",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".__init__()"
     },
     {
@@ -1707,7 +1597,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_configured",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".configured()"
     },
     {
@@ -1718,7 +1608,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_initialize_async",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".initialize_async()"
     },
     {
@@ -1729,7 +1619,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_enqueue_config",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".enqueue_config()"
     },
     {
@@ -1740,7 +1630,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_configure_commands",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".configure_commands()"
     },
     {
@@ -1751,7 +1641,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_enqueue_update",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".enqueue_update()"
     },
     {
@@ -1761,8 +1651,8 @@
       "source_location": "L128",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_process_queue_worker",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": ".process_queue_worker()"
     },
     {
@@ -1773,7 +1663,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_process_update",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": ".process_update()"
     },
     {
@@ -1784,7 +1674,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_command",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "._handle_command()"
     },
     {
@@ -1795,7 +1685,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_enqueue_typing",
       "community": 10,
-      "community_name": "_action_jira_run",
+      "community_name": "Message Handling",
       "norm_label": "._enqueue_typing()"
     },
     {
@@ -1806,7 +1696,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_typing_refresher",
       "community": 10,
-      "community_name": "_action_jira_run",
+      "community_name": "Message Handling",
       "norm_label": "._typing_refresher()"
     },
     {
@@ -1817,7 +1707,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_message",
       "community": 10,
-      "community_name": "_action_jira_run",
+      "community_name": "Message Handling",
       "norm_label": "._handle_message()"
     },
     {
@@ -1828,7 +1718,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_show_skill_confirmation",
       "community": 10,
-      "community_name": "_action_jira_run",
+      "community_name": "Message Handling",
       "norm_label": "._show_skill_confirmation()"
     },
     {
@@ -1839,7 +1729,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_pending_skill_cleanup",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "._pending_skill_cleanup()"
     },
     {
@@ -1850,7 +1740,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_improve",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "._handle_improve()"
     },
     {
@@ -1860,8 +1750,8 @@
       "source_location": "L411",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_schedule_add",
-      "community": 6,
-      "community_name": "._send_message",
+      "community": 10,
+      "community_name": "Message Handling",
       "norm_label": "._handle_schedule_add()"
     },
     {
@@ -1871,8 +1761,8 @@
       "source_location": "L502",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_edit_message",
-      "community": 5,
-      "community_name": "._edit_message",
+      "community": 6,
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "._edit_message()"
     },
     {
@@ -1883,7 +1773,7 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_show_menu",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "._show_menu()"
     },
     {
@@ -1894,513 +1784,502 @@
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_callback",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "._handle_callback()"
     },
     {
       "label": "._send_message()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L767",
+      "source_location": "L764",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_send_message",
-      "community": 6,
-      "community_name": "._send_message",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "._send_message()"
     },
     {
       "label": "._send_callback_answer()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L779",
+      "source_location": "L776",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_send_callback_answer",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "._send_callback_answer()"
     },
     {
       "label": "._send_direct()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L794",
+      "source_location": "L791",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_send_direct",
-      "community": 16,
-      "community_name": "_jira_workbench_code",
+      "community": 19,
+      "community_name": "._send_direct",
       "norm_label": "._send_direct()"
     },
     {
       "label": "._send_voice_direct()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L817",
+      "source_location": "L814",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_send_voice_direct",
       "community": 12,
-      "community_name": "._send_tts_async",
+      "community_name": "TTS Voice Output",
       "norm_label": "._send_voice_direct()"
     },
     {
       "label": "._send_tts_async()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L850",
+      "source_location": "L847",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_send_tts_async",
       "community": 12,
-      "community_name": "._send_tts_async",
+      "community_name": "TTS Voice Output",
       "norm_label": "._send_tts_async()"
     },
     {
       "label": ".drain_outbox()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L888",
+      "source_location": "L885",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_drain_outbox",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".drain_outbox()"
     },
     {
       "label": ".peek_outbox()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L897",
+      "source_location": "L894",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_peek_outbox",
-      "community": 16,
-      "community_name": "_jira_workbench_code",
+      "community": 20,
+      "community_name": ".peek_outbox",
       "norm_label": ".peek_outbox()"
     },
     {
       "label": ".drain_voice_queue()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L902",
+      "source_location": "L899",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_drain_voice_queue",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".drain_voice_queue()"
     },
     {
       "label": ".stop()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L910",
+      "source_location": "L907",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_stop",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": ".stop()"
     },
     {
       "label": ".status()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L913",
+      "source_location": "L910",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_status",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": ".status()"
     },
     {
       "label": "_call_composio()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1036",
+      "source_location": "L1033",
       "_origin": "ast",
       "id": "telegram_bot_call_composio",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "_call_composio()"
     },
     {
       "label": "_action_web_status()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1047",
+      "source_location": "L1044",
       "_origin": "ast",
       "id": "telegram_bot_action_web_status",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_web_status()"
     },
     {
       "label": "_action_memory_view()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1056",
+      "source_location": "L1053",
       "_origin": "ast",
       "id": "telegram_bot_action_memory_view",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_memory_view()"
     },
     {
       "label": "_action_memory_status()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1077",
+      "source_location": "L1074",
       "_origin": "ast",
       "id": "telegram_bot_action_memory_status",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_memory_status()"
     },
     {
       "label": "_action_memory_clear()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1086",
+      "source_location": "L1083",
       "_origin": "ast",
       "id": "telegram_bot_action_memory_clear",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_memory_clear()"
     },
     {
       "label": "_action_memory_cleanup()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1095",
+      "source_location": "L1092",
       "_origin": "ast",
       "id": "telegram_bot_action_memory_cleanup",
       "community": 7,
-      "community_name": "TelegramBot",
+      "community_name": "Telegram Bot Lifecycle & Queue",
       "norm_label": "_action_memory_cleanup()"
     },
     {
       "label": "_action_chat_summarize()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1104",
+      "source_location": "L1101",
       "_origin": "ast",
       "id": "telegram_bot_action_chat_summarize",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_chat_summarize()"
     },
     {
       "label": "_action_voice_queue()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1115",
+      "source_location": "L1112",
       "_origin": "ast",
       "id": "telegram_bot_action_voice_queue",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_voice_queue()"
     },
     {
       "label": "_action_system_status()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1119",
+      "source_location": "L1116",
       "_origin": "ast",
       "id": "telegram_bot_action_system_status",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_system_status()"
     },
     {
       "label": "_action_system_provider()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1132",
+      "source_location": "L1129",
       "_origin": "ast",
       "id": "telegram_bot_action_system_provider",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_system_provider()"
     },
     {
       "label": "_action_system_uptime()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1140",
+      "source_location": "L1137",
       "_origin": "ast",
       "id": "telegram_bot_action_system_uptime",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_system_uptime()"
     },
     {
       "label": "_action_system_queue()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1149",
+      "source_location": "L1146",
       "_origin": "ast",
       "id": "telegram_bot_action_system_queue",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_system_queue()"
     },
     {
       "label": "_split_tts_text()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1154",
+      "source_location": "L1151",
       "_origin": "ast",
       "id": "telegram_bot_split_tts_text",
       "community": 12,
-      "community_name": "._send_tts_async",
+      "community_name": "TTS Voice Output",
       "norm_label": "_split_tts_text()"
     },
     {
       "label": "_action_tts_toggle()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1200",
+      "source_location": "L1197",
       "_origin": "ast",
       "id": "telegram_bot_action_tts_toggle",
-      "community": 21,
-      "community_name": "_action_tts_toggle",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_tts_toggle()"
     },
     {
       "label": "_action_tts_model_switch()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1216",
+      "source_location": "L1213",
       "_origin": "ast",
       "id": "telegram_bot_action_tts_model_switch",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "_action_tts_model_switch()"
     },
     {
       "label": "_action_model_switch()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1226",
+      "source_location": "L1223",
       "_origin": "ast",
       "id": "telegram_bot_action_model_switch",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "_action_model_switch()"
     },
     {
       "label": "_action_system_composio()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1237",
+      "source_location": "L1234",
       "_origin": "ast",
       "id": "telegram_bot_action_system_composio",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_system_composio()"
     },
     {
       "label": "_action_schedule_add()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1248",
+      "source_location": "L1245",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_add",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_schedule_add()"
     },
     {
       "label": "_action_schedule_list()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1252",
+      "source_location": "L1249",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_list",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "_action_schedule_list()"
     },
     {
       "label": "_action_schedule_remove_by_id()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1300",
+      "source_location": "L1296",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_remove_by_id",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "_action_schedule_remove_by_id()"
     },
     {
       "label": "_action_schedule_pause_by_id()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1311",
+      "source_location": "L1307",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_pause_by_id",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "_action_schedule_pause_by_id()"
     },
     {
       "label": "_action_schedule_resume_by_id()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1322",
+      "source_location": "L1318",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_resume_by_id",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "_action_schedule_resume_by_id()"
-    },
-    {
-      "label": "_action_schedule_run_by_id()",
-      "file_type": "code",
-      "source_file": "telegram_bot.py",
-      "source_location": "L1334",
-      "_origin": "ast",
-      "id": "telegram_bot_action_schedule_run_by_id",
-      "community": 6,
-      "community_name": "._send_message",
-      "norm_label": "_action_schedule_run_by_id()"
     },
     {
       "label": "_action_skill_list()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1348",
+      "source_location": "L1333",
       "_origin": "ast",
       "id": "telegram_bot_action_skill_list",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_skill_list()"
     },
     {
       "label": "_action_skill_search_prompt()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1369",
+      "source_location": "L1354",
       "_origin": "ast",
       "id": "telegram_bot_action_skill_search_prompt",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_skill_search_prompt()"
     },
     {
       "label": "_action_skill_autolearn_toggle()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1373",
+      "source_location": "L1358",
       "_origin": "ast",
       "id": "telegram_bot_action_skill_autolearn_toggle",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_skill_autolearn_toggle()"
     },
     {
       "label": "_action_skill_forget_inactive()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1392",
+      "source_location": "L1377",
       "_origin": "ast",
       "id": "telegram_bot_action_skill_forget_inactive",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "_action_skill_forget_inactive()"
     },
     {
       "label": "_jira_workbench_code()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1408",
+      "source_location": "L1393",
       "_origin": "ast",
       "id": "telegram_bot_jira_workbench_code",
       "community": 16,
-      "community_name": "_jira_workbench_code",
+      "community_name": "Jira Workbench",
       "norm_label": "_jira_workbench_code()"
     },
     {
       "label": "_parse_workbench_issues()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1413",
+      "source_location": "L1398",
       "_origin": "ast",
       "id": "telegram_bot_parse_workbench_issues",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "_parse_workbench_issues()"
     },
     {
       "label": "_parse_jira_result()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1427",
+      "source_location": "L1412",
       "_origin": "ast",
       "id": "telegram_bot_parse_jira_result",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "_parse_jira_result()"
     },
     {
       "label": "_parse_jira_single()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1441",
+      "source_location": "L1426",
       "_origin": "ast",
       "id": "telegram_bot_parse_jira_single",
-      "community": 11,
-      "community_name": "_action_jira_show",
+      "community": 9,
+      "community_name": "Jira Operations",
       "norm_label": "_parse_jira_single()"
     },
     {
       "label": "_adf_to_plaintext()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1469",
+      "source_location": "L1454",
       "_origin": "ast",
       "id": "telegram_bot_adf_to_plaintext",
-      "community": 11,
-      "community_name": "_action_jira_show",
+      "community": 9,
+      "community_name": "Jira Operations",
       "norm_label": "_adf_to_plaintext()"
     },
     {
       "label": "_action_jira_open_tasks()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1534",
+      "source_location": "L1519",
       "_origin": "ast",
       "id": "telegram_bot_action_jira_open_tasks",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "_action_jira_open_tasks()"
     },
     {
       "label": "_action_jira_subtasks()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1585",
+      "source_location": "L1570",
       "_origin": "ast",
       "id": "telegram_bot_action_jira_subtasks",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "_action_jira_subtasks()"
     },
     {
       "label": "_action_jira_show()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1633",
+      "source_location": "L1618",
       "_origin": "ast",
       "id": "telegram_bot_action_jira_show",
-      "community": 11,
-      "community_name": "_action_jira_show",
+      "community": 9,
+      "community_name": "Jira Operations",
       "norm_label": "_action_jira_show()"
     },
     {
       "label": "_action_jira_run()",
       "file_type": "code",
       "source_file": "telegram_bot.py",
-      "source_location": "L1688",
+      "source_location": "L1673",
       "_origin": "ast",
       "id": "telegram_bot_action_jira_run",
       "community": 10,
-      "community_name": "_action_jira_run",
+      "community_name": "Message Handling",
       "norm_label": "_action_jira_run()"
     },
     {
@@ -2411,7 +2290,7 @@
       "_origin": "ast",
       "id": "telegram_bot_rationale_293",
       "community": 10,
-      "community_name": "_action_jira_run",
+      "community_name": "Message Handling",
       "norm_label": "send inline confirmation for a detected skill."
     },
     {
@@ -2421,8 +2300,8 @@
       "source_location": "L412",
       "_origin": "ast",
       "id": "telegram_bot_rationale_412",
-      "community": 6,
-      "community_name": "._send_message",
+      "community": 10,
+      "community_name": "Message Handling",
       "norm_label": "parse /schedule add <text>, show confirmation with yes/no inline."
     },
     {
@@ -2432,8 +2311,8 @@
       "source_location": "L503",
       "_origin": "ast",
       "id": "telegram_bot_rationale_503",
-      "community": 5,
-      "community_name": "._edit_message",
+      "community": 6,
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "enqueue an editmessagetext to the outbox."
     },
     {
@@ -2444,7 +2323,7 @@
       "_origin": "ast",
       "id": "telegram_bot_rationale_511",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "send or edit a menu message. edits existing menu if one was sent before."
     },
     {
@@ -2455,195 +2334,250 @@
       "_origin": "ast",
       "id": "telegram_bot_rationale_575",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "route callback_query: navigation (mn:*) or action (ac:*)."
     },
     {
       "label": "Try calling api.telegram.org directly. Returns True if sent.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L795",
+      "source_location": "L792",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_795",
-      "community": 16,
-      "community_name": "_jira_workbench_code",
+      "id": "telegram_bot_rationale_792",
+      "community": 19,
+      "community_name": "._send_direct",
       "norm_label": "try calling api.telegram.org directly. returns true if sent."
     },
     {
-      "label": "Send Opus audio as a voice message directly to Telegram API. Uses httpx\u2026",
+      "label": "Send Opus audio as a voice message directly to Telegram API.          Uses htt",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L818",
+      "source_location": "L815",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_818",
+      "id": "telegram_bot_rationale_815",
       "community": 12,
-      "community_name": "._send_tts_async",
-      "norm_label": "send opus audio as a voice message directly to telegram api. uses httpx..."
+      "community_name": "TTS Voice Output",
+      "norm_label": "send opus audio as a voice message directly to telegram api.          uses htt"
     },
     {
-      "label": "Background task: synthesize TTS, send voice messages. Called via\u2026",
+      "label": "Background task: synthesize TTS, send voice messages.          Called via asyn",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L851",
+      "source_location": "L848",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_851",
+      "id": "telegram_bot_rationale_848",
       "community": 12,
-      "community_name": "._send_tts_async",
-      "norm_label": "background task: synthesize tts, send voice messages. called via..."
+      "community_name": "TTS Voice Output",
+      "norm_label": "background task: synthesize tts, send voice messages.          called via asyn"
     },
     {
       "label": "Return outbox items without draining (for diagnostics).",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L898",
+      "source_location": "L895",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_898",
-      "community": 16,
-      "community_name": "_jira_workbench_code",
+      "id": "telegram_bot_rationale_895",
+      "community": 20,
+      "community_name": ".peek_outbox",
       "norm_label": "return outbox items without draining (for diagnostics)."
     },
     {
       "label": "Call a Composio tool (async, awaits directly in running loop).",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1037",
+      "source_location": "L1034",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1037",
+      "id": "telegram_bot_rationale_1034",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "call a composio tool (async, awaits directly in running loop)."
     },
     {
-      "label": "Split text at sentence boundaries, each chunk \u2264 max_chars. Uses regex to split\u2026",
+      "label": "Split text at sentence boundaries, each chunk \u2264 max_chars.      Uses regex to",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1155",
+      "source_location": "L1152",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1155",
+      "id": "telegram_bot_rationale_1152",
       "community": 12,
-      "community_name": "._send_tts_async",
-      "norm_label": "split text at sentence boundaries, each chunk \u2264 max_chars. uses regex to split..."
+      "community_name": "TTS Voice Output",
+      "norm_label": "split text at sentence boundaries, each chunk \u2264 max_chars.      uses regex to"
     },
     {
       "label": "Toggle TTS on/off for this chat. Persists to memory_store.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1201",
+      "source_location": "L1198",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1201",
-      "community": 21,
-      "community_name": "_action_tts_toggle",
+      "id": "telegram_bot_rationale_1198",
+      "community": 5,
+      "community_name": "Telegram Bot Actions",
       "norm_label": "toggle tts on/off for this chat. persists to memory_store."
     },
     {
       "label": "Switch TTS model for this chat. Persists to memory_store.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1217",
+      "source_location": "L1214",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1217",
+      "id": "telegram_bot_rationale_1214",
       "community": 6,
-      "community_name": "._send_message",
+      "community_name": "Telegram Bot Callbacks & Commands",
       "norm_label": "switch tts model for this chat. persists to memory_store."
     },
     {
       "label": "Wrap Python code for Composio REMOTE_WORKBENCH execution.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1409",
+      "source_location": "L1394",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1409",
+      "id": "telegram_bot_rationale_1394",
       "community": 16,
-      "community_name": "_jira_workbench_code",
+      "community_name": "Jira Workbench",
       "norm_label": "wrap python code for composio remote_workbench execution."
     },
     {
       "label": "Extract issues list from workbench stdout output.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1414",
+      "source_location": "L1399",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1414",
+      "id": "telegram_bot_rationale_1399",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "extract issues list from workbench stdout output."
     },
     {
       "label": "Parse issues from Composio workbench response.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1428",
+      "source_location": "L1413",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1428",
+      "id": "telegram_bot_rationale_1413",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "parse issues from composio workbench response."
     },
     {
-      "label": "Parse single issue from JIRA_GET_ISSUE workbench response. Response shape:\u2026",
+      "label": "Parse single issue from JIRA_GET_ISSUE workbench response.      Response shape",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1442",
+      "source_location": "L1427",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1442",
-      "community": 11,
-      "community_name": "_action_jira_show",
-      "norm_label": "parse single issue from jira_get_issue workbench response. response shape:..."
+      "id": "telegram_bot_rationale_1427",
+      "community": 9,
+      "community_name": "Jira Operations",
+      "norm_label": "parse single issue from jira_get_issue workbench response.      response shape"
     },
     {
       "label": "Convert Atlassian Document Format (ADF) JSON to plain text.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1470",
+      "source_location": "L1455",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1470",
-      "community": 11,
-      "community_name": "_action_jira_show",
+      "id": "telegram_bot_rationale_1455",
+      "community": 9,
+      "community_name": "Jira Operations",
       "norm_label": "convert atlassian document format (adf) json to plain text."
     },
     {
       "label": "Show open tasks from configured JIRA_EPICS via Composio workbench.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1535",
+      "source_location": "L1520",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1535",
+      "id": "telegram_bot_rationale_1520",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "show open tasks from configured jira_epics via composio workbench."
     },
     {
       "label": "Show subtasks for a given issue via Composio workbench.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1586",
+      "source_location": "L1571",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1586",
+      "id": "telegram_bot_rationale_1571",
       "community": 9,
-      "community_name": "_action_jira_subtasks",
+      "community_name": "Jira Operations",
       "norm_label": "show subtasks for a given issue via composio workbench."
     },
     {
       "label": "Fetch and display a single Jira issue's description (read-only view).",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1634",
+      "source_location": "L1619",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1634",
-      "community": 11,
-      "community_name": "_action_jira_show",
+      "id": "telegram_bot_rationale_1619",
+      "community": 9,
+      "community_name": "Jira Operations",
       "norm_label": "fetch and display a single jira issue's description (read-only view)."
     },
     {
       "label": "Fetch Jira issue description and run it as an LLM prompt.",
       "file_type": "rationale",
       "source_file": "telegram_bot.py",
-      "source_location": "L1689",
+      "source_location": "L1674",
       "_origin": "ast",
-      "id": "telegram_bot_rationale_1689",
+      "id": "telegram_bot_rationale_1674",
       "community": 10,
-      "community_name": "_action_jira_run",
+      "community_name": "Message Handling",
       "norm_label": "fetch jira issue description and run it as an llm prompt."
+    },
+    {
+      "label": "test_schedule_parse.py",
+      "file_type": "code",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "test_schedule_parse",
+      "community": 4,
+      "community_name": "Hermes Bridge LLM",
+      "norm_label": "test_schedule_parse.py"
+    },
+    {
+      "label": "FakeSettings",
+      "file_type": "code",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "test_schedule_parse_fakesettings",
+      "community": 4,
+      "community_name": "Hermes Bridge LLM",
+      "norm_label": "fakesettings"
+    },
+    {
+      "label": "check()",
+      "file_type": "code",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "test_schedule_parse_check",
+      "community": 4,
+      "community_name": "Hermes Bridge LLM",
+      "norm_label": "check()"
+    },
+    {
+      "label": "epoch_after()",
+      "file_type": "code",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L91",
+      "_origin": "ast",
+      "id": "test_schedule_parse_epoch_after",
+      "community": 4,
+      "community_name": "Hermes Bridge LLM",
+      "norm_label": "epoch_after()"
+    },
+    {
+      "label": "Compute the next occurrence of HH:MM in local time.",
+      "file_type": "rationale",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "test_schedule_parse_rationale_92",
+      "community": 4,
+      "community_name": "Hermes Bridge LLM",
+      "norm_label": "compute the next occurrence of hh:mm in local time."
     },
     {
       "label": "tg_tts.py",
@@ -2653,7 +2587,7 @@
       "_origin": "ast",
       "id": "tg_tts",
       "community": 13,
-      "community_name": "tg_tts.py",
+      "community_name": "TTS Synthesis",
       "norm_label": "tg_tts.py"
     },
     {
@@ -2664,7 +2598,7 @@
       "_origin": "ast",
       "id": "tg_tts_synthesize",
       "community": 13,
-      "community_name": "tg_tts.py",
+      "community_name": "TTS Synthesis",
       "norm_label": "synthesize()"
     },
     {
@@ -2675,7 +2609,7 @@
       "_origin": "ast",
       "id": "tg_tts_to_opus",
       "community": 13,
-      "community_name": "tg_tts.py",
+      "community_name": "TTS Synthesis",
       "norm_label": "to_opus()"
     },
     {
@@ -2686,30 +2620,30 @@
       "_origin": "ast",
       "id": "tg_tts_rationale_1",
       "community": 13,
-      "community_name": "tg_tts.py",
+      "community_name": "TTS Synthesis",
       "norm_label": "tts helpers for hermes agent \u2014 synthesize speech via local router-0."
     },
     {
-      "label": "Synthesize text to MP3 audio via router-0 TTS endpoint. Args: text: Text to\u2026",
+      "label": "Synthesize text to MP3 audio via router-0 TTS endpoint.      Args:         text:",
       "file_type": "rationale",
       "source_file": "tg_tts.py",
       "source_location": "L17",
       "_origin": "ast",
       "id": "tg_tts_rationale_17",
       "community": 13,
-      "community_name": "tg_tts.py",
-      "norm_label": "synthesize text to mp3 audio via router-0 tts endpoint. args: text: text to..."
+      "community_name": "TTS Synthesis",
+      "norm_label": "synthesize text to mp3 audio via router-0 tts endpoint.      args:         text:"
     },
     {
-      "label": "Convert MP3 bytes to OggOpus bytes via ffmpeg (pipe). Same pattern as\u2026",
+      "label": "Convert MP3 bytes to OggOpus bytes via ffmpeg (pipe).      Same pattern as tg_vo",
       "file_type": "rationale",
       "source_file": "tg_tts.py",
       "source_location": "L48",
       "_origin": "ast",
       "id": "tg_tts_rationale_48",
       "community": 13,
-      "community_name": "tg_tts.py",
-      "norm_label": "convert mp3 bytes to oggopus bytes via ffmpeg (pipe). same pattern as..."
+      "community_name": "TTS Synthesis",
+      "norm_label": "convert mp3 bytes to oggopus bytes via ffmpeg (pipe).      same pattern as tg_vo"
     },
     {
       "label": "tg_voice.py",
@@ -2719,7 +2653,7 @@
       "_origin": "ast",
       "id": "tg_voice",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "tg_voice.py"
     },
     {
@@ -2730,7 +2664,7 @@
       "_origin": "ast",
       "id": "tg_voice_tg_file_path",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "tg_file_path()"
     },
     {
@@ -2741,7 +2675,7 @@
       "_origin": "ast",
       "id": "tg_voice_download_file",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "download_file()"
     },
     {
@@ -2752,7 +2686,7 @@
       "_origin": "ast",
       "id": "tg_voice_py_path",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "path"
     },
     {
@@ -2763,7 +2697,7 @@
       "_origin": "ast",
       "id": "tg_voice_to_wav",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "to_wav()"
     },
     {
@@ -2774,7 +2708,7 @@
       "_origin": "ast",
       "id": "tg_voice_multipart_transcribe",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "multipart_transcribe()"
     },
     {
@@ -2785,19 +2719,19 @@
       "_origin": "ast",
       "id": "tg_voice_transcribe",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "transcribe()"
     },
     {
-      "label": "Voice helpers for Hermes Agent \u2014 download Telegram audio, transcribe via local\u2026",
+      "label": "Voice helpers for Hermes Agent \u2014 download Telegram audio, transcribe via local r",
       "file_type": "rationale",
       "source_file": "tg_voice.py",
       "source_location": "L1",
       "_origin": "ast",
       "id": "tg_voice_rationale_1",
       "community": 2,
-      "community_name": "android_bot.py",
-      "norm_label": "voice helpers for hermes agent \u2014 download telegram audio, transcribe via local..."
+      "community_name": "Android Bot Core",
+      "norm_label": "voice helpers for hermes agent \u2014 download telegram audio, transcribe via local r"
     },
     {
       "label": "Get Telegram file path from file_id.",
@@ -2807,7 +2741,7 @@
       "_origin": "ast",
       "id": "tg_voice_rationale_15",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "get telegram file path from file_id."
     },
     {
@@ -2818,7 +2752,7 @@
       "_origin": "ast",
       "id": "tg_voice_rationale_23",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "download a telegram file to disk."
     },
     {
@@ -2829,7 +2763,7 @@
       "_origin": "ast",
       "id": "tg_voice_rationale_30",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "convert audio to 16khz mono wav via ffmpeg."
     },
     {
@@ -2840,7 +2774,7 @@
       "_origin": "ast",
       "id": "tg_voice_rationale_39",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "transcribe wav via multipart post to an openai-compatible asr endpoint."
     },
     {
@@ -2851,7 +2785,7 @@
       "_origin": "ast",
       "id": "tg_voice_rationale_80",
       "community": 2,
-      "community_name": "android_bot.py",
+      "community_name": "Android Bot Core",
       "norm_label": "transcribe wav via local router-0 stt endpoint."
     },
     {
@@ -2887,7 +2821,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "readme.md",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md"
     },
     {
@@ -2901,7 +2835,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "deploying hermes agent",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md"
     },
     {
@@ -2915,7 +2849,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "requirements.txt",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "requirements_txt"
     },
     {
@@ -2929,7 +2863,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "hermes agent bot 0",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_hermes_agent_bot_0"
     },
     {
@@ -2943,7 +2877,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "android/termux",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_android_termux"
     },
     {
@@ -2957,7 +2891,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "getupdates polling",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_get_updates_polling"
     },
     {
@@ -2971,7 +2905,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "3-provider llm routing",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_3_provider_llm_routing"
     },
     {
@@ -2985,7 +2919,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "httpx",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_httpx"
     },
     {
@@ -2999,7 +2933,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "composio mcp",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_composio_mcp"
     },
     {
@@ -3013,7 +2947,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "jira",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_jira"
     },
     {
@@ -3027,7 +2961,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "firecrawl",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_firecrawl"
     },
     {
@@ -3041,7 +2975,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "voice memo transcription",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_voice_memo_transcription"
     },
     {
@@ -3055,7 +2989,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "router-0 stt",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_router_0_stt"
     },
     {
@@ -3069,7 +3003,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "sqlite memory",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_sqlite_memory"
     },
     {
@@ -3083,7 +3017,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "scheduler engine",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_scheduler_engine"
     },
     {
@@ -3097,7 +3031,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "inline keyboard menus",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "readme_md_inline_keyboard_menus"
     },
     {
@@ -3111,7 +3045,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "architecture",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_architecture"
     },
     {
@@ -3125,7 +3059,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "poll loop",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_poll_loop"
     },
     {
@@ -3139,7 +3073,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "outbox drain",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_outbox_drain"
     },
     {
@@ -3153,7 +3087,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "hermesbridge (llm bridge)",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_llm_bridge"
     },
     {
@@ -3167,7 +3101,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "provider fallback chain",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_provider_fallback_chain"
     },
     {
@@ -3181,7 +3115,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "telegram bot component",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_telegram_bot_component"
     },
     {
@@ -3195,7 +3129,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "memorystore (sqlite)",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_memory_store"
     },
     {
@@ -3209,7 +3143,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "schedulerengine",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_scheduler_engine"
     },
     {
@@ -3223,7 +3157,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "in-process voice pipeline",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_voice_pipeline"
     },
     {
@@ -3237,7 +3171,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "text-to-speech (tts)",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_tts"
     },
     {
@@ -3251,7 +3185,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "composio mcp integration",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_composio_mcp_integration"
     },
     {
@@ -3265,7 +3199,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "learned skills / auto-learn",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_learned_skills"
     },
     {
@@ -3279,7 +3213,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "nl+structured schedule parsing",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_schedule_parsing"
     },
     {
@@ -3293,7 +3227,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "jira integrated menu",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_jira_integration"
     },
     {
@@ -3307,7 +3241,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "error recovery patterns",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_error_recovery"
     },
     {
@@ -3321,7 +3255,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "edge cases covered",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_edge_cases"
     },
     {
@@ -3335,7 +3269,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "startup flow",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_startup_flow"
     },
     {
@@ -3349,7 +3283,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "deployment (clone/adb/ssh)",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_deployment"
     },
     {
@@ -3363,7 +3297,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "provider switching (/model + inline menu)",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_provider_switching"
     },
     {
@@ -3377,7 +3311,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "router-0 provider",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "docs_skills_deploying_hermes_agent_md_router_0_provider"
     },
     {
@@ -3391,7 +3325,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "httpx dependency",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "requirements_txt_httpx_dep"
     },
     {
@@ -3405,7 +3339,7 @@
       "contributor": null,
       "community": 0,
       "norm_label": "numpy dependency",
-      "community_name": "Deploying Hermes Agent",
+      "community_name": "Documentation & README",
       "id": "requirements_txt_numpy_dep"
     }
   ],
@@ -4235,6 +4169,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L15",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "test_schedule_parse",
+      "target": "hermes_bridge",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "hermes_bridge.py",
@@ -4519,6 +4465,29 @@
       "source": "hermes_bridge_hermesbridge",
       "target": "hermes_bridge_hermesbridge_switch_provider",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L15",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "test_schedule_parse",
+      "target": "hermes_bridge_hermesbridge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L15",
+      "weight": 0.8,
+      "_origin": "ast",
+      "source": "test_schedule_parse_fakesettings",
+      "target": "hermes_bridge_hermesbridge",
+      "confidence_score": 0.5
     },
     {
       "relation": "calls",
@@ -5492,7 +5461,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L346",
+      "source_location": "L234",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5503,7 +5472,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L300",
+      "source_location": "L188",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5514,7 +5483,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L110",
+      "source_location": "L95",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5525,18 +5494,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L129",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine",
-      "target": "scheduler_schedulerengine_clear_timer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L186",
+      "source_location": "L109",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5547,18 +5505,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L133",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine",
-      "target": "scheduler_schedulerengine_dispatcher_loop",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L175",
+      "source_location": "L98",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5569,7 +5516,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L198",
+      "source_location": "L121",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5580,7 +5527,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L88",
+      "source_location": "L71",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5591,7 +5538,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L429",
+      "source_location": "L313",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5613,7 +5560,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L422",
+      "source_location": "L306",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5624,7 +5571,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L391",
+      "source_location": "L277",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5635,7 +5582,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L99",
+      "source_location": "L82",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5646,18 +5593,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L115",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine",
-      "target": "scheduler_schedulerengine_refresh_timers",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L382",
+      "source_location": "L269",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5668,7 +5604,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L403",
+      "source_location": "L288",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5679,7 +5615,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L94",
+      "source_location": "L77",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5690,40 +5626,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L436",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine",
-      "target": "scheduler_schedulerengine_run_now",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L125",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine",
-      "target": "scheduler_schedulerengine_set_timer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L159",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine",
-      "target": "scheduler_schedulerengine_spawn_job",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L45",
+      "source_location": "L38",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5734,7 +5637,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L55",
+      "source_location": "L46",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine",
@@ -5745,10 +5648,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L46",
+      "source_location": "L39",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "scheduler_rationale_46",
+      "source": "scheduler_rationale_39",
       "target": "scheduler_schedulerengine_start",
       "confidence_score": 1.0
     },
@@ -5757,7 +5660,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L48",
+      "source_location": "L41",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_start",
@@ -5769,19 +5672,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L52",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_start",
-      "target": "scheduler_schedulerengine_dispatcher_loop",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L47",
+      "source_location": "L40",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_start",
@@ -5793,7 +5684,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L51",
+      "source_location": "L43",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_start",
@@ -5801,25 +5692,13 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L50",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_start",
-      "target": "scheduler_schedulerengine_refresh_timers",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L56",
+      "source_location": "L47",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "scheduler_rationale_56",
+      "source": "scheduler_rationale_47",
       "target": "scheduler_schedulerengine_stop",
       "confidence_score": 1.0
     },
@@ -5828,7 +5707,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L88",
+      "source_location": "L71",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_get_conn",
@@ -5840,7 +5719,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L313",
+      "source_location": "L201",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_catch_up_missed_jobs",
@@ -5852,7 +5731,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L181",
+      "source_location": "L104",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_fetch_due_jobs",
@@ -5864,7 +5743,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L434",
+      "source_location": "L318",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_get_job",
@@ -5876,7 +5755,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L427",
+      "source_location": "L311",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_list_jobs",
@@ -5888,7 +5767,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L94",
+      "source_location": "L77",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_row_to_dict",
@@ -5900,7 +5779,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L102",
+      "source_location": "L85",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_poll_loop",
@@ -5912,7 +5791,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L103",
+      "source_location": "L86",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_poll_loop",
@@ -5924,163 +5803,10 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L105",
+      "source_location": "L88",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_poll_loop",
-      "target": "scheduler_schedulerengine_spawn_job",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L116",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_rationale_116",
-      "target": "scheduler_schedulerengine_refresh_timers",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L378",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_add_job",
-      "target": "scheduler_schedulerengine_set_timer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L245",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_fire_job",
-      "target": "scheduler_schedulerengine_set_timer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L419",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_resume_job",
-      "target": "scheduler_schedulerengine_set_timer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L226",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_fire_job",
-      "target": "scheduler_schedulerengine_clear_timer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L399",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_pause_job",
-      "target": "scheduler_schedulerengine_clear_timer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L387",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_remove_job",
-      "target": "scheduler_schedulerengine_clear_timer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L134",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_rationale_134",
-      "target": "scheduler_schedulerengine_dispatcher_loop",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L142",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_dispatcher_loop",
-      "target": "scheduler_schedulerengine_get_job",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L145",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_dispatcher_loop",
-      "target": "scheduler_schedulerengine_spawn_job",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L160",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_rationale_160",
-      "target": "scheduler_schedulerengine_spawn_job",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L445",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_run_now",
-      "target": "scheduler_schedulerengine_spawn_job",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L167",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_spawn_job",
       "target": "scheduler_schedulerengine_fire_job",
       "confidence_score": 1.0
     },
@@ -6088,10 +5814,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L187",
+      "source_location": "L110",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "scheduler_rationale_187",
+      "source": "scheduler_rationale_110",
       "target": "scheduler_schedulerengine_daily_next_run",
       "confidence_score": 1.0
     },
@@ -6100,7 +5826,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L318",
+      "source_location": "L206",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_catch_up_missed_jobs",
@@ -6112,7 +5838,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L240",
+      "source_location": "L142",
       "weight": 1.0,
       "_origin": "ast",
       "source": "scheduler_schedulerengine_fire_job",
@@ -6123,10 +5849,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L199",
+      "source_location": "L122",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "scheduler_rationale_199",
+      "source": "scheduler_rationale_122",
       "target": "scheduler_schedulerengine_fire_job",
       "confidence_score": 1.0
     },
@@ -6134,10 +5860,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L301",
+      "source_location": "L189",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "scheduler_rationale_301",
+      "source": "scheduler_rationale_189",
       "target": "scheduler_schedulerengine_catch_up_missed_jobs",
       "confidence_score": 1.0
     },
@@ -6145,34 +5871,11 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scheduler.py",
-      "source_location": "L348",
+      "source_location": "L236",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "scheduler_rationale_348",
+      "source": "scheduler_rationale_236",
       "target": "scheduler_schedulerengine_add_job",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L442",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_schedulerengine_run_now",
-      "target": "scheduler_schedulerengine_get_job",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "scheduler.py",
-      "source_location": "L437",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "scheduler_rationale_437",
-      "target": "scheduler_schedulerengine_run_now",
       "confidence_score": 1.0
     },
     {
@@ -6234,7 +5937,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1746",
+      "source_location": "L1731",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6246,7 +5949,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1760",
+      "source_location": "L1745",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6258,7 +5961,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1688",
+      "source_location": "L1673",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6269,7 +5972,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1633",
+      "source_location": "L1618",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6280,7 +5983,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1585",
+      "source_location": "L1570",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6291,7 +5994,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1745",
+      "source_location": "L1730",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6303,7 +6006,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1744",
+      "source_location": "L1729",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6315,7 +6018,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1743",
+      "source_location": "L1728",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6327,7 +6030,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1742",
+      "source_location": "L1727",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6339,7 +6042,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1226",
+      "source_location": "L1223",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6350,7 +6053,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1754",
+      "source_location": "L1739",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6362,7 +6065,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1755",
+      "source_location": "L1740",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6374,7 +6077,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1311",
+      "source_location": "L1307",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6385,7 +6088,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1300",
+      "source_location": "L1296",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6396,7 +6099,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1322",
+      "source_location": "L1318",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6404,21 +6107,10 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "telegram_bot.py",
-      "source_location": "L1334",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "telegram_bot",
-      "target": "telegram_bot_action_schedule_run_by_id",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1758",
+      "source_location": "L1743",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6430,7 +6122,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1759",
+      "source_location": "L1744",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6442,7 +6134,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1756",
+      "source_location": "L1741",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6454,7 +6146,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1757",
+      "source_location": "L1742",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6466,7 +6158,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1753",
+      "source_location": "L1738",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6478,7 +6170,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1750",
+      "source_location": "L1735",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6490,7 +6182,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1752",
+      "source_location": "L1737",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6502,7 +6194,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1749",
+      "source_location": "L1734",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6514,7 +6206,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1751",
+      "source_location": "L1736",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6526,7 +6218,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1216",
+      "source_location": "L1213",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6537,7 +6229,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1748",
+      "source_location": "L1733",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6549,7 +6241,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1747",
+      "source_location": "L1732",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6561,7 +6253,7 @@
       "relation": "indirect_call",
       "confidence": "INFERRED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1741",
+      "source_location": "L1726",
       "weight": 1.0,
       "_origin": "ast",
       "context": "collection",
@@ -6573,7 +6265,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1469",
+      "source_location": "L1454",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6584,7 +6276,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1036",
+      "source_location": "L1033",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6595,7 +6287,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1408",
+      "source_location": "L1393",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6606,7 +6298,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1427",
+      "source_location": "L1412",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6617,7 +6309,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1441",
+      "source_location": "L1426",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6628,7 +6320,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1413",
+      "source_location": "L1398",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6639,7 +6331,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1154",
+      "source_location": "L1151",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6662,7 +6354,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L871",
+      "source_location": "L868",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6674,7 +6366,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L872",
+      "source_location": "L869",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot",
@@ -6686,7 +6378,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1104",
+      "source_location": "L1101",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_chat_summarize",
@@ -6698,7 +6390,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1534",
+      "source_location": "L1519",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_open_tasks",
@@ -6710,7 +6402,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1688",
+      "source_location": "L1673",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_run",
@@ -6722,7 +6414,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1633",
+      "source_location": "L1618",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_show",
@@ -6734,7 +6426,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1585",
+      "source_location": "L1570",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_subtasks",
@@ -6746,7 +6438,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1095",
+      "source_location": "L1092",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_cleanup",
@@ -6758,7 +6450,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1086",
+      "source_location": "L1083",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_clear",
@@ -6770,7 +6462,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1077",
+      "source_location": "L1074",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_status",
@@ -6782,7 +6474,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1056",
+      "source_location": "L1053",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_view",
@@ -6794,7 +6486,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1226",
+      "source_location": "L1223",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_model_switch",
@@ -6806,7 +6498,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1248",
+      "source_location": "L1245",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_add",
@@ -6818,7 +6510,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1252",
+      "source_location": "L1249",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_list",
@@ -6830,7 +6522,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1311",
+      "source_location": "L1307",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_pause_by_id",
@@ -6842,7 +6534,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1300",
+      "source_location": "L1296",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_remove_by_id",
@@ -6854,7 +6546,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1322",
+      "source_location": "L1318",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_resume_by_id",
@@ -6866,19 +6558,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1334",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "telegram_bot_action_schedule_run_by_id",
-      "target": "telegram_bot_telegrambot",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "references",
-      "context": "parameter_type",
-      "confidence": "EXTRACTED",
-      "source_file": "telegram_bot.py",
-      "source_location": "L1373",
+      "source_location": "L1358",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_skill_autolearn_toggle",
@@ -6890,7 +6570,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1392",
+      "source_location": "L1377",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_skill_forget_inactive",
@@ -6902,7 +6582,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1348",
+      "source_location": "L1333",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_skill_list",
@@ -6914,7 +6594,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1369",
+      "source_location": "L1354",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_skill_search_prompt",
@@ -6926,7 +6606,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1237",
+      "source_location": "L1234",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_composio",
@@ -6938,7 +6618,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1132",
+      "source_location": "L1129",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_provider",
@@ -6950,7 +6630,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1149",
+      "source_location": "L1146",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_queue",
@@ -6962,7 +6642,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1119",
+      "source_location": "L1116",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_status",
@@ -6974,7 +6654,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1140",
+      "source_location": "L1137",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_uptime",
@@ -6986,7 +6666,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1216",
+      "source_location": "L1213",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_tts_model_switch",
@@ -6998,7 +6678,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1200",
+      "source_location": "L1197",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_tts_toggle",
@@ -7010,7 +6690,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1115",
+      "source_location": "L1112",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_voice_queue",
@@ -7022,7 +6702,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1047",
+      "source_location": "L1044",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_web_status",
@@ -7055,7 +6735,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L888",
+      "source_location": "L885",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7066,7 +6746,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L902",
+      "source_location": "L899",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7198,7 +6878,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L897",
+      "source_location": "L894",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7242,7 +6922,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L779",
+      "source_location": "L776",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7253,7 +6933,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L794",
+      "source_location": "L791",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7264,7 +6944,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L767",
+      "source_location": "L764",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7275,7 +6955,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L850",
+      "source_location": "L847",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7286,7 +6966,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L817",
+      "source_location": "L814",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7319,7 +6999,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L913",
+      "source_location": "L910",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7330,7 +7010,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L910",
+      "source_location": "L907",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot",
@@ -7545,7 +7225,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1699",
+      "source_location": "L1684",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_run",
@@ -7581,7 +7261,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1718",
+      "source_location": "L1703",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_run",
@@ -7676,7 +7356,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L651",
+      "source_location": "L648",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot_handle_callback",
@@ -7746,7 +7426,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1232",
+      "source_location": "L1229",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_model_switch",
@@ -7758,7 +7438,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1223",
+      "source_location": "L1220",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_tts_model_switch",
@@ -7816,7 +7496,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L751",
+      "source_location": "L748",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot_handle_callback",
@@ -7828,7 +7508,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L753",
+      "source_location": "L750",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot_handle_callback",
@@ -7840,7 +7520,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L755",
+      "source_location": "L752",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot_handle_callback",
@@ -7900,18 +7580,6 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L648",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "telegram_bot_telegrambot_handle_callback",
-      "target": "telegram_bot_action_schedule_run_by_id",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "telegram_bot.py",
       "source_location": "L595",
       "weight": 1.0,
       "_origin": "ast",
@@ -7948,7 +7616,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1106",
+      "source_location": "L1103",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_chat_summarize",
@@ -7960,7 +7628,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1538",
+      "source_location": "L1523",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_open_tasks",
@@ -7972,7 +7640,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1702",
+      "source_location": "L1687",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_run",
@@ -7984,7 +7652,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1646",
+      "source_location": "L1631",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_show",
@@ -7996,7 +7664,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1600",
+      "source_location": "L1585",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_subtasks",
@@ -8008,7 +7676,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1098",
+      "source_location": "L1095",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_cleanup",
@@ -8020,7 +7688,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1089",
+      "source_location": "L1086",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_clear",
@@ -8032,7 +7700,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1080",
+      "source_location": "L1077",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_status",
@@ -8044,7 +7712,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1059",
+      "source_location": "L1056",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_view",
@@ -8056,7 +7724,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1228",
+      "source_location": "L1225",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_model_switch",
@@ -8068,7 +7736,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1249",
+      "source_location": "L1246",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_add",
@@ -8080,7 +7748,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1254",
+      "source_location": "L1251",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_list",
@@ -8092,7 +7760,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1313",
+      "source_location": "L1309",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_pause_by_id",
@@ -8104,7 +7772,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1302",
+      "source_location": "L1298",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_remove_by_id",
@@ -8116,7 +7784,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1324",
+      "source_location": "L1320",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_schedule_resume_by_id",
@@ -8128,19 +7796,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1336",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "telegram_bot_action_schedule_run_by_id",
-      "target": "telegram_bot_telegrambot_send_message",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "telegram_bot.py",
-      "source_location": "L1376",
+      "source_location": "L1361",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_skill_autolearn_toggle",
@@ -8152,7 +7808,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1395",
+      "source_location": "L1380",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_skill_forget_inactive",
@@ -8164,7 +7820,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1351",
+      "source_location": "L1336",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_skill_list",
@@ -8176,7 +7832,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1370",
+      "source_location": "L1355",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_skill_search_prompt",
@@ -8188,7 +7844,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1240",
+      "source_location": "L1237",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_composio",
@@ -8200,7 +7856,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1134",
+      "source_location": "L1131",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_provider",
@@ -8212,7 +7868,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1151",
+      "source_location": "L1148",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_queue",
@@ -8224,7 +7880,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1129",
+      "source_location": "L1126",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_status",
@@ -8236,7 +7892,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1146",
+      "source_location": "L1143",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_uptime",
@@ -8248,7 +7904,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1219",
+      "source_location": "L1216",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_tts_model_switch",
@@ -8260,7 +7916,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1205",
+      "source_location": "L1202",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_tts_toggle",
@@ -8272,7 +7928,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1116",
+      "source_location": "L1113",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_voice_queue",
@@ -8284,7 +7940,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1050",
+      "source_location": "L1047",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_web_status",
@@ -8296,7 +7952,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L772",
+      "source_location": "L769",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot_send_message",
@@ -8307,10 +7963,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L795",
+      "source_location": "L792",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_795",
+      "source": "telegram_bot_rationale_792",
       "target": "telegram_bot_telegrambot_send_direct",
       "confidence_score": 1.0
     },
@@ -8318,10 +7974,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L818",
+      "source_location": "L815",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_818",
+      "source": "telegram_bot_rationale_815",
       "target": "telegram_bot_telegrambot_send_voice_direct",
       "confidence_score": 1.0
     },
@@ -8330,7 +7986,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L881",
+      "source_location": "L878",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot_send_tts_async",
@@ -8341,10 +7997,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L851",
+      "source_location": "L848",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_851",
+      "source": "telegram_bot_rationale_848",
       "target": "telegram_bot_telegrambot_send_tts_async",
       "confidence_score": 1.0
     },
@@ -8353,7 +8009,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L863",
+      "source_location": "L860",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_telegrambot_send_tts_async",
@@ -8364,10 +8020,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L898",
+      "source_location": "L895",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_898",
+      "source": "telegram_bot_rationale_895",
       "target": "telegram_bot_telegrambot_peek_outbox",
       "confidence_score": 1.0
     },
@@ -8376,7 +8032,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1082",
+      "source_location": "L1079",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_status",
@@ -8388,7 +8044,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1061",
+      "source_location": "L1058",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_memory_view",
@@ -8400,7 +8056,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1242",
+      "source_location": "L1239",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_composio",
@@ -8412,7 +8068,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1136",
+      "source_location": "L1133",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_provider",
@@ -8424,7 +8080,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1150",
+      "source_location": "L1147",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_queue",
@@ -8436,7 +8092,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1120",
+      "source_location": "L1117",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_status",
@@ -8448,7 +8104,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1141",
+      "source_location": "L1138",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_system_uptime",
@@ -8460,7 +8116,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1052",
+      "source_location": "L1049",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_web_status",
@@ -8472,7 +8128,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1551",
+      "source_location": "L1536",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_open_tasks",
@@ -8484,7 +8140,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1700",
+      "source_location": "L1685",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_run",
@@ -8496,7 +8152,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1644",
+      "source_location": "L1629",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_show",
@@ -8508,7 +8164,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1598",
+      "source_location": "L1583",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_subtasks",
@@ -8519,10 +8175,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1037",
+      "source_location": "L1034",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1037",
+      "source": "telegram_bot_rationale_1034",
       "target": "telegram_bot_call_composio",
       "confidence_score": 1.0
     },
@@ -8530,10 +8186,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1155",
+      "source_location": "L1152",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1155",
+      "source": "telegram_bot_rationale_1152",
       "target": "telegram_bot_split_tts_text",
       "confidence_score": 1.0
     },
@@ -8541,10 +8197,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1201",
+      "source_location": "L1198",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1201",
+      "source": "telegram_bot_rationale_1198",
       "target": "telegram_bot_action_tts_toggle",
       "confidence_score": 1.0
     },
@@ -8552,10 +8208,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1217",
+      "source_location": "L1214",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1217",
+      "source": "telegram_bot_rationale_1214",
       "target": "telegram_bot_action_tts_model_switch",
       "confidence_score": 1.0
     },
@@ -8563,10 +8219,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1409",
+      "source_location": "L1394",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1409",
+      "source": "telegram_bot_rationale_1394",
       "target": "telegram_bot_jira_workbench_code",
       "confidence_score": 1.0
     },
@@ -8575,7 +8231,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1435",
+      "source_location": "L1420",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_parse_jira_result",
@@ -8586,10 +8242,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1414",
+      "source_location": "L1399",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1414",
+      "source": "telegram_bot_rationale_1399",
       "target": "telegram_bot_parse_workbench_issues",
       "confidence_score": 1.0
     },
@@ -8598,7 +8254,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1556",
+      "source_location": "L1541",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_open_tasks",
@@ -8610,7 +8266,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1602",
+      "source_location": "L1587",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_subtasks",
@@ -8621,10 +8277,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1428",
+      "source_location": "L1413",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1428",
+      "source": "telegram_bot_rationale_1413",
       "target": "telegram_bot_parse_jira_result",
       "confidence_score": 1.0
     },
@@ -8633,7 +8289,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1704",
+      "source_location": "L1689",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_run",
@@ -8645,7 +8301,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1648",
+      "source_location": "L1633",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_show",
@@ -8656,10 +8312,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1442",
+      "source_location": "L1427",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1442",
+      "source": "telegram_bot_rationale_1427",
       "target": "telegram_bot_parse_jira_single",
       "confidence_score": 1.0
     },
@@ -8668,7 +8324,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1660",
+      "source_location": "L1645",
       "weight": 1.0,
       "_origin": "ast",
       "source": "telegram_bot_action_jira_show",
@@ -8679,10 +8335,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1470",
+      "source_location": "L1455",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1470",
+      "source": "telegram_bot_rationale_1455",
       "target": "telegram_bot_adf_to_plaintext",
       "confidence_score": 1.0
     },
@@ -8690,10 +8346,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1535",
+      "source_location": "L1520",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1535",
+      "source": "telegram_bot_rationale_1520",
       "target": "telegram_bot_action_jira_open_tasks",
       "confidence_score": 1.0
     },
@@ -8701,10 +8357,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1586",
+      "source_location": "L1571",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1586",
+      "source": "telegram_bot_rationale_1571",
       "target": "telegram_bot_action_jira_subtasks",
       "confidence_score": 1.0
     },
@@ -8712,10 +8368,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1634",
+      "source_location": "L1619",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1634",
+      "source": "telegram_bot_rationale_1619",
       "target": "telegram_bot_action_jira_show",
       "confidence_score": 1.0
     },
@@ -8723,11 +8379,55 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "telegram_bot.py",
-      "source_location": "L1689",
+      "source_location": "L1674",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "telegram_bot_rationale_1689",
+      "source": "telegram_bot_rationale_1674",
       "target": "telegram_bot_action_jira_run",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L45",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "test_schedule_parse",
+      "target": "test_schedule_parse_check",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L91",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "test_schedule_parse",
+      "target": "test_schedule_parse_epoch_after",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L18",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "test_schedule_parse",
+      "target": "test_schedule_parse_fakesettings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "test_schedule_parse.py",
+      "source_location": "L92",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "test_schedule_parse_rationale_92",
+      "target": "test_schedule_parse_epoch_after",
       "confidence_score": 1.0
     },
     {
@@ -9526,5 +9226,5 @@
       "weight": 1.0
     }
   ],
-  "built_at_commit": "8cf74f5b40bc481f00e3217d46682c45926168f8"
+  "built_at_commit": "c79affd9be3606feb0680c07ea955f5aa2ac2f6e"
 }
