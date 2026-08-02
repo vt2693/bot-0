@@ -49,7 +49,7 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
     │  tg_voice.py  │           ┌──────▼──────┐
     │  ── download──┤           │ Scheduler   │
     │  ── ffmpeg ───┤           │ Engine      │
-    │  ── transcribe│           │ (30s poll)  │
+    │  ── transcribe│           │(timers+30s) │
     │               │           └─────────────┘
     │  tg_tts.py    │
     │  ── synthesize│
@@ -71,7 +71,7 @@ Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 
 | `config.py` | Settings from env vars, 3-provider auto-detection |
 | `composio_mcp.py` | Composio MCP client (HTTP JSON-RPC, workbench for Jira tools) |
 | `memory_store.py` | SQLite fact + skill store (SQLite-only on Android) |
-| `scheduler.py` | SchedulerEngine (30s poll loop) |
+| `scheduler.py` | SchedulerEngine (event-driven dispatch + 30s poll backstop) |
 | `tg_voice.py` | Voice helper: download, ffmpeg, router-0 STT transcription |
 | `tg_tts.py` | TTS helper: synthesize via router-0 (google-tts/en), ffmpeg to OggOpus |
 | `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts, ROUTER_0_AUDIO_URL |
@@ -115,7 +115,7 @@ Confidence: 100% — LIKE-based fact search with recent-facts fallback. No FTS5,
 Confidence: 100% — HTTP JSON-RPC client with initialize → tools/list → tools/call flow. Jira tools accessed via `COMPOSIO_REMOTE_WORKBENCH` + `run_composio_tool()` (not direct `tools/call` RPC). Cold-start retry pattern.
 
 ### SchedulerEngine
-Confidence: 100% — 30s async poll loop. SQLite persistence. NL+structured `/schedule` parsing with interval/time-target support. 5-min confirmation TTL. 3-error auto-pause. Once/daily/interval modes. `catch_up` skips once-mode jobs (interval=0 guard). **Run Now** (`⚡ Run Now` button on each job row, `ac:schedule_run:*`) fires a job immediately via `run_now()` → `_spawn_job(job, manual=True)`; manual runs update `last_run_at`/`last_result` but leave `next_run_at` (and thus the schedule) untouched, and `_spawn_job` is the single guard against duplicate concurrent executions.
+Confidence: 100% — Event-driven dispatch: per-job timer map wakes a dispatcher task at the earliest `next_run_at` so due jobs start promptly; the 30s async poll loop remains as catch-up/cleanup backstop. SQLite persistence. NL+structured `/schedule` parsing with interval/time-target support. 5-min confirmation TTL. 3-error auto-pause. Once/daily/interval modes. `catch_up` skips once-mode jobs (interval=0 guard). **Run Now** (`⚡ Run Now` button on each job row, `ac:schedule_run:*`) fires a job immediately via `run_now()` → `_spawn_job(job, manual=True)`; manual runs update `last_run_at`/`last_result` but leave `next_run_at` (and thus the schedule) untouched, and `_spawn_job` is the single guard against duplicate concurrent executions.
 
 ## Inputs (secrets)
 
@@ -276,7 +276,7 @@ SQLite-backed fact + skill store. SQLite-only on Android.
 
 ### Step 8: Scheduler (scheduler.py)
 
-30s async poll loop. Checks `scheduled_jobs.next_run_at ≤ now`. 3 consecutive errors → auto-pause with notification. Cold-boot catch-up (skip >2 intervals behind). Max 20 jobs/chat.
+Event-driven dispatch: per-job timer map (`_timers`), dispatcher task wakes at the earliest `next_run_at` via `asyncio.wait_for` and spawns due jobs promptly; 30s async poll loop stays as catch-up/cleanup backstop. Timers re-armed after each run by mode (daily/interval re-schedules, once/3-error clears). Checks `scheduled_jobs.next_run_at ≤ now`. 3 consecutive errors → auto-pause with notification. Cold-boot catch-up (skip >2 intervals behind). Max 20 jobs/chat.
 
 ### Step 9: Composio MCP (composio_mcp.py)
 
@@ -359,7 +359,7 @@ start_android.sh
 | **`_method` dispatch** | Field in outbox dicts mapping to Telegram API method (sendMessage, etc.) |
 | **TELEGRAM_PATHS** | Dict mapping method names to API paths (`sendMessage → /sendMessage`) |
 | **MemoryStore** | SQLite-backed fact + skill store, no FTS5, no vector search; SQLite-only on Android |
-| **SchedulerEngine** | 30s async poll loop, SQLite persistence, 3-error auto-pause |
+| **SchedulerEngine** | Event-driven dispatch (per-job timers, prompt wake) + 30s poll backstop, SQLite persistence, 3-error auto-pause |
 | **Composio MCP** | HTTP JSON-RPC to connect.composio.dev/mcp; Jira via workbench |
 | **COMPOSIO_REMOTE_WORKBENCH** | Code execution tool for Jira access (not direct tools/call RPC) |
 | **Learned skills** | SQLite skills table: title/problem/procedure/status lifecycle |
