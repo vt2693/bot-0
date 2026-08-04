@@ -286,12 +286,66 @@ class HermesBridge:
             pass
         return env_on
 
+    EXPAND_SYSTEM_PROMPT = (
+        "You are a memory retrieval assistant. Rephrase the user's message into 3-6 "
+        "standalone search terms — names, topics, synonyms, related words — that would "
+        "match a stored fact in a keyword search engine. Return ONLY a JSON object "
+        'with a single key "terms" whose value is an array of strings.'
+    )
+
+    @staticmethod
+    def _normalize_expansion(out: str) -> list[str]:
+        """Parse the LLM's expansion reply into a list of terms.
+
+        Accepts a JSON object {"terms": [...]}, a bare JSON array, or
+        prose/code-fenced wrappers. Falls back to [] on any parse failure so
+        retrieval degrades to the raw keyword search.
+        """
+        if not out or not isinstance(out, str):
+            return []
+        s = out.strip()
+        # Strip ```json ... ``` fences if the model emits them.
+        if s.startswith("```"):
+            s = re.sub(r"^```[a-zA-Z]*\s*|\s*```$", "", s).strip()
+        try:
+            data = json.loads(s)
+        except Exception:
+            return []
+        if isinstance(data, list):
+            terms = data
+        elif isinstance(data, dict):
+            terms = data.get("terms") or []
+        else:
+            return []
+        return [str(t).strip() for t in terms if str(t).strip()][:10]
+
+    def _expand_query(self, message: str) -> list[str]:
+        """LLM query expansion: turn the message into better search terms.
+
+        Reuses chat() with system_override + response_format, so it's isolated
+        (no history/tools/skills/extraction) and cheap (temp 0, max_tokens 200).
+        Every failure degrades to the raw keyword search (returns []).
+        """
+        if not (self.memory_enabled and self.memory_store):
+            return []
+        if len(message.strip()) < 3:
+            return []
+        try:
+            out = self.chat(message, history=[], scope="global",
+                            system_override=self.EXPAND_SYSTEM_PROMPT,
+                            response_format={"type": "json_object"})
+            return self._normalize_expansion(out)
+        except Exception:
+            logger.exception("Query expansion failed; falling back to keyword search")
+            return []
+
     def chat_with_memory(self, message: str, history: list | None = None, scope: str = "global") -> str:
         mem_block = None
         injected_skills = None
         if self.memory_enabled and self.memory_store:
             self._memory_stats["injections"] += 1
-            mems = self.memory_store.get_relevant(message, scope, 100)
+            expanded = self._expand_query(message)
+            mems = self.memory_store.get_relevant(message, scope, 100, extra_terms=expanded)
             if mems:
                 self._memory_stats["hits"] += 1
                 mem_block = "\n".join("- " + m["content"] for m in mems)

@@ -140,8 +140,12 @@ class MemoryStore:
             rows = self._conn.execute(sql, params).fetchall()
         return [self._row(r) for r in rows]
 
-    def get_relevant(self, query: str, scope: str = "global", limit: int = 5) -> list[dict]:
+    def get_relevant(self, query: str, scope: str = "global", limit: int = 5,
+                     extra_terms: list[str] | None = None) -> list[dict]:
         words = [w for w in (query or "").lower().split() if len(w) > 3]
+        for t in (extra_terms or []):
+            words.extend(w for w in t.lower().split() if len(w) > 3)
+        words = words[:10]
         results = []
         for w in words[:5]:
             results.extend(self.search(w, scope, limit))
