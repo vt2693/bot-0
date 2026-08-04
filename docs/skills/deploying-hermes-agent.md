@@ -108,8 +108,8 @@ Confidence: 100% — Voice memo detected in poll loop → download via getFile A
 ### Text-to-Speech (TTS)
 Confidence: 100% — Toggleable per-user from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` per chat_id. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` per chat_id with default `edge-tts/en-US-AndrewMultilingualNeural`. Menu shows ✅ active and ⭐ default indicators. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
 
-### MemoryStore (LIKE + SQLite)
-Confidence: 100% — LIKE-based fact search with recent-facts fallback. No FTS5, no HRR, no numpy. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync.
+### MemoryStore (LLM-expanded LIKE + SQLite)
+Confidence: 100% — Fact search via keyword LIKE on raw message words **plus LLM query-expansion terms** (`get_relevant(extra_terms=...)`; `_expand_query` runs a cheap temp-0 JSON `chat()` call per message, degrades to raw keywords on any failure). Recent-facts fallback on empty hits. No FTS5, no HRR, no numpy, no vector search. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync.
 
 ### Composio MCP integration
 Confidence: 100% — HTTP JSON-RPC client with initialize → tools/list → tools/call flow. Jira tools accessed via `COMPOSIO_REMOTE_WORKBENCH` + `run_composio_tool()` (not direct `tools/call` RPC). Cold-start retry pattern.
@@ -245,7 +245,7 @@ Main asyncio entry point. Key sections:
 3-provider LLM bridge using **direct httpx calls** (no openai SDK). Key methods:
 
 - `_call_llm()` — sends POST to `/chat/completions` with `stream: False`, handles tool calls in loop up to `TOOL_LOOP_MAX_ROUNDS`
-- `chat_with_memory()` — retrieves relevant facts + skills, injects into system prompt, calls LLM with `extract_facts` tool, detects skills
+- `chat_with_memory()` — LLM query expansion (`_expand_query`: lightweight `chat()` call with `system_override` + JSON `response_format`, temp 0, no tools → 3-6 search terms), retrieves relevant facts + skills, injects into system prompt, calls LLM with `extract_facts` tool, detects skills
 - `_build_messages()` — constructs message list from history (dict or tuple format), injected skills/facts
 - `_detect_skill()` — heuristic gate + constrained JSON LLM extraction for learned skills
 - `_execute_tool()` — calls `ComposioMCP.call_tool_sync()` (sync `httpx.Client`, no event loop needed)
@@ -270,7 +270,7 @@ Main asyncio entry point. Key sections:
 
 SQLite-backed fact + skill store. SQLite-only on Android.
 
-- **Facts:** `facts` table with LIKE search, trust_score (+0.05/-0.10), cleanup_low_trust (< 0.2).
+- **Facts:** `facts` table with LIKE search, trust_score (+0.05/-0.10), cleanup_low_trust (< 0.2). Retrieval is keyword `LIKE` on raw message words plus LLM-expanded terms (`get_relevant(extra_terms=...)`, word cap 10); recent-facts fallback on empty hits.
 - **Skills:** `skills` table with title/problem/procedure/failure_pattern/status lifecycle (unverified → active → inactive).
 - **Scheduled jobs:** `scheduled_jobs` table co-located for SchedulerEngine.
 
@@ -358,7 +358,7 @@ start_android.sh
 | **Outbox** | Thread-safe list of `{_method, ...}` dicts; `drain_outbox` returns to caller |
 | **`_method` dispatch** | Field in outbox dicts mapping to Telegram API method (sendMessage, etc.) |
 | **TELEGRAM_PATHS** | Dict mapping method names to API paths (`sendMessage → /sendMessage`) |
-| **MemoryStore** | SQLite-backed fact + skill store, no FTS5, no vector search; SQLite-only on Android |
+| **MemoryStore** | SQLite-backed fact + skill store; LIKE search on raw + LLM-expanded terms (`extra_terms`), no FTS5, no vector search; SQLite-only on Android |
 | **SchedulerEngine** | Event-driven dispatch (per-job timers, prompt wake) + 30s poll backstop, SQLite persistence, 3-error auto-pause |
 | **Composio MCP** | HTTP JSON-RPC to connect.composio.dev/mcp; Jira via workbench |
 | **COMPOSIO_REMOTE_WORKBENCH** | Code execution tool for Jira access (not direct tools/call RPC) |
