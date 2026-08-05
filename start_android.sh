@@ -16,7 +16,7 @@ mkdir -p "$TEMP_DIR" logs
 # Verify critical deps before starting
 python -c "
 import sys, importlib.util
-pkgs = ['httpx', 'numpy']
+pkgs = ['httpx']
 missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
 if missing:
     print('ERROR: Missing packages: ' + ' '.join(missing), flush=True)

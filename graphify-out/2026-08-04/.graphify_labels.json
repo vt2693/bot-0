@@ -4,9 +4,9 @@
   "2": "android_bot.py",
   "3": "SchedulerEngine",
   "4": "HermesBridge",
-  "5": "._handle_command",
-  "6": "._handle_callback",
-  "7": "telegram_bot.py",
+  "5": "._edit_message",
+  "6": "._send_message",
+  "7": "TelegramBot",
   "8": "ComposioMCP",
   "9": "_action_jira_subtasks",
   "10": "_action_jira_run",
@@ -15,9 +15,8 @@
   "13": "tg_tts.py",
   "14": "start_android.sh",
   "15": "setup_android.sh",
-  "16": "TelegramBot",
+  "16": "_jira_workbench_code",
   "17": "deploy_android.ps1",
   "18": "CLAUDE.md",
-  "19": "_jira_workbench_code",
-  "20": ".peek_outbox"
+  "21": "_action_tts_toggle"
 }

@@ -28,10 +28,7 @@ else
   cd hermes-bot
 fi
 
-# Install Python deps — bot now uses httpx directly, no openai SDK needed
-echo "Installing numpy via pkg (pre-built)..."
-pkg install -y python-numpy 2>/dev/null || true
-
+# Install Python deps — bot uses httpx directly, no openai SDK needed
 # Ensure pip is up to date
 pip install --upgrade pip 2>&1 | tail -1
 
@@ -42,7 +39,7 @@ pip install httpx 2>&1 || pip install --default-timeout=300 httpx 2>&1
 echo "Verifying packages..."
 python -c "
 import sys, importlib.util
-pkgs = ['httpx', 'numpy']
+pkgs = ['httpx']
 missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
 if missing:
     print('ERROR: missing packages:', ' '.join(missing))

@@ -193,10 +193,10 @@ bash start_android.sh   # starts in tmux
 
 ### Step 2: Setup Script (setup_android.sh)
 
-- Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`, `python-numpy` (pre-built)
+- Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`
 - Installs: `httpx` via pip (no openai SDK needed — bot uses direct httpx calls)
-- Verifies: `python -c "import httpx, numpy"`
-- Prompts for 6 API keys + 3 optional configs (ROUTER_0_BASE_URL, ROUTER_0_AUDIO_URL, TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults
+- Verifies: `python -c "import httpx"`
+- Prompts for 6 configs + 2 optional configs (TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults: TELEGRAM_BOT_TOKEN, ROUTER_0_API_KEY, ROUTER_0_BASE_URL, ROUTER_0_AUDIO_URL, COMPOSIO_CONSUMER_API_KEY, OPENCODE_ZEN_API_KEY
 - Writes `$HOME/.hermes-tokens.env` with `PROVIDER="router_0"`
 
 ### Step 3: Start Script (start_android.sh)
@@ -214,7 +214,7 @@ fi
 . "$ENV_FILE"
 
 # Verify deps
-python -c "import sys, importlib.util; pkgs=['httpx','numpy']; missing=[...]; ..." || exit 1
+python -c "import sys, importlib.util; pkgs=['httpx']; missing=[...]; ..." || exit 1
 
 termux-wake-lock || true
 tmux has-session -t hermes 2>/dev/null && echo "Killing existing session..." && tmux kill-session -t hermes
@@ -333,7 +333,7 @@ After `bash start_android.sh`:
 ```
 start_android.sh
   → source .hermes-tokens.env
-  → verify httpx, numpy
+  → verify httpx
   → kill old tmux session
   → tmux new-session
     → python android_bot.py

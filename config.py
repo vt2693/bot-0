@@ -1,6 +1,5 @@
 import os
 import logging
-from pathlib import Path
 from functools import lru_cache
 from typing import Optional
 
@@ -11,8 +10,6 @@ class Settings:
     APP_NAME = os.getenv("APP_NAME", "Hermes Agent")
     APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
     DEBUG = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
-    HOST = os.getenv("HOST", "0.0.0.0")
-    PORT = int(os.getenv("PORT", "7860"))
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
     TELEGRAM_BOT_TOKEN: Optional[str] = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -39,12 +36,6 @@ class Settings:
     TOOL_LOOP_MAX_ROUNDS = int(os.getenv("TOOL_LOOP_MAX_ROUNDS", "1000"))
     LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "600"))
 
-    APP_DIR = Path("/app")
-    LOG_DIR = APP_DIR / "logs"
-    DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
-    ASSETS_DIR = APP_DIR / "assets"
-    HERMES_HOME = Path(os.getenv("HERMES_HOME", "/app/.hermes"))
-    TEMP_DIR = Path(os.getenv("TEMP_DIR", "/tmp/app"))
     MEMORY_ENABLED = os.getenv("MEMORY_ENABLED", "true").lower() in ("true", "1", "yes")
     MEMORY_AUTO_EXTRACT = os.getenv("MEMORY_AUTO_EXTRACT", "true").lower() in ("true", "1", "yes")
     MEMORY_RESTORE_ON_STARTUP = os.getenv("MEMORY_RESTORE_ON_STARTUP", "false").lower() in ("true", "1", "yes")
