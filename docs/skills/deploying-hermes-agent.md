@@ -109,7 +109,7 @@ Confidence: 100% — Voice memo detected in poll loop → download via getFile A
 Confidence: 100% — Toggleable per-user from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` per chat_id. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` per chat_id with default `edge-tts/en-US-AndrewMultilingualNeural`. Menu shows ✅ active and ⭐ default indicators. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
 
 ### MemoryStore (LLM-expanded LIKE + SQLite)
-Confidence: 100% — Fact search via keyword LIKE on raw message words **plus LLM query-expansion terms** (`get_relevant(extra_terms=...)`; `_expand_query` runs a cheap temp-0 JSON `chat()` call per message, degrades to raw keywords on any failure). Recent-facts fallback on empty hits. No FTS5, no HRR, no numpy, no vector search. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync.
+Confidence: 100% — Fact search via keyword LIKE on raw message words **plus LLM query-expansion terms** (`get_relevant(extra_terms=...)`; `_expand_query` runs a cheap temp-0 `chat()` call per message, degrades to raw keywords on any failure). Recent-facts fallback on empty hits. No FTS5, no HRR, no numpy, no vector search. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync.
 
 ### Composio MCP integration
 Confidence: 100% — HTTP JSON-RPC client with initialize → tools/list → tools/call flow. Jira tools accessed via `COMPOSIO_REMOTE_WORKBENCH` + `run_composio_tool()` (not direct `tools/call` RPC). Cold-start retry pattern.
@@ -245,7 +245,7 @@ Main asyncio entry point. Key sections:
 3-provider LLM bridge using **direct httpx calls** (no openai SDK). Key methods:
 
 - `_call_llm()` — sends POST to `/chat/completions` with `stream: False`, handles tool calls in loop up to `TOOL_LOOP_MAX_ROUNDS`
-- `chat_with_memory()` — LLM query expansion (`_expand_query`: lightweight `chat()` call with `system_override` + JSON `response_format`, temp 0, no tools → 3-6 search terms), retrieves relevant facts + skills, injects into system prompt, calls LLM with `extract_facts` tool, detects skills
+- `chat_with_memory()` — LLM query expansion (`_expand_query`: lightweight `chat()` call with `system_override`, temp 0, no tools → 3-6 search terms), retrieves relevant facts + skills, injects into system prompt, calls LLM with `extract_facts` tool, detects skills
 - `_build_messages()` — constructs message list from history (dict or tuple format), injected skills/facts
 - `_detect_skill()` — heuristic gate + constrained JSON LLM extraction for learned skills
 - `_execute_tool()` — calls `ComposioMCP.call_tool_sync()` (sync `httpx.Client`, no event loop needed)
