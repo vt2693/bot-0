@@ -4,6 +4,7 @@
   "2": "android_bot.py",
   "3": "SchedulerEngine",
   "4": "HermesBridge",
+  "5": "._handle_command",
   "6": "._handle_callback",
   "7": "telegram_bot.py",
   "8": "ComposioMCP",

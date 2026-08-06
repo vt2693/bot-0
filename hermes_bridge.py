@@ -210,6 +210,8 @@ class HermesBridge:
                     resp = httpx.post(url, json=body, headers=headers, timeout=self.settings.LLM_TIMEOUT)
                     resp.raise_for_status()
                     data = resp.json()
+                    if "error" in data or not isinstance(data.get("choices"), list) or not data["choices"]:
+                        raise RuntimeError(f"LLM API error: {data.get('error') or 'missing choices in response'}")
                     last_err = None
                     break
                 except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException,
@@ -322,7 +324,7 @@ class HermesBridge:
     def _expand_query(self, message: str) -> list[str]:
         """LLM query expansion: turn the message into better search terms.
 
-        Reuses chat() with system_override + response_format, so it's isolated
+        Reuses chat() with system_override, so it's isolated
         (no history/tools/skills/extraction) and cheap (temp 0, max_tokens 200).
         Every failure degrades to the raw keyword search (returns []).
         """
@@ -332,8 +334,7 @@ class HermesBridge:
             return []
         try:
             out = self.chat(message, history=[], scope="global",
-                            system_override=self.EXPAND_SYSTEM_PROMPT,
-                            response_format={"type": "json_object"})
+                            system_override=self.EXPAND_SYSTEM_PROMPT)
             return self._normalize_expansion(out)
         except Exception:
             logger.exception("Query expansion failed; falling back to keyword search")
