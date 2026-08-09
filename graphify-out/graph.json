@@ -413,8 +413,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "hermes_bridge_is_transient_llm_error",
-      "community": 5,
-      "community_name": "FakeResp",
+      "community": 2,
+      "community_name": "android_bot.py",
       "norm_label": "_is_transient_llm_error()"
     },
     {
@@ -787,8 +787,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "hermes_bridge_rationale_24",
-      "community": 5,
-      "community_name": "FakeResp",
+      "community": 2,
+      "community_name": "android_bot.py",
       "norm_label": "true if the provider error dict/str describes a transient upstream failure."
     },
     {
@@ -1915,8 +1915,8 @@
       "source_location": "L144",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_process_update",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": ".process_update()"
     },
     {
@@ -1926,8 +1926,8 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_command",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "._handle_command()"
     },
     {
@@ -1937,8 +1937,8 @@
       "source_location": "L212",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_enqueue_typing",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 9,
+      "community_name": "_action_jira_run",
       "norm_label": "._enqueue_typing()"
     },
     {
@@ -1948,8 +1948,8 @@
       "source_location": "L216",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_typing_refresher",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 9,
+      "community_name": "_action_jira_run",
       "norm_label": "._typing_refresher()"
     },
     {
@@ -1959,8 +1959,8 @@
       "source_location": "L224",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_message",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 9,
+      "community_name": "_action_jira_run",
       "norm_label": "._handle_message()"
     },
     {
@@ -1970,8 +1970,8 @@
       "source_location": "L300",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_show_skill_confirmation",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 9,
+      "community_name": "_action_jira_run",
       "norm_label": "._show_skill_confirmation()"
     },
     {
@@ -1981,8 +1981,8 @@
       "source_location": "L332",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_pending_skill_cleanup",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "._pending_skill_cleanup()"
     },
     {
@@ -1992,8 +1992,8 @@
       "source_location": "L336",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_improve",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "._handle_improve()"
     },
     {
@@ -2003,8 +2003,8 @@
       "source_location": "L419",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_schedule_add",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "._handle_schedule_add()"
     },
     {
@@ -2014,8 +2014,8 @@
       "source_location": "L510",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_edit_message",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 19,
+      "community_name": "._edit_message",
       "norm_label": "._edit_message()"
     },
     {
@@ -2025,8 +2025,8 @@
       "source_location": "L518",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_show_menu",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "._show_menu()"
     },
     {
@@ -2036,8 +2036,8 @@
       "source_location": "L582",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_handle_callback",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "._handle_callback()"
     },
     {
@@ -2047,8 +2047,8 @@
       "source_location": "L775",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_send_message",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "._send_message()"
     },
     {
@@ -2058,8 +2058,8 @@
       "source_location": "L787",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_send_callback_answer",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "._send_callback_answer()"
     },
     {
@@ -2069,8 +2069,8 @@
       "source_location": "L802",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_send_direct",
-      "community": 16,
-      "community_name": "_jira_workbench_code",
+      "community": 20,
+      "community_name": "._send_direct",
       "norm_label": "._send_direct()"
     },
     {
@@ -2113,8 +2113,8 @@
       "source_location": "L905",
       "_origin": "ast",
       "id": "telegram_bot_telegrambot_peek_outbox",
-      "community": 16,
-      "community_name": "_jira_workbench_code",
+      "community": 21,
+      "community_name": ".peek_outbox",
       "norm_label": ".peek_outbox()"
     },
     {
@@ -2157,8 +2157,8 @@
       "source_location": "L1044",
       "_origin": "ast",
       "id": "telegram_bot_call_composio",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "_call_composio()"
     },
     {
@@ -2300,8 +2300,8 @@
       "source_location": "L1208",
       "_origin": "ast",
       "id": "telegram_bot_action_tts_toggle",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 11,
+      "community_name": "_action_tts_toggle",
       "norm_label": "_action_tts_toggle()"
     },
     {
@@ -2311,8 +2311,8 @@
       "source_location": "L1224",
       "_origin": "ast",
       "id": "telegram_bot_action_tts_model_switch",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "_action_tts_model_switch()"
     },
     {
@@ -2322,8 +2322,8 @@
       "source_location": "L1234",
       "_origin": "ast",
       "id": "telegram_bot_action_model_switch",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "_action_model_switch()"
     },
     {
@@ -2355,8 +2355,8 @@
       "source_location": "L1260",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_list",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "_action_schedule_list()"
     },
     {
@@ -2366,8 +2366,8 @@
       "source_location": "L1308",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_remove_by_id",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "_action_schedule_remove_by_id()"
     },
     {
@@ -2377,8 +2377,8 @@
       "source_location": "L1319",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_pause_by_id",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "_action_schedule_pause_by_id()"
     },
     {
@@ -2388,8 +2388,8 @@
       "source_location": "L1330",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_resume_by_id",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "_action_schedule_resume_by_id()"
     },
     {
@@ -2399,8 +2399,8 @@
       "source_location": "L1342",
       "_origin": "ast",
       "id": "telegram_bot_action_schedule_run_by_id",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "_action_schedule_run_by_id()"
     },
     {
@@ -2465,8 +2465,8 @@
       "source_location": "L1421",
       "_origin": "ast",
       "id": "telegram_bot_parse_workbench_issues",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "_parse_workbench_issues()"
     },
     {
@@ -2476,8 +2476,8 @@
       "source_location": "L1435",
       "_origin": "ast",
       "id": "telegram_bot_parse_jira_result",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "_parse_jira_result()"
     },
     {
@@ -2487,8 +2487,8 @@
       "source_location": "L1449",
       "_origin": "ast",
       "id": "telegram_bot_parse_jira_single",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 10,
+      "community_name": "_action_jira_show",
       "norm_label": "_parse_jira_single()"
     },
     {
@@ -2498,8 +2498,8 @@
       "source_location": "L1477",
       "_origin": "ast",
       "id": "telegram_bot_adf_to_plaintext",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 10,
+      "community_name": "_action_jira_show",
       "norm_label": "_adf_to_plaintext()"
     },
     {
@@ -2509,8 +2509,8 @@
       "source_location": "L1542",
       "_origin": "ast",
       "id": "telegram_bot_action_jira_open_tasks",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "_action_jira_open_tasks()"
     },
     {
@@ -2520,8 +2520,8 @@
       "source_location": "L1593",
       "_origin": "ast",
       "id": "telegram_bot_action_jira_subtasks",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "_action_jira_subtasks()"
     },
     {
@@ -2531,8 +2531,8 @@
       "source_location": "L1641",
       "_origin": "ast",
       "id": "telegram_bot_action_jira_show",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 10,
+      "community_name": "_action_jira_show",
       "norm_label": "_action_jira_show()"
     },
     {
@@ -2542,8 +2542,8 @@
       "source_location": "L1696",
       "_origin": "ast",
       "id": "telegram_bot_action_jira_run",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 9,
+      "community_name": "_action_jira_run",
       "norm_label": "_action_jira_run()"
     },
     {
@@ -2553,8 +2553,8 @@
       "source_location": "L301",
       "_origin": "ast",
       "id": "telegram_bot_rationale_301",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 9,
+      "community_name": "_action_jira_run",
       "norm_label": "send inline confirmation for a detected skill."
     },
     {
@@ -2564,8 +2564,8 @@
       "source_location": "L420",
       "_origin": "ast",
       "id": "telegram_bot_rationale_420",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "parse /schedule add <text>, show confirmation with yes/no inline."
     },
     {
@@ -2575,8 +2575,8 @@
       "source_location": "L511",
       "_origin": "ast",
       "id": "telegram_bot_rationale_511",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 19,
+      "community_name": "._edit_message",
       "norm_label": "enqueue an editmessagetext to the outbox."
     },
     {
@@ -2586,8 +2586,8 @@
       "source_location": "L519",
       "_origin": "ast",
       "id": "telegram_bot_rationale_519",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "send or edit a menu message. edits existing menu if one was sent before."
     },
     {
@@ -2597,8 +2597,8 @@
       "source_location": "L583",
       "_origin": "ast",
       "id": "telegram_bot_rationale_583",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "route callback_query: navigation (mn:*) or action (ac:*)."
     },
     {
@@ -2608,8 +2608,8 @@
       "source_location": "L803",
       "_origin": "ast",
       "id": "telegram_bot_rationale_803",
-      "community": 16,
-      "community_name": "_jira_workbench_code",
+      "community": 20,
+      "community_name": "._send_direct",
       "norm_label": "try calling api.telegram.org directly. returns true if sent."
     },
     {
@@ -2641,8 +2641,8 @@
       "source_location": "L906",
       "_origin": "ast",
       "id": "telegram_bot_rationale_906",
-      "community": 16,
-      "community_name": "_jira_workbench_code",
+      "community": 21,
+      "community_name": ".peek_outbox",
       "norm_label": "return outbox items without draining (for diagnostics)."
     },
     {
@@ -2652,8 +2652,8 @@
       "source_location": "L1045",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1045",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "call a composio tool (async, awaits directly in running loop)."
     },
     {
@@ -2674,8 +2674,8 @@
       "source_location": "L1209",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1209",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 11,
+      "community_name": "_action_tts_toggle",
       "norm_label": "toggle tts on/off for this chat. persists to memory_store."
     },
     {
@@ -2685,8 +2685,8 @@
       "source_location": "L1225",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1225",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 5,
+      "community_name": "._send_message",
       "norm_label": "switch tts model for this chat. persists to memory_store."
     },
     {
@@ -2707,8 +2707,8 @@
       "source_location": "L1422",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1422",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "extract issues list from workbench stdout output."
     },
     {
@@ -2718,8 +2718,8 @@
       "source_location": "L1436",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1436",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "parse issues from composio workbench response."
     },
     {
@@ -2729,8 +2729,8 @@
       "source_location": "L1450",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1450",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 10,
+      "community_name": "_action_jira_show",
       "norm_label": "parse single issue from jira_get_issue workbench response. response shape:..."
     },
     {
@@ -2740,8 +2740,8 @@
       "source_location": "L1478",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1478",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 10,
+      "community_name": "_action_jira_show",
       "norm_label": "convert atlassian document format (adf) json to plain text."
     },
     {
@@ -2751,8 +2751,8 @@
       "source_location": "L1543",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1543",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "show open tasks from configured jira_epics via composio workbench."
     },
     {
@@ -2762,8 +2762,8 @@
       "source_location": "L1594",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1594",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 6,
+      "community_name": "_action_jira_subtasks",
       "norm_label": "show subtasks for a given issue via composio workbench."
     },
     {
@@ -2773,8 +2773,8 @@
       "source_location": "L1642",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1642",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 10,
+      "community_name": "_action_jira_show",
       "norm_label": "fetch and display a single jira issue's description (read-only view)."
     },
     {
@@ -2784,174 +2784,9 @@
       "source_location": "L1697",
       "_origin": "ast",
       "id": "telegram_bot_rationale_1697",
-      "community": 7,
-      "community_name": "TelegramBot",
+      "community": 9,
+      "community_name": "_action_jira_run",
       "norm_label": "fetch jira issue description and run it as an llm prompt."
-    },
-    {
-      "label": "test_llm_retry.py",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": "test_llm_retry.py"
-    },
-    {
-      "label": "make_settings()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L15",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_make_settings",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": "make_settings()"
-    },
-    {
-      "label": "FakeResp",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L38",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_fakeresp",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": "fakeresp"
-    },
-    {
-      "label": ".__init__()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L39",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_fakeresp_init",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".__init__()"
-    },
-    {
-      "label": ".raise_for_status()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L43",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_fakeresp_raise_for_status",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".raise_for_status()"
-    },
-    {
-      "label": ".json()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L49",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_fakeresp_json",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".json()"
-    },
-    {
-      "label": "LlmRetryTest",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L67",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_llmretrytest",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": "llmretrytest"
-    },
-    {
-      "label": ".setUp()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L68",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_llmretrytest_setup",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".setup()"
-    },
-    {
-      "label": ".test_capacity_exhausted_after_all_retries_raises_friendly()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L73",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_llmretrytest_test_capacity_exhausted_after_all_retries_raises_friendly",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".test_capacity_exhausted_after_all_retries_raises_friendly()"
-    },
-    {
-      "label": ".test_hard_auth_error_fails_fast_no_retry()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L87",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_llmretrytest_test_hard_auth_error_fails_fast_no_retry",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".test_hard_auth_error_fails_fast_no_retry()"
-    },
-    {
-      "label": ".test_failover_uses_another_provider_on_exhaustion()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L95",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_llmretrytest_test_failover_uses_another_provider_on_exhaustion",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".test_failover_uses_another_provider_on_exhaustion()"
-    },
-    {
-      "label": ".test_provider_200_with_completions_returns_choices()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L109",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_llmretrytest_test_provider_200_with_completions_returns_choices",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".test_provider_200_with_completions_returns_choices()"
-    },
-    {
-      "label": ".test_transient_body_retried_then_success()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L117",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_llmretrytest_test_transient_body_retried_then_success",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".test_transient_body_retried_then_success()"
-    },
-    {
-      "label": ".test_is_transient_matcher()",
-      "file_type": "code",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L130",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_llmretrytest_test_is_transient_matcher",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": ".test_is_transient_matcher()"
-    },
-    {
-      "label": "Retry + provider-failover tests for HermesBridge._call_llm.",
-      "file_type": "rationale",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "tests_test_llm_retry_rationale_1",
-      "community": 5,
-      "community_name": "FakeResp",
-      "norm_label": "retry + provider-failover tests for hermesbridge._call_llm."
     },
     {
       "label": "tg_tts.py",
@@ -4576,18 +4411,6 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L12",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry",
-      "target": "hermes_bridge",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -4643,30 +4466,6 @@
       "source": "hermes_bridge_rationale_24",
       "target": "hermes_bridge_is_transient_llm_error",
       "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L12",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry",
-      "target": "hermes_bridge_is_transient_llm_error",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L131",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_test_is_transient_matcher",
-      "target": "hermes_bridge_is_transient_llm_error"
     },
     {
       "relation": "method",
@@ -4997,52 +4796,6 @@
       "source": "hermes_bridge_hermesbridge",
       "target": "hermes_bridge_hermesbridge_try_failover",
       "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L12",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry",
-      "target": "hermes_bridge_hermesbridge",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "uses",
-      "confidence": "INFERRED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L12",
-      "weight": 0.8,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_fakeresp",
-      "target": "hermes_bridge_hermesbridge",
-      "confidence_score": 0.5
-    },
-    {
-      "relation": "uses",
-      "confidence": "INFERRED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L12",
-      "weight": 0.8,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest",
-      "target": "hermes_bridge_hermesbridge",
-      "confidence_score": 0.5
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L70",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_setup",
-      "target": "hermes_bridge_hermesbridge"
     },
     {
       "relation": "calls",
@@ -9373,244 +9126,6 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L38",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry",
-      "target": "tests_test_llm_retry_fakeresp",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L67",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry",
-      "target": "tests_test_llm_retry_llmretrytest",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L15",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry",
-      "target": "tests_test_llm_retry_make_settings",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L1",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_rationale_1",
-      "target": "tests_test_llm_retry",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L69",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_setup",
-      "target": "tests_test_llm_retry_make_settings",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L75",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_test_capacity_exhausted_after_all_retries_raises_friendly",
-      "target": "tests_test_llm_retry_make_settings",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L39",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_fakeresp",
-      "target": "tests_test_llm_retry_fakeresp_init",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L49",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_fakeresp",
-      "target": "tests_test_llm_retry_fakeresp_json",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L43",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_fakeresp",
-      "target": "tests_test_llm_retry_fakeresp_raise_for_status",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L80",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_test_capacity_exhausted_after_all_retries_raises_friendly",
-      "target": "tests_test_llm_retry_fakeresp",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L99",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_test_failover_uses_another_provider_on_exhaustion",
-      "target": "tests_test_llm_retry_fakeresp",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L89",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_test_hard_auth_error_fails_fast_no_retry",
-      "target": "tests_test_llm_retry_fakeresp",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L111",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_test_provider_200_with_completions_returns_choices",
-      "target": "tests_test_llm_retry_fakeresp",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L122",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest_test_transient_body_retried_then_success",
-      "target": "tests_test_llm_retry_fakeresp",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L68",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest",
-      "target": "tests_test_llm_retry_llmretrytest_setup",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L73",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest",
-      "target": "tests_test_llm_retry_llmretrytest_test_capacity_exhausted_after_all_retries_raises_friendly",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L95",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest",
-      "target": "tests_test_llm_retry_llmretrytest_test_failover_uses_another_provider_on_exhaustion",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L87",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest",
-      "target": "tests_test_llm_retry_llmretrytest_test_hard_auth_error_fails_fast_no_retry",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L130",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest",
-      "target": "tests_test_llm_retry_llmretrytest_test_is_transient_matcher",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L109",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest",
-      "target": "tests_test_llm_retry_llmretrytest_test_provider_200_with_completions_returns_choices",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_llm_retry.py",
-      "source_location": "L117",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tests_test_llm_retry_llmretrytest",
-      "target": "tests_test_llm_retry_llmretrytest_test_transient_body_retried_then_success",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
       "source_file": "tg_tts.py",
       "source_location": "L16",
       "weight": 1.0,
@@ -10404,5 +9919,5 @@
       "weight": 1.0
     }
   ],
-  "built_at_commit": "dc83973907e4823b99eb4c43c8ccacc13496ee1d"
+  "built_at_commit": "ecac361bb8ab02ad7adf766b268703fd97e7bfce"
 }
