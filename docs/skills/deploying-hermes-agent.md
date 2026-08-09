@@ -4,6 +4,7 @@ description: >-
   Deploy Hermes Agent to Android/Termux (headless Telegram bot via getUpdates polling).
   3-provider LLM config with router_0, SchedulerEngine, MemoryStore (SQLite),
   Composio MCP tools, TTS and in-process voice transcription via local router-0.
+  Retry + provider failover on upstream capacity exhaustion.
   Confidence: 100%
 ---
 
@@ -91,7 +92,7 @@ Confidence: 100% — Validated end-to-end with live Telegram message delivery. H
 Confidence: 100% — 3 provider names including `router_0`. Provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter`. Settings immutable, cached via `@lru_cache()`.
 
 ### Provider fallback chain
-Confidence: 100% — 3 attempts with 1.5x exponential backoff on transient errors (ECONNRESET, 5xx, JSONDecodeError from proxy cold-start HTML); `chat()` wraps final failure in `f"Error: {e}"`.
+Confidence: 100% — Transient provider errors (server_error, upstream 5xx, resource exhaustion, rate limit) are classified and retried. Capacity-exhaustion class uses 4 attempts with `2**attempt` backoff (2/4/8s); network flakiness keeps 1.5x exponential backoff. On exhaustion beyond retries, the bridge fails over to the next configured provider with an announced ⚠️ notice (provider restored next turn); hard client errors (auth, bad request) fail fast. `chat()` re-raises provider errors (logs trace first) so the Telegram layer renders a clean message — no raw API dump to the user.
 
 ### Provider switching (/model + inline menu)
 Confidence: 100% — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing). Menu dynamically shows ✅ on active model, ⭐ on provider default.
@@ -229,7 +230,7 @@ Main asyncio entry point. Key sections:
 
 **Poll loop:** `_poll_loop(tg, work_dir)` — infinite loop calling `getUpdates` with 30s long-poll timeout via `asyncio.to_thread`. Voice messages detected in the loop, processed inline (download → ffmpeg → transcribe), then re-routed as text through the normal queue.
 
-**Outbox drain:** `_drain_outbox(tg)` — background task draining `tg.outbox` and delivering via `_send_direct()` with 1 retry on failure.
+**Outbox drain:** `_drain_outbox(tg)` — background task draining `tg.outbox` and delivering via `_send_direct()` (3 attempts with 1.5x backoff inside `_send_direct`).
 
 **Startup sequence:**
 1. Initialize ComposioMCP, MemoryStore, HermesBridge, TelegramBot
@@ -244,7 +245,7 @@ Main asyncio entry point. Key sections:
 
 3-provider LLM bridge using **direct httpx calls** (no openai SDK). Key methods:
 
-- `_call_llm()` — sends POST to `/chat/completions` with `stream: False`, handles tool calls in loop up to `TOOL_LOOP_MAX_ROUNDS`
+- `_call_llm()` — sends POST to `/chat/completions` with `stream: False`, handles tool calls in loop up to `TOOL_LOOP_MAX_ROUNDS`. Classifies provider errors: transient (server_error, ResourceExhausted, 5xx, rate limit) retried with escalating backoff; capacity exhaustion beyond retries fails over to the next configured provider with an announced notice. Non-transient (auth/bad request) fail fast.
 - `chat_with_memory()` — LLM query expansion (`_expand_query`: lightweight `chat()` call with `system_override`, temp 0, no tools → 3-6 search terms), retrieves relevant facts + skills, injects into system prompt, calls LLM with `extract_facts` tool, detects skills
 - `_build_messages()` — constructs message list from history (dict or tuple format), injected skills/facts
 - `_detect_skill()` — heuristic gate + constrained JSON LLM extraction for learned skills
@@ -288,6 +289,8 @@ HTTP JSON-RPC client. Tools accessed via `initialize` → `tools/list` → `tool
 
 | Signal | Action |
 |--------|--------|
+| LLM upstream saturation (ResourceExhausted / server_error / 5xx) | Retry 4× with `2**attempt` backoff, then fail over to next configured provider with ⚠️ notice |
+| Non-transient LLM error (auth, bad request, invalid model) | Fail fast — no retry, clean user message |
 | LLM call returns streaming (SSE) | Ensure `stream: False` in request body |
 | Composio cold start returns empty | Retry once after 2s |
 | getUpdates timeout | `asyncio.wait_for` wrapper catches `TimeoutError`, continues loop |
