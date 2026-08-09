@@ -264,6 +264,14 @@ class TelegramBot:
         refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
         try:
             response = await asyncio.to_thread(self.bridge_chat, text, hist, key)
+        except Exception as e:
+            logger.error("LLM error for chat %s: %s", chat_id, e)
+            self._send_message(
+                chat_id,
+                "⚠️ The AI provider is temporarily unavailable — upstream may be at capacity. "
+                "Try again in a moment.",
+            )
+            return
         finally:
             refresh_task.cancel()
             try:

@@ -8,6 +8,27 @@ import httpx
 
 from config import Settings
 
+# Provider-side transient failures we retry: capacity exhaustion, upstream 5xx,
+# rate limiting. Hard client errors (auth, bad request) fail fast.
+_TRANSIENT_ERROR_TERMS = (
+    "server_error", "resourceexhausted", "502", "upstream", "rate limit",
+    "429", "503", "overloaded", "temporarily unavailable", "service unavailable",
+)
+
+
+class RetryableError(Exception):
+    """A provider error worth retrying (transient) that surfaced as HTTP 200 body."""
+
+
+def _is_transient_llm_error(err) -> bool:
+    """True if the provider error dict/str describes a transient upstream failure."""
+    import json as _json
+    if isinstance(err, dict):
+        blob = _json.dumps(err).lower()
+    else:
+        blob = str(err).lower()
+    return any(term in blob for term in _TRANSIENT_ERROR_TERMS)
+
 logger = logging.getLogger(__name__)
 
 
@@ -167,8 +188,11 @@ class HermesBridge:
                                   system_override=system_override,
                                   response_format=response_format)
         except Exception as e:
-            logger.exception("Chat failed")
-            return f"Error: {e}"
+            # Don't swallow provider errors into a returned string — let them
+            # propagate so the Telegram layer can retry/fall back and render a
+            # clean message. Logging keeps the trace for operators.
+            logger.error("Chat failed: %s", e)
+            raise
 
     def _call_llm(self, message: str, history: list,
                   memory_context: str | None = None,
@@ -203,25 +227,52 @@ class HermesBridge:
         url = (base_url.rstrip("/") if base_url else "") + "/chat/completions"
 
         max_rounds = self.settings.TOOL_LOOP_MAX_ROUNDS
+        primary_provider = self._provider
         for round_i in range(max_rounds):
             last_err = None
-            for attempt in range(3):
+            capacity_hit = False
+            for attempt in range(4):
                 try:
                     resp = httpx.post(url, json=body, headers=headers, timeout=self.settings.LLM_TIMEOUT)
                     resp.raise_for_status()
                     data = resp.json()
                     if "error" in data or not isinstance(data.get("choices"), list) or not data["choices"]:
-                        raise RuntimeError(f"LLM API error: {data.get('error') or 'missing choices in response'}")
+                        err = data.get("error")
+                        if not err:
+                            raise RuntimeError("LLM API error: missing choices in response")
+                        if not _is_transient_llm_error(err):
+                            # Hard client error (auth, bad request) — fail fast, no retry.
+                            raise RuntimeError(f"LLM API error: {err}")
+                        capacity_hit = True
+                        raise RetryableError(f"LLM API error: {err}")
+                    capacity_hit = False
                     last_err = None
                     break
                 except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException,
-                        httpx.HTTPStatusError, json.JSONDecodeError) as e:
+                        httpx.HTTPStatusError, json.JSONDecodeError, RetryableError) as e:
                     last_err = e
-                    if attempt < 2:
-                        import time as _time
-                        _time.sleep(1.5 ** attempt)
+                    if attempt < 3:
+                        # Capacity exhaustion clears in seconds — wait longer than plain
+                        # network flakiness (2s/4s/8s vs the old 1.5**attempt).
+                        delay = (2 ** attempt) if (capacity_hit or isinstance(e, RetryableError)) else (1.5 ** attempt)
+                        time.sleep(delay)
                     continue
             if last_err:
+                # Out of retries on a capacity/upstream failure: fail over to another
+                # configured provider (announced) rather than surfacing the raw error.
+                if (capacity_hit or isinstance(last_err, RetryableError)) and self._try_failover(primary_provider):
+                    # _try_failover left self._provider on the fallback — re-resolve url/headers
+                    # for it, then restore the primary for the next call.
+                    base_url = self._resolve_base_url()
+                    api_key = self._resolve_api_key()
+                    headers = {"Content-Type": "application/json"}
+                    if api_key:
+                        headers["Authorization"] = f"Bearer {api_key}"
+                    url = (base_url.rstrip("/") if base_url else "") + "/chat/completions"
+                    self._provider = primary_provider
+                    continue
+                if capacity_hit or isinstance(last_err, RetryableError):
+                    raise RuntimeError(f"LLM API error: {self._fmt_provider_error(last_err)}")
                 raise last_err
             choice = data["choices"][0]
             msg = choice["message"]
@@ -246,6 +297,45 @@ class HermesBridge:
                         pass
             body["messages"] = messages
         return f"Tool loop stopped after {max_rounds} rounds. The task may need more steps or the tools are failing. Try a simpler request."
+
+    def _try_failover(self, primary_provider: str) -> bool:
+        """Temporarily switch to another configured provider after capacity exhaustion.
+
+        Returns True if a fallback provider was selected (self._provider set to it).
+        Selection is deterministic: the earliest configured provider with a key
+        that isn't the saturated one.
+        """
+        s = self.settings
+        order = ("router_0", "openrouter", "opencode_zen")
+        keys = {
+            "router_0": s.ROUTER_0_API_KEY,
+            "openrouter": s.OPENROUTER_API_KEY,
+            "opencode_zen": s.OPENCODE_ZEN_API_KEY,
+        }
+        for name in order:
+            if name == primary_provider:
+                continue
+            if keys.get(name):
+                self._provider = name
+                self._model = self._resolve_model()
+                if self.broadcast_fn:
+                    try:
+                        self.broadcast_fn(
+                            f"⚠️ Primary provider **{primary_provider}** saturated — "
+                            f"serving from **{name}** this turn."
+                        )
+                    except Exception:
+                        pass
+                return True
+        return False
+
+    @staticmethod
+    @staticmethod
+    def _fmt_provider_error(err):
+        """Render a RetryableError/httpx error as the short user-facing message."""
+        if isinstance(err, RetryableError):
+            return str(err).replace("LLM API error: ", "", 1)
+        return str(err)
 
     def _execute_tool(self, name: str, args: dict, scope: str = "global") -> str:
         if name == "extract_facts":

@@ -1,16 +1,16 @@
-# Graph Report - bot-0  (2026-08-06)
+# Graph Report - bot-0  (2026-08-09)
 
 ## Corpus Check
-- 15 files · ~19,395 words
+- 16 files · ~20,191 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 298 nodes · 541 edges · 20 communities (15 shown, 5 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 35 edges (avg confidence: 0.66)
+- 322 nodes · 584 edges · 15 communities (12 shown, 3 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 38 edges (avg confidence: 0.65)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ffe83480`
+- Built from commit: `dc839739`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,44 +20,39 @@
 - android_bot.py
 - SchedulerEngine
 - HermesBridge
-- ._handle_callback
-- telegram_bot.py
+- FakeResp
+- TelegramBot
 - ComposioMCP
-- _action_jira_subtasks
-- _action_jira_run
-- _action_jira_show
 - ._send_tts_async
 - tg_tts.py
 - start_android.sh
 - setup_android.sh
-- TelegramBot
-- CLAUDE.md
 - _jira_workbench_code
-- .peek_outbox
+- CLAUDE.md
 
 ## God Nodes (most connected - your core abstractions)
 1. `TelegramBot` - 64 edges
-2. `HermesBridge` - 32 edges
+2. `HermesBridge` - 38 edges
 3. `MemoryStore` - 30 edges
 4. `SchedulerEngine` - 27 edges
 5. `Deploying Hermes Agent` - 23 edges
 6. `ComposioMCP` - 12 edges
 7. `main()` - 11 edges
-8. `Hermes Agent Bot 0` - 10 edges
-9. `_process_voice()` - 9 edges
-10. `_action_jira_run()` - 9 edges
+8. `FakeResp` - 10 edges
+9. `Hermes Agent Bot 0` - 10 edges
+10. `_process_voice()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `HermesBridge` --uses--> `Settings`  [INFERRED]
   hermes_bridge.py → config.py
+- `FakeResp` --uses--> `HermesBridge`  [INFERRED]
+  tests/test_llm_retry.py → hermes_bridge.py
+- `LlmRetryTest` --uses--> `HermesBridge`  [INFERRED]
+  tests/test_llm_retry.py → hermes_bridge.py
 - `_drain_outbox()` --references--> `TelegramBot`  [EXTRACTED]
   android_bot.py → telegram_bot.py
 - `_process_voice()` --references--> `TelegramBot`  [EXTRACTED]
   android_bot.py → telegram_bot.py
-- `_poll_loop()` --references--> `TelegramBot`  [EXTRACTED]
-  android_bot.py → telegram_bot.py
-- `main()` --calls--> `ComposioMCP`  [EXTRACTED]
-  android_bot.py → composio_mcp.py
 
 ## Import Cycles
 - None detected.
@@ -66,7 +61,7 @@
 - **Voice Pipeline (download -> ffmpeg -> STT transcription, and TTS synthesize -> OggOpus -> sendVoice)** — docs_skills_deploying_hermes_agent_md_voice_pipeline, docs_skills_deploying_hermes_agent_md_tts, readme_md_router_0_stt, readme_md_voice_memo_transcription [EXTRACTED 1.00]
 - **Persistence Layer (SQLite facts, skills, scheduled jobs co-located)** — readme_md_sqlite_memory, docs_skills_deploying_hermes_agent_md_memory_store, docs_skills_deploying_hermes_agent_md_learned_skills, readme_md_scheduler_engine [EXTRACTED 1.00]
 
-## Communities (20 total, 5 thin omitted)
+## Communities (15 total, 3 thin omitted)
 
 ### Community 0 - "Deploying Hermes Agent"
 Cohesion: 0.07
@@ -77,36 +72,24 @@ Cohesion: 0.08
 Nodes (8): MemoryStore, Connection, Row, No-op — remote backup removed., Add a skill. Upserts on normalized title match., LIKE-based token match on title + problem + tags. Excludes inactive., Search + increment injection_count. For injection pipeline., Return a fresh connection to the same DB (for SchedulerEngine).
 
 ### Community 2 - "android_bot.py"
-Cohesion: 0.10
-Nodes (26): _drain_outbox(), _get_updates_sync(), main(), _poll_loop(), _process_voice(), Path, Hermes Agent — Android/Termux entry point (headless Telegram bot). Reuses all…, Poll getUpdates, process voice inline, feed into enqueue_update. (+18 more)
+Cohesion: 0.09
+Nodes (29): _drain_outbox(), _get_updates_sync(), main(), _poll_loop(), _process_voice(), Path, Hermes Agent — Android/Termux entry point (headless Telegram bot). Reuses all…, Poll getUpdates, process voice inline, feed into enqueue_update. (+21 more)
 
 ### Community 3 - "SchedulerEngine"
 Cohesion: 0.09
 Nodes (14): Connection, Row, Load active jobs' next_run_at into the timer map (cold-boot path)., Wake at the earliest next_run_at and spawn due jobs promptly. The 30s poll…, Create and track a fire_job task, shared by poll loop and run_now. Returns True…, Given a daily job's anchor time, return next occurrence at same HH:MM., Lightweight in-process scheduler using SQLite persistence. Runs an async poll…, Execute one job: LLM call -> send result -> update DB. When manual=True… (+6 more)
 
 ### Community 4 - "HermesBridge"
-Cohesion: 0.09
-Nodes (9): HermesBridge, Parse the LLM's expansion reply into a list of terms. Accepts a JSON object…, LLM query expansion: turn the message into better search terms. Reuses chat()…, Compute epoch for HH:MM today/tomorrow/next-weekday in local time., Convert 12-hour clock to 24-hour. ampm is 'am'/'pm' or None., Convert a matched time expression into interval_minutes or absolute_epoch., Try to extract schedule from text using regex patterns. Returns…, Parse natural-language scheduling intent. Tries deterministic regex first,… (+1 more)
+Cohesion: 0.08
+Nodes (11): HermesBridge, Temporarily switch to another configured provider after capacity exhaustion.…, Render a RetryableError/httpx error as the short user-facing message., Parse the LLM's expansion reply into a list of terms. Accepts a JSON object…, LLM query expansion: turn the message into better search terms. Reuses chat()…, Compute epoch for HH:MM today/tomorrow/next-weekday in local time., Convert 12-hour clock to 24-hour. ampm is 'am'/'pm' or None., Convert a matched time expression into interval_minutes or absolute_epoch. (+3 more)
 
-### Community 6 - "._handle_callback"
+### Community 5 - "FakeResp"
 Cohesion: 0.18
-Nodes (8): _action_model_switch(), _action_schedule_remove_by_id(), _action_schedule_run_by_id(), _action_tts_model_switch(), Switch TTS model for this chat. Persists to memory_store., Enqueue an editMessageText to the outbox., Send or edit a menu message. Edits existing menu if one was sent before., Route callback_query: navigation (mn:*) or action (ac:*).
+Nodes (6): _is_transient_llm_error(), True if the provider error dict/str describes a transient upstream failure., FakeResp, LlmRetryTest, make_settings(), Retry + provider-failover tests for HermesBridge._call_llm.
 
-### Community 7 - "telegram_bot.py"
-Cohesion: 0.19
-Nodes (19): _action_chat_summarize(), _action_memory_cleanup(), _action_memory_clear(), _action_memory_status(), _action_memory_view(), _action_schedule_add(), _action_skill_autolearn_toggle(), _action_skill_forget_inactive() (+11 more)
-
-### Community 9 - "_action_jira_subtasks"
-Cohesion: 0.22
-Nodes (10): _action_jira_open_tasks(), _action_jira_subtasks(), _call_composio(), _parse_jira_result(), _parse_workbench_issues(), Call a Composio tool (async, awaits directly in running loop)., Extract issues list from workbench stdout output., Parse issues from Composio workbench response. (+2 more)
-
-### Community 10 - "_action_jira_run"
-Cohesion: 0.28
-Nodes (4): _action_jira_run(), Fetch Jira issue description and run it as an LLM prompt., Send inline confirmation for a detected skill., Parse /schedule add <text>, show confirmation with Yes/No inline.
-
-### Community 11 - "_action_jira_show"
-Cohesion: 0.33
-Nodes (6): _action_jira_show(), _adf_to_plaintext(), _parse_jira_single(), Parse single issue from JIRA_GET_ISSUE workbench response. Response shape:…, Convert Atlassian Document Format (ADF) JSON to plain text., Fetch and display a single Jira issue's description (read-only view).
+### Community 7 - "TelegramBot"
+Cohesion: 0.07
+Nodes (51): _action_chat_summarize(), _action_jira_open_tasks(), _action_jira_run(), _action_jira_show(), _action_jira_subtasks(), _action_memory_cleanup(), _action_memory_clear(), _action_memory_status() (+43 more)
 
 ### Community 12 - "._send_tts_async"
 Cohesion: 0.33
@@ -120,29 +103,29 @@ Nodes (5): TTS helpers for Hermes Agent — synthesize speech via local router-0
 Cohesion: 0.40
 Nodes (4): PATH, start_android.sh script, TEMP_DIR, WORK_DIR
 
-### Community 16 - "TelegramBot"
-Cohesion: 0.15
-Nodes (5): _action_schedule_list(), _action_schedule_pause_by_id(), _action_schedule_resume_by_id(), Try calling api.telegram.org directly. Returns True if sent., TelegramBot
+### Community 16 - "_jira_workbench_code"
+Cohesion: 0.20
+Nodes (4): _jira_workbench_code(), Wrap Python code for Composio REMOTE_WORKBENCH execution., Try calling api.telegram.org directly. Returns True if sent., Return outbox items without draining (for diagnostics).
 
 ## Knowledge Gaps
 - **9 isolated node(s):** `setup_android.sh script`, `start_android.sh script`, `PATH`, `TEMP_DIR`, `WORK_DIR` (+4 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **5 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `TelegramBot` connect `TelegramBot` to `android_bot.py`, `._handle_callback`, `telegram_bot.py`, `_action_jira_subtasks`, `_action_jira_run`, `_action_jira_show`, `._send_tts_async`, `.peek_outbox`?**
-  _High betweenness centrality (0.274) - this node is a cross-community bridge._
-- **Why does `HermesBridge` connect `HermesBridge` to `android_bot.py`?**
-  _High betweenness centrality (0.191) - this node is a cross-community bridge._
+- **Why does `TelegramBot` connect `TelegramBot` to `_jira_workbench_code`, `android_bot.py`, `._send_tts_async`?**
+  _High betweenness centrality (0.262) - this node is a cross-community bridge._
+- **Why does `HermesBridge` connect `HermesBridge` to `android_bot.py`, `FakeResp`?**
+  _High betweenness centrality (0.253) - this node is a cross-community bridge._
 - **Why does `SchedulerEngine` connect `SchedulerEngine` to `android_bot.py`?**
-  _High betweenness centrality (0.186) - this node is a cross-community bridge._
+  _High betweenness centrality (0.176) - this node is a cross-community bridge._
+- **Are the 3 inferred relationships involving `HermesBridge` (e.g. with `Settings` and `FakeResp`) actually correct?**
+  _`HermesBridge` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 2 inferred relationships involving `Deploying Hermes Agent` (e.g. with `README.md` and `Hermes Agent Bot 0`) actually correct?**
   _`Deploying Hermes Agent` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `setup_android.sh script`, `start_android.sh script`, `PATH` to the rest of the system?**
   _9 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Deploying Hermes Agent` be split into smaller, more focused modules?**
   _Cohesion score 0.07396870554765292 - nodes in this community are weakly interconnected._
-- **Should `MemoryStore` be split into smaller, more focused modules?**
-  _Cohesion score 0.08412698412698413 - nodes in this community are weakly interconnected._
