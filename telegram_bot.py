@@ -5,10 +5,15 @@ import asyncio
 import logging
 import re
 import threading
+import tempfile
 import urllib.request
 import urllib.error
+from pathlib import Path
 from typing import Callable
 import httpx
+
+from pdf_doc import extract_text_from_pdf_bytes, is_pdf, truncate
+from tg_voice import tg_file_path, download_file
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +34,7 @@ class TelegramBot:
         self._outbox_lock = threading.Lock()
         self._chat_history: dict[str, list] = {}
         self._history_max = 1000
+        self._pdf_context: dict[str, dict] = {}  # chat_id -> {"filename", "text"}
         self._voice_queue: list[dict] = []
         self._voice_lock = threading.Lock()
         self._menu_msg_id: dict[int, int] = {}  # chat_id -> last menu message_id
@@ -157,6 +163,10 @@ class TelegramBot:
                 self._voice_queue.append({"chat_id": chat_id, "file_id": v.get("file_id"), "duration_s": v.get("duration", 0), "timestamp": time.time()})
             self._send_message(chat_id, "Voice memo received -- transcribing...")
             return
+        doc = msg.get("document")
+        if doc:
+            await self._handle_document(chat_id, doc)
+            return
         text = msg.get("text") or ""
         if text.startswith("/"):
             await self._handle_command(chat_id, text)
@@ -169,6 +179,7 @@ class TelegramBot:
         arg = parts[1].strip() if len(parts) > 1 else ""
         if cmd == "/start":
             self._chat_history.pop(str(chat_id), None)
+            self._pdf_context.pop(str(chat_id), None)
             self._send_message(chat_id, "Hello -- Hermes Agent online. Send text or voice. Use /menu for the interactive menu.")
         elif cmd == "/menu":
             self._menu_msg_id.pop(chat_id, None)  # fresh send, never edit
@@ -259,6 +270,31 @@ class TelegramBot:
         ):
             await self._handle_schedule_add(chat_id, text, auto_detected=True)
             return
+        # PDF Q&A: when a PDF is loaded for this chat and the message is not a
+        # command/skill-edit/schedule intent, treat it as a question about the doc.
+        ctx = self._pdf_context.get(key)
+        if ctx and self.bridge:
+            self._enqueue_typing(chat_id)
+            prompt = (
+                f"PDF Q&A — filename: {ctx['filename']}\n"
+                f"Question: {text}\n\n"
+                f"=== Document content ===\n{ctx['text']}"
+            )
+            try:
+                resp = await asyncio.to_thread(
+                    self.bridge.chat, prompt, [],
+                    system_override="You answer strictly from the provided PDF content. "
+                                   "If the answer is not in the document, say so plainly.",
+                )
+                self._send_message(chat_id, resp)
+            except Exception as e:
+                logger.error("PDF Q&A failed chat %s: %s", chat_id, e)
+                self._send_message(
+                    chat_id,
+                    "⚠️ The AI provider is temporarily unavailable — upstream may be at capacity. "
+                    "Try again in a moment.",
+                )
+            return
         hist = self._chat_history.get(key, [])
         self._enqueue_typing(chat_id)
         refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
@@ -296,6 +332,64 @@ class TelegramBot:
             asyncio.create_task(self._send_tts_async(chat_id, response, model))
         if skill_info:
             self._show_skill_confirmation(chat_id, skill_info)
+
+    async def _handle_document(self, chat_id: int, doc: dict) -> None:
+        """Auto-analyze an uploaded PDF: download, extract text, summarize, offer Q&A."""
+        if not self.bridge:
+            self._send_message(chat_id, "PDF analysis unavailable (bridge offline).")
+            return
+        if not is_pdf(doc):
+            self._send_message(chat_id, "Not a PDF — only PDFs are analyzed.")
+            return
+        file_id = doc.get("file_id", "")
+        fname = doc.get("file_name", "document.pdf")
+        if not file_id:
+            self._send_message(chat_id, "Couldn't read the file from Telegram.")
+            return
+        self._enqueue_typing(chat_id)
+        tmp = None
+        try:
+            self._send_message(chat_id, "📄 Downloading PDF…")
+            path = await asyncio.to_thread(tg_file_path, self.token, file_id)
+            work_dir = Path(os.getenv("WORK_DIR", tempfile.gettempdir()))
+            work_dir.mkdir(parents=True, exist_ok=True)
+            tmp = work_dir / f"pdf_{chat_id}_{int(time.time())}.pdf"
+            await asyncio.to_thread(download_file, self.token, path, tmp)
+            data = tmp.read_bytes()
+        except Exception as e:
+            logger.error("PDF download failed chat %s: %s", chat_id, e)
+            self._send_message(chat_id, "⚠️ Couldn't download the file.")
+            return
+        finally:
+            if tmp:
+                try:
+                    tmp.unlink(missing_ok=True)
+                except Exception:
+                    pass
+        try:
+            self._send_message(chat_id, "🧠 Extracting text…")
+            text = await asyncio.to_thread(extract_text_from_pdf_bytes, data)
+        except ValueError as e:
+            logger.warning("PDF parse failed chat %s: %s", chat_id, e)
+            self._send_message(chat_id, "⚠️ Couldn't read this PDF — it may be corrupted.")
+            return
+        if not text:
+            self._send_message(chat_id, "🤔 Couldn't extract text — this may be a scanned/image PDF.")
+            return
+        self._pdf_context[str(chat_id)] = {"filename": fname, "text": truncate(text)}
+        try:
+            self._send_message(chat_id, "⚙️ Analyzing…")
+            prompt = f"Summarize this PDF and list its key points as bullets.\n\n=== PDF ===\n{text}"
+            resp = await asyncio.to_thread(self.bridge.chat, prompt, [])
+            self._send_message(chat_id, resp)
+            self._send_message(chat_id, "Ask me anything about this PDF.")
+        except Exception as e:
+            logger.error("PDF analysis failed chat %s: %s", chat_id, e)
+            self._send_message(
+                chat_id,
+                "⚠️ The AI provider is temporarily unavailable — upstream may be at capacity. "
+                "Try again in a moment.",
+            )
 
     def _show_skill_confirmation(self, chat_id: int, skill: dict) -> None:
         """Send inline confirmation for a detected skill."""
