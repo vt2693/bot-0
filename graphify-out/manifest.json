@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "telegram_bot.py": {
-    "mtime": 1786278966.024001,
-    "ast_hash": "69eeeaba167dd42c29f3dbe4807c6e03",
+    "mtime": 1786346929.9056864,
+    "ast_hash": "80a30b0e910dc5c160a883b14ef1e38f",
     "semantic_hash": ""
   },
   "tg_tts.py": {
@@ -70,13 +70,18 @@
     "semantic_hash": ""
   },
   "requirements.txt": {
-    "mtime": 1785898242.1812994,
-    "ast_hash": "2c8ac5aa9002cc37daeae498c0e6c2cc",
+    "mtime": 1786346511.3039603,
+    "ast_hash": "17fd1093fe88ad3aa8d3efc38c2fc821",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
     "mtime": 1785577343.5558586,
     "ast_hash": "82efb97a359f5c7290bf2513d14686be",
+    "semantic_hash": ""
+  },
+  "pdf_doc.py": {
+    "mtime": 1786346662.2056744,
+    "ast_hash": "27f11f71cd15252eb2f86e08bfd59dc4",
     "semantic_hash": ""
   }
 }
