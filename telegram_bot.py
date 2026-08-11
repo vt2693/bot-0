@@ -119,6 +119,7 @@ class TelegramBot:
             {"command": "improve", "description": "Extract skills from conversation"},
             {"command": "secrets", "description": "Configured providers"},
             {"command": "schedule", "description": "Manage scheduled tasks"},
+            {"command": "pdf_stop", "description": "Exit PDF Q&A mode"},
         ]
         self.enqueue_config("setMyCommands", {"commands": cmds})
         # Do NOT call setChatMenuButton — let Telegram use its own default

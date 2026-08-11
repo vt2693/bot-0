@@ -1,16 +1,16 @@
-# Graph Report - bot-0  (2026-08-10)
+# Graph Report - bot-0  (2026-08-11)
 
 ## Corpus Check
-- 16 files · ~20,598 words
+- 16 files · ~20,693 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 317 nodes · 580 edges · 22 communities (15 shown, 7 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.67)
+- 319 nodes · 584 edges · 15 communities (10 shown, 5 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 40 edges (avg confidence: 0.66)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6dd51c2d`
+- Built from commit: `9bbf2d59`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,25 +20,18 @@
 - android_bot.py
 - SchedulerEngine
 - HermesBridge
-- ._send_message
-- _action_jira_subtasks
 - TelegramBot
-- ComposioMCP
-- _action_jira_run
-- _action_jira_show
-- _action_tts_toggle
-- ._send_tts_async
+- ._handle_document
 - tg_tts.py
 - start_android.sh
 - setup_android.sh
 - _jira_workbench_code
 - CLAUDE.md
-- telegram_bot.py
 - ._send_direct
 - .peek_outbox
 
 ## God Nodes (most connected - your core abstractions)
-1. `TelegramBot` - 65 edges
+1. `TelegramBot` - 66 edges
 2. `HermesBridge` - 34 edges
 3. `MemoryStore` - 30 edges
 4. `SchedulerEngine` - 27 edges
@@ -56,10 +49,10 @@
   android_bot.py → telegram_bot.py
 - `_poll_loop()` --references--> `TelegramBot`  [EXTRACTED]
   android_bot.py → telegram_bot.py
-- `main()` --calls--> `ComposioMCP`  [EXTRACTED]
-  android_bot.py → composio_mcp.py
 - `main()` --calls--> `get_settings()`  [EXTRACTED]
   android_bot.py → config.py
+- `main()` --calls--> `HermesBridge`  [EXTRACTED]
+  android_bot.py → hermes_bridge.py
 
 ## Import Cycles
 - None detected.
@@ -68,7 +61,7 @@
 - **Voice Pipeline (download -> ffmpeg -> STT transcription, and TTS synthesize -> OggOpus -> sendVoice)** — docs_skills_deploying_hermes_agent_md_voice_pipeline, docs_skills_deploying_hermes_agent_md_tts, readme_md_router_0_stt, readme_md_voice_memo_transcription [EXTRACTED 1.00]
 - **Persistence Layer (SQLite facts, skills, scheduled jobs co-located)** — readme_md_sqlite_memory, docs_skills_deploying_hermes_agent_md_memory_store, docs_skills_deploying_hermes_agent_md_learned_skills, readme_md_scheduler_engine [EXTRACTED 1.00]
 
-## Communities (22 total, 7 thin omitted)
+## Communities (15 total, 5 thin omitted)
 
 ### Community 0 - "Deploying Hermes Agent"
 Cohesion: 0.07
@@ -79,8 +72,8 @@ Cohesion: 0.08
 Nodes (8): MemoryStore, Connection, Row, No-op — remote backup removed., Add a skill. Upserts on normalized title match., LIKE-based token match on title + problem + tags. Excludes inactive., Search + increment injection_count. For injection pipeline., Return a fresh connection to the same DB (for SchedulerEngine).
 
 ### Community 2 - "android_bot.py"
-Cohesion: 0.09
-Nodes (32): _drain_outbox(), _get_updates_sync(), main(), _poll_loop(), _process_voice(), Path, Hermes Agent — Android/Termux entry point (headless Telegram bot). Reuses all…, Poll getUpdates, process voice inline, feed into enqueue_update. (+24 more)
+Cohesion: 0.08
+Nodes (26): _drain_outbox(), _get_updates_sync(), main(), _poll_loop(), _process_voice(), Path, Hermes Agent — Android/Termux entry point (headless Telegram bot). Reuses all…, Poll getUpdates, process voice inline, feed into enqueue_update. (+18 more)
 
 ### Community 3 - "SchedulerEngine"
 Cohesion: 0.09
@@ -90,29 +83,13 @@ Nodes (14): Connection, Row, Load active jobs' next_run_at into the timer map (c
 Cohesion: 0.07
 Nodes (18): get_settings(), Settings, Exception, HermesBridge, _is_transient_llm_error(), A provider error worth retrying (transient) that surfaced as HTTP 200 body., True if the provider error dict/str describes a transient upstream failure., Temporarily switch to another configured provider after capacity exhaustion.… (+10 more)
 
-### Community 5 - "._send_message"
-Cohesion: 0.19
-Nodes (11): _action_model_switch(), _action_schedule_list(), _action_schedule_pause_by_id(), _action_schedule_remove_by_id(), _action_schedule_resume_by_id(), _action_schedule_run_by_id(), _action_tts_model_switch(), Switch TTS model for this chat. Persists to memory_store. (+3 more)
-
-### Community 6 - "_action_jira_subtasks"
-Cohesion: 0.22
-Nodes (10): _action_jira_open_tasks(), _action_jira_subtasks(), _call_composio(), _parse_jira_result(), _parse_workbench_issues(), Call a Composio tool (async, awaits directly in running loop)., Extract issues list from workbench stdout output., Parse issues from Composio workbench response. (+2 more)
-
 ### Community 7 - "TelegramBot"
-Cohesion: 0.11
-Nodes (9): _action_chat_summarize(), _action_memory_cleanup(), _action_schedule_add(), _action_skill_autolearn_toggle(), _action_skill_forget_inactive(), _action_skill_list(), _action_voice_queue(), Enqueue an editMessageText to the outbox. (+1 more)
+Cohesion: 0.07
+Nodes (53): _action_chat_summarize(), _action_jira_open_tasks(), _action_jira_run(), _action_jira_show(), _action_jira_subtasks(), _action_memory_cleanup(), _action_memory_clear(), _action_memory_status() (+45 more)
 
-### Community 9 - "_action_jira_run"
-Cohesion: 0.38
-Nodes (3): _action_jira_run(), Fetch Jira issue description and run it as an LLM prompt., Send inline confirmation for a detected skill.
-
-### Community 10 - "_action_jira_show"
-Cohesion: 0.33
-Nodes (6): _action_jira_show(), _adf_to_plaintext(), _parse_jira_single(), Parse single issue from JIRA_GET_ISSUE workbench response. Response shape:…, Convert Atlassian Document Format (ADF) JSON to plain text., Fetch and display a single Jira issue's description (read-only view).
-
-### Community 12 - "._send_tts_async"
-Cohesion: 0.33
-Nodes (4): Split text at sentence boundaries, each chunk ≤ max_chars. Uses regex to split…, Send Opus audio as a voice message directly to Telegram API. Uses httpx…, Background task: synthesize TTS, send voice messages. Called via…, _split_tts_text()
+### Community 9 - "._handle_document"
+Cohesion: 0.10
+Nodes (12): extract_text_from_pdf_bytes(), is_pdf(), PDF helpers for Hermes Agent — detect, download, and extract text from Telegram…, Return True when a Telegram document is a PDF. Telegram sometimes reports…, Extract all text from a PDF. Returns "" when the PDF has no extractable text…, Trim text to `limit` chars, cutting on a word boundary., truncate(), Auto-analyze an uploaded PDF: download, extract text, summarize, offer Q&A. (+4 more)
 
 ### Community 13 - "tg_tts.py"
 Cohesion: 0.33
@@ -122,24 +99,20 @@ Nodes (5): TTS helpers for Hermes Agent — synthesize speech via local router-0
 Cohesion: 0.40
 Nodes (4): PATH, start_android.sh script, TEMP_DIR, WORK_DIR
 
-### Community 19 - "telegram_bot.py"
-Cohesion: 0.27
-Nodes (10): _action_memory_clear(), _action_memory_status(), _action_memory_view(), _action_skill_search_prompt(), _action_system_composio(), _action_system_provider(), _action_system_queue(), _action_system_status() (+2 more)
-
 ## Knowledge Gaps
 - **9 isolated node(s):** `setup_android.sh script`, `start_android.sh script`, `PATH`, `TEMP_DIR`, `WORK_DIR` (+4 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **5 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `TelegramBot` connect `TelegramBot` to `android_bot.py`, `._send_message`, `_action_jira_subtasks`, `_action_jira_run`, `_action_jira_show`, `_action_tts_toggle`, `._send_tts_async`, `telegram_bot.py`, `._send_direct`, `.peek_outbox`?**
-  _High betweenness centrality (0.257) - this node is a cross-community bridge._
+- **Why does `TelegramBot` connect `TelegramBot` to `._handle_document`, `android_bot.py`, `._send_direct`, `.peek_outbox`?**
+  _High betweenness centrality (0.259) - this node is a cross-community bridge._
 - **Why does `HermesBridge` connect `HermesBridge` to `android_bot.py`?**
-  _High betweenness centrality (0.199) - this node is a cross-community bridge._
+  _High betweenness centrality (0.198) - this node is a cross-community bridge._
 - **Why does `SchedulerEngine` connect `SchedulerEngine` to `android_bot.py`?**
-  _High betweenness centrality (0.178) - this node is a cross-community bridge._
+  _High betweenness centrality (0.177) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `Deploying Hermes Agent` (e.g. with `README.md` and `Hermes Agent Bot 0`) actually correct?**
   _`Deploying Hermes Agent` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `setup_android.sh script`, `start_android.sh script`, `PATH` to the rest of the system?**

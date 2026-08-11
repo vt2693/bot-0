@@ -60,6 +60,8 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 
 **Key insight:** Android bot uses **direct** Telegram API calls. `android_bot.py` long-polls `getUpdates` for inbound messages and calls `api.telegram.org` directly for outbound via `_send_direct()`. No webhook.
 
+PDFs sent to the chat are auto-analyzed: `_handle_document()` downloads the file, extracts text via `pdf_doc.py` (pypdf), sends a summary, then loads the text into per-chat `_pdf_context` so follow-up messages become PDF Q&A. `/pdf_stop` (or the inline "Exit PDF Q&A" button) clears that context and returns to normal chat.
+
 Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 STT (groq/whisper-large-v3). TTS: text → `synthesize()` (MP3) → `to_opus()` (OggOpus) → `sendVoice`.
 
 ## Files
@@ -75,6 +77,7 @@ Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 
 | `scheduler.py` | SchedulerEngine (event-driven dispatch + 30s poll backstop) |
 | `tg_voice.py` | Voice helper: download, ffmpeg, router-0 STT transcription |
 | `tg_tts.py` | TTS helper: synthesize via router-0 (google-tts/en), ffmpeg to OggOpus |
+| `pdf_doc.py` | PDF helpers: detect, download, extract text via pypdf (for PDF auto-analyze) |
 | `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts, ROUTER_0_AUDIO_URL |
 | `start_android.sh` | tmux launcher with auto-restart, dep check, wake-lock |
 | `deploy_android.ps1` | Windows script: ADB push or SSH/rsync to phone (non-interactive) |
@@ -101,7 +104,7 @@ Confidence: 100% — Telegram `/model` command and inline model-switch menu (Sys
 Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `oc/deepseek-v4-flash-free`. Default base: `http://192.168.1.6:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
 
 ### Telegram bot + polling
-Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 7 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`. Inline keyboard menu (11 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira, TTS Model). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:tts_model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
+Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 8 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`. Inline keyboard menu (11 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira, TTS Model). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:tts_model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle`, `ac:pdf_stop` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
 
 ### In-process voice (STT)
 Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice process needed.
@@ -258,7 +261,8 @@ Main asyncio entry point. Key sections:
 - **Queue:** Thread-safe list. `enqueue_update()` adds, `process_queue_worker()` pops and calls `process_update()`.
 - **Outbox:** Thread-safe list. Methods write `{"_method": "sendMessage", ...}`. `drain_outbox()` returns and clears.
 - **Inline menus:** `MENUS` dict with 11 menus. Callback routing via `mn:*` (menu nav), `ac:*` (action handlers).
-- **Commands (7):** `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`.
+- **Commands (8):** `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`.
+- **PDF auto-analyze:** Documents with a PDF mime/name trigger `_handle_document()` — download → pypdf text extraction → summary via bridge → per-chat `_pdf_context`. Subsequent non-command messages route through PDF Q&A (strict "answer only from the document" system prompt). `/pdf_stop` or the inline **❌ Exit PDF Q&A** button (`ac:pdf_stop`) clears the context; `/start` also clears it.
 - **Skills:** `/improve` — list/search/detail/edit/delete skills. Auto-detect via `_detect_skill()` + Save/Edit/Discard confirmation.
 - **Schedule — two entry paths to the same scheduler pipeline:**
   - **Manual:** `/schedule add <text>` routes to `parse_schedule()`. Subcommands: `add`, `list`, `remove <id>`, `pause <id>`, `resume <id>`; bare `/schedule` opens the Schedule menu.
@@ -328,7 +332,8 @@ After `bash start_android.sh`:
 5. Send "remember that I live in Bogor" → should store and recall on later messages
 6. Tap Jira → Open Tasks → should show issues (requires JIRA_EPICS + Composio key)
 7. Tap Menu → Voice & Minutes → TTS On/Off → toggle on, send text → should reply with text + voice message
-8. Check logs: `tail -20 ~/hermes-bot/logs/bot.log`
+8. Send a PDF → should download, extract text, summarize, then answer questions about it; `/pdf_stop` (or the exit button) returns to normal chat
+9. Check logs: `tail -20 ~/hermes-bot/logs/bot.log`
 
 ## Quick Reference
 
