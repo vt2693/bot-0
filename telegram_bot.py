@@ -199,6 +199,11 @@ class TelegramBot:
         elif cmd == "/secrets":
             s = self.bridge.status() if self.bridge else {}
             self._send_message(chat_id, "Provider: " + s.get("provider", "?") + "\nComposio: " + str(bool(getattr(self.bridge, "_composio", None))) + "\nFirecrawl: via Composio")
+        elif cmd == "/pdf_stop":
+            if self._pdf_context.pop(str(chat_id), None):
+                self._send_message(chat_id, "✅ Left PDF Q&A mode. You're back to normal chat.")
+            else:
+                self._send_message(chat_id, "No active PDF Q&A session.")
         elif cmd == "/schedule":
             if not arg:
                 self._menu_msg_id.pop(chat_id, None)
@@ -382,7 +387,13 @@ class TelegramBot:
             prompt = f"Summarize this PDF and list its key points as bullets.\n\n=== PDF ===\n{text}"
             resp = await asyncio.to_thread(self.bridge.chat, prompt, [])
             self._send_message(chat_id, resp)
-            self._send_message(chat_id, "Ask me anything about this PDF.")
+            kb = {"inline_keyboard": [[{"text": "❌ Exit PDF Q&A", "callback_data": "ac:pdf_stop"}]]}
+            self._send_message(
+                chat_id,
+                "Ask me anything about this PDF.\n\n"
+                "To exit PDF Q&A and chat normally, send /pdf_stop or press the button below.",
+                reply_markup=kb,
+            )
         except Exception as e:
             logger.error("PDF analysis failed chat %s: %s", chat_id, e)
             self._send_message(
@@ -1839,6 +1850,14 @@ async def _action_jira_run(bot: TelegramBot, chat_id: int, issue_key: str) -> No
     bot._send_message(chat_id, response)
 
 
+async def _action_pdf_stop(bot: TelegramBot, chat_id: int) -> None:
+    """Exit PDF Q&A mode for this chat, dropping the stored document context."""
+    if bot._pdf_context.pop(str(chat_id), None):
+        bot._send_message(chat_id, "✅ Left PDF Q&A mode. You're back to normal chat.")
+    else:
+        bot._send_message(chat_id, "No active PDF Q&A session.")
+
+
 MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "web_status": _action_web_status,
     "memory_view": _action_memory_view,
@@ -1860,4 +1879,5 @@ MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "skill_autolearn_toggle": _action_skill_autolearn_toggle,
     "skill_forget_inactive": _action_skill_forget_inactive,
     "jira_open_tasks": _action_jira_open_tasks,
+    "pdf_stop": _action_pdf_stop,
 }
