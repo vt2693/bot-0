@@ -34,7 +34,8 @@ class Settings:
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2048"))
     TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
     TOOL_LOOP_MAX_ROUNDS = int(os.getenv("TOOL_LOOP_MAX_ROUNDS", "1000"))
-    LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "600"))
+    LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "60"))
+    LLM_RETRY_ATTEMPTS = int(os.getenv("LLM_RETRY_ATTEMPTS", "3"))
 
     MEMORY_ENABLED = os.getenv("MEMORY_ENABLED", "true").lower() in ("true", "1", "yes")
     MEMORY_AUTO_EXTRACT = os.getenv("MEMORY_AUTO_EXTRACT", "true").lower() in ("true", "1", "yes")

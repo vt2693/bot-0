@@ -128,19 +128,22 @@ class TelegramBot:
 
     def enqueue_update(self, update: dict) -> None:
         with self._queue_lock:
-            self._queue.append(update)
+            self._queue.append({"update": update, "enqueued_at": time.time()})
             if len(self._queue) > 100:
                 self._queue.pop(0)
 
     async def process_queue_worker(self) -> None:
         while self._initialized:
-            item = None
+            entry = None
             with self._queue_lock:
                 if self._queue:
-                    item = self._queue.pop(0)
-            if not item:
+                    entry = self._queue.pop(0)
+            if not entry:
                 await asyncio.sleep(0.5)
                 continue
+            item = entry["update"]
+            queue_wait_s = time.time() - entry["enqueued_at"]
+            logger.info("Dequeued update after %.1fs in queue", queue_wait_s)
             try:
                 self._queue_processed += 1
                 await self.process_update(item)

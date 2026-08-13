@@ -45,6 +45,44 @@ class HermesBridge:
         self._memory_stats = {"injections": 0, "hits": 0, "misses": 0, "extractions": 0, "skill_detections": 0}
         self.broadcast_fn = None
 
+    def _is_simple_chat(self, message: str) -> bool:
+        """Return True for trivial conversational messages that should take the fast path."""
+        if not message or not isinstance(message, str):
+            return False
+        m = message.strip()
+        if not m:
+            return False
+        # Length / word count gate
+        if len(m) > 20 and len(m.split()) > 4:
+            return False
+        m_lower = m.lower()
+        # Scheduling intent words
+        scheduling_words = (
+            "every", "daily", "weekday", "weekdays", "at ", " in ", " min", " hour",
+            " day", " sec", "remind", "schedule", "recurring", "cron"
+        )
+        for w in scheduling_words:
+            if w in m_lower:
+                return False
+        # Explicit memory/skill verbs
+        skill_verbs = (
+            "remember", "save", "learn", "skill", "procedure", "workflow",
+            "process", "technique", "store", "memorize", "forget"
+        )
+        for w in skill_verbs:
+            if w in m_lower:
+                return False
+        # Document/task/tool intent words
+        tool_words = (
+            "summarize", "analyze", "search", "jira", "pdf", "extract",
+            "transcribe", "fetch", "poll", "monitor", "watch", "query",
+            "retrieve", "lookup", "browse", "scrape"
+        )
+        for w in tool_words:
+            if w in m_lower:
+                return False
+        return True
+
     def _resolve_model(self) -> str:
         s = self.settings
         return {
@@ -228,10 +266,12 @@ class HermesBridge:
 
         max_rounds = self.settings.TOOL_LOOP_MAX_ROUNDS
         primary_provider = self._provider
+        max_attempts = getattr(self.settings, "LLM_RETRY_ATTEMPTS", 3)
         for round_i in range(max_rounds):
             last_err = None
             capacity_hit = False
-            for attempt in range(4):
+            for attempt in range(max_attempts):
+                attempt_start = time.monotonic()
                 try:
                     resp = httpx.post(url, json=body, headers=headers, timeout=self.settings.LLM_TIMEOUT)
                     resp.raise_for_status()
@@ -251,12 +291,24 @@ class HermesBridge:
                 except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException,
                         httpx.HTTPStatusError, json.JSONDecodeError, RetryableError) as e:
                     last_err = e
-                    if attempt < 3:
+                    if attempt < max_attempts - 1:
                         # Capacity exhaustion clears in seconds — wait longer than plain
                         # network flakiness (2s/4s/8s vs the old 1.5**attempt).
                         delay = (2 ** attempt) if (capacity_hit or isinstance(e, RetryableError)) else (1.5 ** attempt)
+                        logger.debug("Provider attempt %d/%d took %.1fms; retrying after %.1fs...",
+                                     attempt + 1, max_attempts,
+                                     (time.monotonic() - attempt_start) * 1000, delay)
                         time.sleep(delay)
+                    else:
+                        logger.debug("Provider attempt %d/%d took %.1fms; no more retries",
+                                     attempt + 1, max_attempts,
+                                     (time.monotonic() - attempt_start) * 1000)
                     continue
+            # Log successful attempt
+            if not last_err:
+                logger.debug("Provider attempt %d/%d took %.1fms; success",
+                             attempt + 1, max_attempts,
+                             (time.monotonic() - attempt_start) * 1000)
             if last_err:
                 # Out of retries on a capacity/upstream failure: fail over to another
                 # configured provider (announced) rather than surfacing the raw error.
@@ -422,6 +474,7 @@ class HermesBridge:
             return []
         if len(message.strip()) < 3:
             return []
+        start = time.monotonic()
         try:
             out = self.chat(message, history=[], scope="global",
                             system_override=self.EXPAND_SYSTEM_PROMPT)
@@ -429,34 +482,50 @@ class HermesBridge:
         except Exception:
             logger.exception("Query expansion failed; falling back to keyword search")
             return []
+        finally:
+            elapsed = (time.monotonic() - start) * 1000
+            logger.debug("Query expansion took %.1fms", elapsed)
 
     def chat_with_memory(self, message: str, history: list | None = None, scope: str = "global") -> str:
         mem_block = None
         injected_skills = None
+        is_simple = self._is_simple_chat(message)
+
         if self.memory_enabled and self.memory_store:
             self._memory_stats["injections"] += 1
-            expanded = self._expand_query(message)
-            mems = self.memory_store.get_relevant(message, scope, 100, extra_terms=expanded)
-            if mems:
-                self._memory_stats["hits"] += 1
-                mem_block = "\n".join("- " + m["content"] for m in mems)
+            if not is_simple:
+                expanded = self._expand_query(message)
+                mems = self.memory_store.get_relevant(message, scope, 100, extra_terms=expanded)
+                if mems:
+                    self._memory_stats["hits"] += 1
+                    mem_block = "\n".join("- " + m["content"] for m in mems)
+                else:
+                    self._memory_stats["misses"] += 1
+                skills = self.memory_store.skill_inject(message, scope, 10)
+                if skills:
+                    injected_skills = skills
             else:
+                # Fast path: skip query expansion and skill injection for simple chat
                 self._memory_stats["misses"] += 1
-            skills = self.memory_store.skill_inject(message, scope, 10)
-            if skills:
-                injected_skills = skills
+
+        enable_extraction = not is_simple
+        main_start = time.monotonic()
         response = self.chat(message, history or [], mem_block, injected_skills,
-                             scope=scope, enable_extraction=True)
-        if injected_skills and re.search(r"skill|procedure|steps|here.?s how", response or "", re.I):
-            for s in injected_skills:
-                try:
-                    self.memory_store.skill_record_usage(s["id"])
-                except Exception:
-                    pass
-        if self._auto_learn_enabled(scope):
-            skill = self._detect_skill(message, response, history or [])
-            if skill:
-                return json.dumps({"_skill_detected": skill, "response": response})
+                             scope=scope, enable_extraction=enable_extraction)
+        elapsed_main = (time.monotonic() - main_start) * 1000
+        logger.debug("Main chat took %.1fms", elapsed_main)
+
+        if not is_simple:
+            if injected_skills and re.search(r"skill|procedure|steps|here.?s how", response or "", re.I):
+                for s in injected_skills:
+                    try:
+                        self.memory_store.skill_record_usage(s["id"])
+                    except Exception:
+                        pass
+            if self._auto_learn_enabled(scope):
+                skill = self._detect_skill(message, response, history or [])
+                if skill:
+                    return json.dumps({"_skill_detected": skill, "response": response})
         return response
 
     def _detect_skill(self, message: str, response: str, history: list) -> dict | None:
@@ -469,6 +538,7 @@ class HermesBridge:
         explicit = bool(_re.search(r"(?:save|create|remember|note|learn|store)\s+(?:this|a|that|the)?\s*(?:skill|procedure|workflow|process|technique)?", message, _re.I))
         if not (user_success or correction or explicit):
             return None
+        skill_start = time.monotonic()
         last_user = message[:800]
         last_asst = response[:800]
         if explicit:
@@ -510,6 +580,9 @@ class HermesBridge:
                 return result
         except (json.JSONDecodeError, Exception):
             pass
+        finally:
+            elapsed_skill = (time.monotonic() - skill_start) * 1000
+            logger.debug("Skill detection took %.1fms", elapsed_skill)
         return None
 
     # ──────────────────────────────────────────────
