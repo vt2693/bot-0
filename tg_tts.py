@@ -55,6 +55,8 @@ def to_opus(mp3_bytes: bytes) -> bytes:
         capture_output=True,
         timeout=30,
     )
-    proc.check_returncode()
+    if proc.returncode != 0:
+        stderr_text = proc.stderr.decode(errors="replace")[:500] if proc.stderr else "(no output)"
+        raise RuntimeError(f"ffmpeg to_opus failed (exit {proc.returncode}): {stderr_text}")
     return proc.stdout
 

@@ -29,9 +29,13 @@ def download_file(bot_token: str, file_path: str, out: Path) -> None:
 def to_wav(src: Path) -> Path:
     """Convert audio to 16kHz mono WAV via ffmpeg."""
     dst = src.with_suffix(".wav")
-    subprocess.check_call(
-        ["ffmpeg", "-y", "-i", str(src), "-ar", "16000", "-ac", "1", str(dst)]
+    proc = subprocess.run(
+        ["ffmpeg", "-y", "-i", str(src), "-ar", "16000", "-ac", "1", str(dst)],
+        capture_output=True,
     )
+    if proc.returncode != 0:
+        stderr_text = proc.stderr.decode(errors="replace")[:500] if proc.stderr else "(no output)"
+        raise RuntimeError(f"ffmpeg to_wav failed (exit {proc.returncode}): {stderr_text}")
     return dst
 
 
