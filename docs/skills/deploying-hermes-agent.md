@@ -95,7 +95,7 @@ Confidence: 100% — Validated end-to-end with live Telegram message delivery. H
 Confidence: 100% — 3 provider names including `router_0`. Provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter`. Settings immutable, cached via `@lru_cache()`.
 
 ### Provider fallback chain
-Confidence: 100% — Transient provider errors (server_error, upstream 5xx, resource exhaustion, rate limit) are classified and retried. Capacity-exhaustion class uses 4 attempts with `2**attempt` backoff (2/4/8s); network flakiness keeps 1.5x exponential backoff. On exhaustion beyond retries, the bridge fails over to the next configured provider with an announced ⚠️ notice (provider restored next turn); hard client errors (auth, bad request) fail fast. `chat()` re-raises provider errors (logs trace first) so the Telegram layer renders a clean message — no raw API dump to the user.
+Confidence: 100% — Transient provider errors (server_error, upstream 5xx, resource exhaustion, rate limit) are classified and retried. Capacity-exhaustion class uses `LLM_RETRY_ATTEMPTS` attempts (default 3, configurable) with `2**attempt` backoff (1/2/4s per capacity exhaustion, or 1.5x for network flakiness). Each attempt has a per-call timeout of `LLM_TIMEOUT` (default 60s, configurable). On exhaustion beyond retries, the bridge fails over to the next configured provider with an announced ⚠️ notice (provider restored next turn); hard client errors (auth, bad request) fail fast. `chat()` re-raises provider errors (logs trace first) so the Telegram layer renders a clean message — no raw API dump to the user.
 
 ### Provider switching (/model + inline menu)
 Confidence: 100% — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing). Menu dynamically shows ✅ on active model, ⭐ on provider default.
@@ -167,7 +167,8 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `MEMORY_DB_PATH` | *see* | No | SQLite path (default: `$HOME/hermes_memory.db` on Android) |
 | `MEMORY_API_KEY` | — | No | Legacy; kept for compat (no-op on Android) |
 | `TOOL_LOOP_MAX_ROUNDS` | `1000` | No | Max LLM tool-call rounds |
-| `LLM_TIMEOUT` | `600` | No | LLM call timeout in seconds |
+| `LLM_TIMEOUT` | `60` | No | Per-LLM-call timeout in seconds |
+| `LLM_RETRY_ATTEMPTS` | `3` | No | Number of retries for transient LLM errors (capacity exhaustion, 5xx, rate limit) |
 | `BROADCAST_CHAT_ID` | — | No | Channel/group chat_id to broadcast tool call results |
 | `SYSTEM_PROMPT` | *Hermes Agent default* | No | Override system prompt |
 | `MAX_TOKENS` | `2048` | No | Max output tokens |
@@ -293,7 +294,7 @@ HTTP JSON-RPC client. Tools accessed via `initialize` → `tools/list` → `tool
 
 | Signal | Action |
 |--------|--------|
-| LLM upstream saturation (ResourceExhausted / server_error / 5xx) | Retry 4× with `2**attempt` backoff, then fail over to next configured provider with ⚠️ notice |
+| LLM upstream saturation (ResourceExhausted / server_error / 5xx) | Retry `LLM_RETRY_ATTEMPTS` times (default 3) with `2**attempt` backoff, then fail over to next configured provider with ⚠️ notice |
 | Non-transient LLM error (auth, bad request, invalid model) | Fail fast — no retry, clean user message |
 | LLM call returns streaming (SSE) | Ensure `stream: False` in request body |
 | Composio cold start returns empty | Retry once after 2s |
