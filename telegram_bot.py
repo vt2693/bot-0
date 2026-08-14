@@ -1117,7 +1117,6 @@ MENUS = {
     "model": {
         "text": "Switch Model",  # placeholder, overridden dynamically in _show_menu
         "buttons": [
-            [{"text": "⚡ oc/deepseek-v4-flash-free", "callback_data": "ac:model:oc/deepseek-v4-flash-free"}],
             [{"text": "🤖 cx/gpt-5.4-mini", "callback_data": "ac:model:cx/gpt-5.4-mini"}],
             [{"text": "🔀 combo-high", "callback_data": "ac:model:combo-high"}],
             [{"text": "🔀 combo-medium", "callback_data": "ac:model:combo-medium"}],

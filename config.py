@@ -23,7 +23,7 @@ class Settings:
     OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     OPENCODE_ZEN_MODEL = os.getenv("OPENCODE_ZEN_MODEL", "deepseek-v4-flash-free")
     OPENCODE_ZEN_BASE_URL = os.getenv("OPENCODE_ZEN_BASE_URL", "https://opencode.ai/zen/v1")
-    ROUTER_0_MODEL = os.getenv("ROUTER_0_MODEL", "oc/deepseek-v4-flash-free")
+    ROUTER_0_MODEL = os.getenv("ROUTER_0_MODEL", "cx/gpt-5.4-mini")
     ROUTER_0_BASE_URL = os.getenv("ROUTER_0_BASE_URL", "http://localhost:20128/v1")
     ROUTER_0_AUDIO_URL: Optional[str] = os.getenv("ROUTER_0_AUDIO_URL")
 

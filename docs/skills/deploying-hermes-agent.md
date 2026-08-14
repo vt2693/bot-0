@@ -101,7 +101,7 @@ Confidence: 100% — Transient provider errors (server_error, upstream 5xx, reso
 Confidence: 100% — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing). Menu dynamically shows ✅ on active model, ⭐ on provider default.
 
 ### Router-0 provider
-Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `oc/deepseek-v4-flash-free`. Default base: `http://localhost:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
+Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `cx/gpt-5.4-mini`. Default base: `http://localhost:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
 
 ### Telegram bot + polling
 Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 8 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`. Inline keyboard menu (11 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira, TTS Model). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:tts_model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle`, `ac:pdf_stop` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
@@ -145,7 +145,7 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 | `TELEGRAM_ALLOWED_USERS` | `""` | No | Restrict to specific user IDs |
 | `PROVIDER` | *auto-detect* | No | Override LLM provider |
 | `ROUTER_0_API_KEY` | — | Yes | Router-0 LLM provider |
-| `ROUTER_0_MODEL` | `oc/deepseek-v4-flash-free` | No | Router-0 model name |
+| `ROUTER_0_MODEL` | `cx/gpt-5.4-mini` | No | Router-0 model name |
 | `ROUTER_0_BASE_URL` | `http://localhost:20128/v1` | No | Router-0 LLM base URL |
 | `ROUTER_0_AUDIO_URL` | — | No | Router-0 audio base URL for TTS/STT (e.g. `http://localhost:20128/v1`) |
 | `TTS_URL` | from `ROUTER_0_AUDIO_URL` | No | Override full TTS endpoint URL |
