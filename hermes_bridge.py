@@ -414,6 +414,7 @@ class HermesBridge:
             self.memory_store.add(content, scope, metadata)
             self._memory_stats["extractions"] += 1
             new_count += 1
+        logger.info("facts extracted count=%s scope=%s", new_count, scope)
         return json.dumps({"stored": new_count})
 
     def _auto_learn_enabled(self, scope: str) -> bool:
@@ -490,23 +491,29 @@ class HermesBridge:
         mem_block = None
         injected_skills = None
         is_simple = self._is_simple_chat(message)
+        logger.info("chat_with_memory: scope=%s simple=%s", scope, is_simple)
 
         if self.memory_enabled and self.memory_store:
             self._memory_stats["injections"] += 1
             if not is_simple:
                 expanded = self._expand_query(message)
+                logger.info("query expanded terms=%s", expanded)
                 mems = self.memory_store.get_relevant(message, scope, 100, extra_terms=expanded)
                 if mems:
                     self._memory_stats["hits"] += 1
                     mem_block = "\n".join("- " + m["content"] for m in mems)
+                    logger.info("memory context injected fact_count=%s", len(mems))
                 else:
                     self._memory_stats["misses"] += 1
+                    logger.info("memory context: no relevant facts found")
                 skills = self.memory_store.skill_inject(message, scope, 10)
                 if skills:
                     injected_skills = skills
+                    logger.info("skills injected count=%s titles=%s", len(skills), [s["title"][:40] for s in skills])
             else:
                 # Fast path: skip query expansion and skill injection for simple chat
                 self._memory_stats["misses"] += 1
+                logger.info("fast path: memory injection skipped (simple chat)")
 
         enable_extraction = not is_simple
         main_start = time.monotonic()
@@ -525,7 +532,10 @@ class HermesBridge:
             if self._auto_learn_enabled(scope):
                 skill = self._detect_skill(message, response, history or [])
                 if skill:
+                    logger.info("skill detected title=%r scope=%s", skill.get("title"), scope)
                     return json.dumps({"_skill_detected": skill, "response": response})
+                else:
+                    logger.info("no skill detected scope=%s", scope)
         return response
 
     def _detect_skill(self, message: str, response: str, history: list) -> dict | None:
@@ -537,6 +547,7 @@ class HermesBridge:
         correction = hist_pairs >= 3 and bool(_re.search(r"(send|error|token|key|reset|reconfig|relay|timeout)", message, _re.I))
         explicit = bool(_re.search(r"(?:save|create|remember|note|learn|store)\s+(?:this|a|that|the)?\s*(?:skill|procedure|workflow|process|technique)?", message, _re.I))
         if not (user_success or correction or explicit):
+            logger.info("skill detection: no trigger (success=%s correction=%s explicit=%s)", user_success, correction, explicit)
             return None
         skill_start = time.monotonic()
         last_user = message[:800]
@@ -577,8 +588,12 @@ class HermesBridge:
             if result.get("skill") and result.get("title") and result.get("procedure"):
                 self._memory_stats.setdefault("skill_detections", 0)
                 self._memory_stats["skill_detections"] += 1
+                logger.info("skill detected via LLM title=%r", result.get("title", "")[:80])
                 return result
-        except (json.JSONDecodeError, Exception):
+            else:
+                logger.info("skill detection: LLM returned no skill")
+        except (json.JSONDecodeError, Exception) as e:
+            logger.debug("skill detection: LLM parse failed: %s", e)
             pass
         finally:
             elapsed_skill = (time.monotonic() - skill_start) * 1000

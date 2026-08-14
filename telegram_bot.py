@@ -447,6 +447,7 @@ class TelegramBot:
         if not ms:
             self._send_message(chat_id, "Memory system not available.")
             return
+        logger.info("improve command chat_id=%s arg=%r", chat_id, arg)
         parts = arg.split(maxsplit=1) if arg else []
         sub = parts[0].lower() if parts else ""
         sub_arg = parts[1].strip() if len(parts) > 1 else ""
@@ -789,6 +790,7 @@ class TelegramBot:
             if r.get("error"):
                 self._send_message(chat_id, f"Failed to save: {r['error']}")
             else:
+                logger.info("skill saved id=%s title=%r chat_id=%s", r["id"], skill.get("title", ""), chat_id)
                 self._send_message(chat_id, f"✅ Skill saved! ID: {r['id']}")
         elif data.startswith("ac:skill_edit:"):
             token = data[len("ac:skill_edit:"):]
@@ -848,9 +850,11 @@ class TelegramBot:
                 is_on = latest["content"].strip().lower() == "auto_learn=true"
             if is_on:
                 ms.add("auto_learn=false", str(chat_id))
+                logger.info("autolearn toggled OFF chat_id=%s", chat_id)
                 self._send_message(chat_id, "⚙️ Auto-learn turned OFF.")
             else:
                 ms.add("auto_learn=true", str(chat_id))
+                logger.info("autolearn toggled ON chat_id=%s", chat_id)
                 self._send_message(chat_id, "⚙️ Auto-learn turned ON.")
         elif data.startswith("ac:skill_forget_inactive"):
             ms = self.bridge.memory_store if self.bridge else None

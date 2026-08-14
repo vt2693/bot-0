@@ -100,6 +100,7 @@ class MemoryStore:
     def add(self, content: str, scope: str = "global", metadata: dict | None = None) -> int:
         content = (content or "").strip()[:1000]
         if not content:
+            logger.debug("add: empty content dropped, scope=%s", scope)
             return -1
         now = time.time()
         with self._lock:
@@ -109,6 +110,7 @@ class MemoryStore:
             )
             self._conn.commit()
             rowid = int(cur.lastrowid)
+        logger.info("fact stored id=%s scope=%s", rowid, scope)
         return rowid
 
     def search(self, query: str, scope: str | None = "global", limit: int = 5) -> list[dict]:
@@ -127,7 +129,9 @@ class MemoryStore:
             if ids:
                 self._conn.execute(f"UPDATE facts SET access_count=access_count+1 WHERE id IN ({','.join('?' for _ in ids)})", ids)
                 self._conn.commit()
-        return [self._row(r) for r in rows]
+        results = [self._row(r) for r in rows]
+        logger.info("fact search query=%r scope=%s limit=%s hits=%s", query, scope, limit, len(results))
+        return results
 
     def _recent_facts(self, scope: str | None, limit: int) -> list[dict]:
         if scope:
@@ -169,21 +173,26 @@ class MemoryStore:
                 (delta, time.time(), scope, f"%{content[:120]}%"),
             )
             self._conn.commit()
-            return cur.rowcount > 0
+            updated = cur.rowcount > 0
+        logger.info("fact feedback scope=%s delta=%+.2f updated=%s feedback=%r", scope, delta, updated, feedback)
+        return updated
 
     def clear(self, scope: str | None = "global") -> None:
         with self._lock:
             if scope:
-                self._conn.execute("DELETE FROM facts WHERE scope=?", (scope,))
+                cur = self._conn.execute("DELETE FROM facts WHERE scope=?", (scope,))
             else:
-                self._conn.execute("DELETE FROM facts")
+                cur = self._conn.execute("DELETE FROM facts")
             self._conn.commit()
+            logger.info("facts cleared scope=%s rows=%s", scope, cur.rowcount)
 
     def cleanup_low_trust(self) -> int:
         with self._lock:
             cur = self._conn.execute("DELETE FROM facts WHERE trust_score < 0.2")
             self._conn.commit()
-            return cur.rowcount
+            removed = cur.rowcount
+        logger.info("cleanup_low_trust removed=%s", removed)
+        return removed
 
     def stats(self) -> dict:
         with self._lock:
@@ -229,6 +238,7 @@ class MemoryStore:
         """Add a skill. Upserts on normalized title match."""
         title = (title or "").strip()[:300]
         if not title or not procedure:
+            logger.debug("skill_add: rejected (missing title/procedure), scope=%s", scope)
             return {"id": -1, "error": "title and procedure required"}
         norm = title.lower().strip()
         now = time.time()
@@ -242,6 +252,7 @@ class MemoryStore:
                     (now, existing["id"]),
                 )
                 self._conn.commit()
+                logger.info("skill_add: upsert (duplicate) id=%s title=%r scope=%s", existing["id"], title, scope)
                 return {"id": existing["id"], "error": ""}
             cur = self._conn.execute(
                 "INSERT INTO skills(title,problem,procedure,evidence,failure_pattern,tags,scope,created_at,updated_at)"
@@ -251,6 +262,7 @@ class MemoryStore:
             )
             self._conn.commit()
             rowid = int(cur.lastrowid)
+        logger.info("skill_add: new id=%s title=%r scope=%s", rowid, title, scope)
         return {"id": rowid, "error": ""}
 
     def skill_search(self, query: str, scope: str | None = "global",
@@ -279,7 +291,9 @@ class MemoryStore:
             if r["id"] not in seen:
                 seen.add(r["id"])
                 out.append(self._skill_row(r))
-        return out[:limit]
+        out = out[:limit]
+        logger.info("skill search query=%r scope=%s holes=%s hits=%s", query, scope, len(results), len(out))
+        return out
 
     def skill_list(self, scope: str | None = "global") -> list[dict]:
         if scope:
@@ -289,15 +303,20 @@ class MemoryStore:
             sql = "SELECT * FROM skills ORDER BY created_at DESC"
             params = ()
         with self._lock:
-            return [self._skill_row(r)
-                    for r in self._conn.execute(sql, params).fetchall()]
+            rows = self._conn.execute(sql, params).fetchall()
+        logger.info("skill list scope=%s count=%s", scope, len(rows))
+        return [self._skill_row(r) for r in rows]
 
     def skill_get(self, skill_id: int) -> dict | None:
         with self._lock:
             row = self._conn.execute(
                 "SELECT * FROM skills WHERE id=?", (skill_id,)
             ).fetchone()
-            return self._skill_row(row) if row else None
+        if row is None:
+            logger.debug("skill get id=%s not found", skill_id)
+            return None
+        logger.debug("skill get id=%s title=%r", skill_id, row["title"])
+        return self._skill_row(row)
 
     def skill_update(self, skill_id: int, **fields) -> bool:
         allowed = {"title", "problem", "procedure", "failure_pattern",
@@ -306,6 +325,7 @@ class MemoryStore:
         if "tags" in updates and not isinstance(updates["tags"], str):
             updates["tags"] = json.dumps(updates["tags"] or [])
         if not updates:
+            logger.debug("skill update id=%s: no fields to update", skill_id)
             return False
         now = time.time()
         updates["updated_at"] = now
@@ -319,6 +339,7 @@ class MemoryStore:
             rc = self._conn.execute(
                 "SELECT changes()"
             ).fetchone()[0]
+        logger.info("skill update id=%s fields=%s updated=%s", skill_id, list(updates.keys()), rc > 0)
         return rc > 0
 
     def skill_remove(self, skill_id: int) -> bool:
@@ -326,17 +347,20 @@ class MemoryStore:
             self._conn.execute("DELETE FROM skills WHERE id=?", (skill_id,))
             self._conn.commit()
             rc = self._conn.execute("SELECT changes()").fetchone()[0]
+        logger.info("skill remove id=%s removed=%s", skill_id, rc > 0)
         return rc > 0
 
     def skill_inject(self, query: str, scope: str = "global",
                      limit: int = 3) -> list[dict]:
         """Search + increment injection_count. For injection pipeline."""
         with self._lock:
-            self._conn.execute(
+            cur = self._conn.execute(
                 "UPDATE skills SET status='inactive' "
                 "WHERE status!='inactive' AND injection_count>=3 AND access_count=0"
             )
             self._conn.commit()
+            if cur.rowcount:
+                logger.info("skill_inject: auto-inactivated %s unused skills", cur.rowcount)
         skills = self.skill_search(query, scope, limit)
         if skills:
             ids = [s["id"] for s in skills]
@@ -349,6 +373,7 @@ class MemoryStore:
                     [now] + ids,
                 )
                 self._conn.commit()
+        logger.info("skill inject query=%r scope=%s limit=%s injected=%s", query, scope, limit, len(skills))
         return skills
 
     def skill_record_usage(self, skill_id: int) -> bool:
@@ -359,6 +384,8 @@ class MemoryStore:
                 (time.time(), skill_id),
             )
             self._conn.commit()
-            return self._conn.execute(
+            rc = self._conn.execute(
                 "SELECT changes()"
-            ).fetchone()[0] > 0
+            ).fetchone()[0]
+        logger.info("skill usage recorded id=%s accessed=%s", skill_id, rc > 0)
+        return rc > 0
