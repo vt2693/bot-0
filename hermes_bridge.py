@@ -53,7 +53,7 @@ class HermesBridge:
         if not m:
             return False
         # Length / word count gate
-        if len(m) > 20 and len(m.split()) > 3:
+        if len(m) > 10 and len(m.split()) > 2:
             return False
         m_lower = m.lower()
         # Scheduling intent words
