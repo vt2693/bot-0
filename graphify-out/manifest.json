@@ -2,86 +2,86 @@
   "android_bot.py": {
     "mtime": 1785577343.5558586,
     "ast_hash": "3109344ebcfc4eee1241761386044b96",
-    "semantic_hash": ""
+    "semantic_hash": "3109344ebcfc4eee1241761386044b96"
   },
   "composio_mcp.py": {
     "mtime": 1785577343.5558586,
     "ast_hash": "ff08ecdaf25a532ba11eb06b58428468",
-    "semantic_hash": ""
+    "semantic_hash": "ff08ecdaf25a532ba11eb06b58428468"
   },
   "config.py": {
-    "mtime": 1786524594.5090966,
-    "ast_hash": "15601d344bace372f662714bf76096b9",
-    "semantic_hash": ""
+    "mtime": 1786679820.074587,
+    "ast_hash": "c1f074db019e831661ff6617e74ec329",
+    "semantic_hash": "c1f074db019e831661ff6617e74ec329"
   },
   "deploy_android.ps1": {
     "mtime": 1785577343.5568588,
     "ast_hash": "2402d33b73f7f0ec79d42853dd862786",
-    "semantic_hash": ""
+    "semantic_hash": "2402d33b73f7f0ec79d42853dd862786"
   },
   "hermes_bridge.py": {
-    "mtime": 1786524578.6029675,
-    "ast_hash": "e6f03fbc59d7fa71269d7cd7216e0652",
-    "semantic_hash": ""
+    "mtime": 1786867868.6777077,
+    "ast_hash": "f08b9615258ac94334aa1f5846973152",
+    "semantic_hash": "f08b9615258ac94334aa1f5846973152"
   },
   "memory_store.py": {
-    "mtime": 1785834627.062151,
-    "ast_hash": "09403c3470b944a85e3d8232896c07ca",
-    "semantic_hash": ""
+    "mtime": 1786693512.6434383,
+    "ast_hash": "3bcff4ff24ef597e78388a0dc177ac25",
+    "semantic_hash": "3bcff4ff24ef597e78388a0dc177ac25"
   },
   "scheduler.py": {
     "mtime": 1785632437.2210891,
     "ast_hash": "93bdaffcb6dc7896cac7eaff60ef9edc",
-    "semantic_hash": ""
+    "semantic_hash": "93bdaffcb6dc7896cac7eaff60ef9edc"
   },
   "setup_android.sh": {
     "mtime": 1786437762.0721633,
     "ast_hash": "a6db78550a3adcd211a1388d1bd15aab",
-    "semantic_hash": ""
+    "semantic_hash": "a6db78550a3adcd211a1388d1bd15aab"
   },
   "start_android.sh": {
     "mtime": 1785898254.9733288,
     "ast_hash": "4939980783d3ff307be7d4dece7585d0",
-    "semantic_hash": ""
+    "semantic_hash": "4939980783d3ff307be7d4dece7585d0"
   },
   "telegram_bot.py": {
-    "mtime": 1786607522.6915574,
-    "ast_hash": "df7996240cef91fe4a26037a67a4d561",
-    "semantic_hash": ""
+    "mtime": 1786693756.8519847,
+    "ast_hash": "cd5b9732ad0d8dc81d79c7c2a5c93a87",
+    "semantic_hash": "cd5b9732ad0d8dc81d79c7c2a5c93a87"
   },
   "tg_tts.py": {
-    "mtime": 1785577343.5758588,
-    "ast_hash": "58c8d5bc12294d63a2eca9f6f1e84770",
-    "semantic_hash": "58c8d5bc12294d63a2eca9f6f1e84770"
+    "mtime": 1786611928.2441328,
+    "ast_hash": "9321694aa33ffd5482b17af6b7aacb67",
+    "semantic_hash": "9321694aa33ffd5482b17af6b7aacb67"
   },
   "tg_voice.py": {
-    "mtime": 1785577343.5758588,
-    "ast_hash": "c3dc0a60f28e0c81993bfdae9f59e600",
-    "semantic_hash": "c3dc0a60f28e0c81993bfdae9f59e600"
+    "mtime": 1786611941.681465,
+    "ast_hash": "26cacb2c6f1444ce3cc199574e037ef2",
+    "semantic_hash": "26cacb2c6f1444ce3cc199574e037ef2"
   },
   "README.md": {
     "mtime": 1785577343.5558586,
     "ast_hash": "8a76ec42a64ab5e02a4a49e652235646",
-    "semantic_hash": ""
+    "semantic_hash": "8a76ec42a64ab5e02a4a49e652235646"
   },
   "docs/skills/deploying-hermes-agent.md": {
-    "mtime": 1786609283.0793312,
-    "ast_hash": "1d5d0d04f35c2ccd1c8a6608e909b5c9",
-    "semantic_hash": ""
+    "mtime": 1786868314.3557754,
+    "ast_hash": "1aba40d66b4a22955ddc3a2e864a5d84",
+    "semantic_hash": "1aba40d66b4a22955ddc3a2e864a5d84"
   },
   "requirements.txt": {
     "mtime": 1786346511.3039603,
     "ast_hash": "17fd1093fe88ad3aa8d3efc38c2fc821",
-    "semantic_hash": ""
+    "semantic_hash": "17fd1093fe88ad3aa8d3efc38c2fc821"
   },
   "CLAUDE.md": {
     "mtime": 1785577343.5558586,
     "ast_hash": "82efb97a359f5c7290bf2513d14686be",
-    "semantic_hash": ""
+    "semantic_hash": "82efb97a359f5c7290bf2513d14686be"
   },
   "pdf_doc.py": {
     "mtime": 1786346662.2056744,
     "ast_hash": "27f11f71cd15252eb2f86e08bfd59dc4",
-    "semantic_hash": ""
+    "semantic_hash": "27f11f71cd15252eb2f86e08bfd59dc4"
   }
 }
