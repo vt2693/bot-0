@@ -1,86 +1,103 @@
 {
   "android_bot.py": {
-    "mtime": 1785577343.5558586,
+    "mtime": 1787559654.971218,
+    "seen": 1788150387.3274353,
     "ast_hash": "3109344ebcfc4eee1241761386044b96",
     "semantic_hash": "3109344ebcfc4eee1241761386044b96"
   },
   "composio_mcp.py": {
-    "mtime": 1785577343.5558586,
+    "mtime": 1787559654.971218,
+    "seen": 1788150387.3274407,
     "ast_hash": "ff08ecdaf25a532ba11eb06b58428468",
     "semantic_hash": "ff08ecdaf25a532ba11eb06b58428468"
   },
   "config.py": {
-    "mtime": 1786679820.074587,
+    "mtime": 1787559654.971218,
+    "seen": 1788150387.327444,
     "ast_hash": "c1f074db019e831661ff6617e74ec329",
     "semantic_hash": "c1f074db019e831661ff6617e74ec329"
   },
   "deploy_android.ps1": {
-    "mtime": 1785577343.5568588,
+    "mtime": 1787559654.971218,
+    "seen": 1788150387.3274462,
     "ast_hash": "2402d33b73f7f0ec79d42853dd862786",
     "semantic_hash": "2402d33b73f7f0ec79d42853dd862786"
   },
   "hermes_bridge.py": {
-    "mtime": 1786867868.6777077,
-    "ast_hash": "f08b9615258ac94334aa1f5846973152",
-    "semantic_hash": "f08b9615258ac94334aa1f5846973152"
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274481,
+    "ast_hash": "cb108c0c4e6a239847c9fab188290604",
+    "semantic_hash": "cb108c0c4e6a239847c9fab188290604"
   },
   "memory_store.py": {
-    "mtime": 1786693512.6434383,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274498,
     "ast_hash": "3bcff4ff24ef597e78388a0dc177ac25",
     "semantic_hash": "3bcff4ff24ef597e78388a0dc177ac25"
   },
   "scheduler.py": {
-    "mtime": 1785632437.2210891,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274531,
     "ast_hash": "93bdaffcb6dc7896cac7eaff60ef9edc",
     "semantic_hash": "93bdaffcb6dc7896cac7eaff60ef9edc"
   },
   "setup_android.sh": {
-    "mtime": 1786437762.0721633,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274553,
     "ast_hash": "a6db78550a3adcd211a1388d1bd15aab",
     "semantic_hash": "a6db78550a3adcd211a1388d1bd15aab"
   },
   "start_android.sh": {
-    "mtime": 1785898254.9733288,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274567,
     "ast_hash": "4939980783d3ff307be7d4dece7585d0",
     "semantic_hash": "4939980783d3ff307be7d4dece7585d0"
   },
   "telegram_bot.py": {
-    "mtime": 1786693756.8519847,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274584,
     "ast_hash": "cd5b9732ad0d8dc81d79c7c2a5c93a87",
     "semantic_hash": "cd5b9732ad0d8dc81d79c7c2a5c93a87"
   },
   "tg_tts.py": {
-    "mtime": 1786611928.2441328,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274596,
     "ast_hash": "9321694aa33ffd5482b17af6b7aacb67",
     "semantic_hash": "9321694aa33ffd5482b17af6b7aacb67"
   },
   "tg_voice.py": {
-    "mtime": 1786611941.681465,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.327461,
     "ast_hash": "26cacb2c6f1444ce3cc199574e037ef2",
     "semantic_hash": "26cacb2c6f1444ce3cc199574e037ef2"
   },
   "README.md": {
-    "mtime": 1785577343.5558586,
+    "mtime": 1787559654.971218,
+    "seen": 1788150387.3274639,
     "ast_hash": "8a76ec42a64ab5e02a4a49e652235646",
     "semantic_hash": "8a76ec42a64ab5e02a4a49e652235646"
   },
   "docs/skills/deploying-hermes-agent.md": {
-    "mtime": 1786868314.3557754,
-    "ast_hash": "1aba40d66b4a22955ddc3a2e864a5d84",
-    "semantic_hash": "1aba40d66b4a22955ddc3a2e864a5d84"
+    "mtime": 1787559654.971218,
+    "seen": 1788150387.3274658,
+    "ast_hash": "90e6ed380a0ff635f38ea6fbc629b5a0",
+    "semantic_hash": "90e6ed380a0ff635f38ea6fbc629b5a0"
   },
   "requirements.txt": {
-    "mtime": 1786346511.3039603,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274672,
     "ast_hash": "17fd1093fe88ad3aa8d3efc38c2fc821",
     "semantic_hash": "17fd1093fe88ad3aa8d3efc38c2fc821"
   },
   "CLAUDE.md": {
-    "mtime": 1785577343.5558586,
+    "mtime": 1787559654.971218,
+    "seen": 1788150387.3274627,
     "ast_hash": "82efb97a359f5c7290bf2513d14686be",
     "semantic_hash": "82efb97a359f5c7290bf2513d14686be"
   },
   "pdf_doc.py": {
-    "mtime": 1786346662.2056744,
+    "mtime": 1787559654.9912174,
+    "seen": 1788150387.3274517,
     "ast_hash": "27f11f71cd15252eb2f86e08bfd59dc4",
     "semantic_hash": "27f11f71cd15252eb2f86e08bfd59dc4"
   }

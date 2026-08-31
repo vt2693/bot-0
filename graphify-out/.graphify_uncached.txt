@@ -1,4 +1,0 @@
-/home/mint/GIT/bot-0/CLAUDE.md
-/home/mint/GIT/bot-0/README.md
-/home/mint/GIT/bot-0/docs/skills/deploying-hermes-agent.md
-/home/mint/GIT/bot-0/requirements.txt
