@@ -61,6 +61,11 @@ class MemoryStore:
                 updated_at REAL NOT NULL
             )
         """)
+        # Migration: add confidence_score for existing skills tables
+        try:
+            self._conn.execute("ALTER TABLE skills ADD COLUMN confidence_score REAL DEFAULT 0.5")
+        except sqlite3.OperationalError:
+            pass
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_skills_scope ON skills(scope)")
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status)")
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_skills_confidence ON skills(confidence_score)")
