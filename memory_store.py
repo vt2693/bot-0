@@ -395,16 +395,32 @@ class MemoryStore:
         logger.info("skill inject query=%r scope=%s limit=%s injected=%s", query, scope, limit, len(skills))
         return skills
 
-    def skill_record_usage(self, skill_id: int) -> bool:
+    def skill_record_usage(self, skill_id: int, success: bool = True) -> bool:
         with self._lock:
+            # adjust confidence
+            delta = 0.05 if success else -0.05
             self._conn.execute(
                 "UPDATE skills SET access_count=access_count+1, "
-                "status='active', updated_at=? WHERE id=?",
-                (time.time(), skill_id),
+                "status='active', confidence_score = MAX(0, MIN(1, confidence_score + ?)), "
+                "updated_at=? WHERE id=?",
+                (delta, time.time(), skill_id),
             )
             self._conn.commit()
             rc = self._conn.execute(
                 "SELECT changes()"
             ).fetchone()[0]
-        logger.info("skill usage recorded id=%s accessed=%s", skill_id, rc > 0)
+        logger.info("skill usage recorded id=%s accessed=%s success=%s", skill_id, rc > 0, success)
         return rc > 0
+
+    def skill_feedback(self, skill_id: int, feedback: str) -> bool:
+        """Adjust skill confidence based on feedback: +0.05 for positive, -0.10 for negative."""
+        delta = 0.05 if "good" in (feedback or "").lower() or "+" in (feedback or "") else -0.10
+        with self._lock:
+            cur = self._conn.execute(
+                "UPDATE skills SET confidence_score = MAX(0, MIN(1, confidence_score + ?)), updated_at=? WHERE id=?",
+                (delta, time.time(), skill_id),
+            )
+            self._conn.commit()
+            updated = cur.rowcount > 0
+        logger.info("skill feedback id=%s delta=%+.2f updated=%s", skill_id, delta, updated)
+        return updated
