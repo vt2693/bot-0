@@ -162,6 +162,7 @@ async def main() -> None:
     bridge = HermesBridge(s, composio=composio)
     bridge.memory_store = store
     bridge.initialize()
+    store.set_confidence_evaluator(bridge.evaluate_confidence)
 
     tg = TelegramBot(
         s.TELEGRAM_BOT_TOKEN,

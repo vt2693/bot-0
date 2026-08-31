@@ -14,12 +14,16 @@ class MemoryStore:
         self.db_path = db_path or ":memory:"
         self._lock = threading.Lock()
         self._ready = False
+        self._confidence_evaluator = None
         self._conn: Optional[sqlite3.Connection] = None
         self._init_db()
 
     @property
     def ready(self) -> bool:
         return self._ready
+
+    def set_confidence_evaluator(self, evaluator):
+        self._confidence_evaluator = evaluator
 
     def _init_db(self) -> None:
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -52,12 +56,14 @@ class MemoryStore:
                 status TEXT NOT NULL DEFAULT 'unverified',
                 access_count INTEGER DEFAULT 0,
                 injection_count INTEGER DEFAULT 0,
+                confidence_score REAL DEFAULT 0.5,
                 created_at REAL NOT NULL,
                 updated_at REAL NOT NULL
             )
         """)
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_skills_scope ON skills(scope)")
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status)")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_skills_confidence ON skills(confidence_score)")
         self._conn.execute("""
             CREATE TABLE IF NOT EXISTS scheduled_jobs (
                 id TEXT PRIMARY KEY,
@@ -97,20 +103,30 @@ class MemoryStore:
             "updated_at": row["updated_at"], "access_count": row["access_count"],
         }
 
+    def _evaluate_confidence(self, text: str, type: str = "fact") -> float:
+        if not self._confidence_evaluator:
+            return 0.5
+        try:
+            return self._confidence_evaluator(text[:500], type)
+        except Exception:
+            return 0.5
+
     def add(self, content: str, scope: str = "global", metadata: dict | None = None) -> int:
         content = (content or "").strip()[:1000]
         if not content:
             logger.debug("add: empty content dropped, scope=%s", scope)
             return -1
+        # Evaluate confidence
+        confidence = self._evaluate_confidence(content, "fact")
         now = time.time()
         with self._lock:
             cur = self._conn.execute(
-                "INSERT INTO facts(scope,content,metadata,created_at,updated_at) VALUES(?,?,?,?,?)",
-                (scope or "global", content, json.dumps(metadata or {}), now, now),
+                "INSERT INTO facts(scope,content,metadata,trust_score,created_at,updated_at) VALUES(?,?,?,?,?,?)",
+                (scope or "global", content, json.dumps(metadata or {}), confidence, now, now),
             )
             self._conn.commit()
             rowid = int(cur.lastrowid)
-        logger.info("fact stored id=%s scope=%s", rowid, scope)
+        logger.info("fact stored id=%s scope=%s confidence=%.2f", rowid, scope, confidence)
         return rowid
 
     def search(self, query: str, scope: str | None = "global", limit: int = 5) -> list[dict]:
@@ -118,10 +134,10 @@ class MemoryStore:
         if not query:
             return self._recent_facts(scope, limit)
         if scope:
-            sql = "SELECT * FROM facts WHERE scope=? AND content LIKE ? ORDER BY created_at DESC LIMIT ?"
+            sql = "SELECT * FROM facts WHERE scope=? AND content LIKE ? ORDER BY trust_score DESC, access_count DESC, created_at DESC LIMIT ?"
             params = (scope, q, limit)
         else:
-            sql = "SELECT * FROM facts WHERE content LIKE ? ORDER BY created_at DESC LIMIT ?"
+            sql = "SELECT * FROM facts WHERE content LIKE ? ORDER BY trust_score DESC, access_count DESC, created_at DESC LIMIT ?"
             params = (q, limit)
         with self._lock:
             rows = self._conn.execute(sql, params).fetchall()
@@ -229,6 +245,7 @@ class MemoryStore:
             "scope": row["scope"], "status": row["status"],
             "access_count": row["access_count"],
             "injection_count": row["injection_count"],
+            "confidence_score": row["confidence_score"],
             "created_at": row["created_at"], "updated_at": row["updated_at"],
         }
 
@@ -240,6 +257,8 @@ class MemoryStore:
         if not title or not procedure:
             logger.debug("skill_add: rejected (missing title/procedure), scope=%s", scope)
             return {"id": -1, "error": "title and procedure required"}
+        # Evaluate confidence based on problem + procedure
+        confidence = self._evaluate_confidence(problem + "\n" + procedure, "skill")
         norm = title.lower().strip()
         now = time.time()
         with self._lock:
@@ -255,14 +274,14 @@ class MemoryStore:
                 logger.info("skill_add: upsert (duplicate) id=%s title=%r scope=%s", existing["id"], title, scope)
                 return {"id": existing["id"], "error": ""}
             cur = self._conn.execute(
-                "INSERT INTO skills(title,problem,procedure,evidence,failure_pattern,tags,scope,created_at,updated_at)"
-                " VALUES(?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO skills(title,problem,procedure,evidence,failure_pattern,tags,scope,confidence_score,created_at,updated_at)"
+                " VALUES(?,?,?,?,?,?,?,?,?,?)",
                 (title, problem, procedure, "", failure_pattern,
-                 json.dumps(tags or []), scope, now, now),
+                 json.dumps(tags or []), scope, confidence, now, now),
             )
             self._conn.commit()
             rowid = int(cur.lastrowid)
-        logger.info("skill_add: new id=%s title=%r scope=%s", rowid, title, scope)
+        logger.info("skill_add: new id=%s title=%r scope=%s confidence=%.2f", rowid, title, scope, confidence)
         return {"id": rowid, "error": ""}
 
     def skill_search(self, query: str, scope: str | None = "global",
@@ -278,12 +297,12 @@ class MemoryStore:
                 if scope:
                     sql = ("SELECT * FROM skills WHERE scope=? AND status!='inactive' "
                            "AND (LOWER(title) LIKE ? OR LOWER(problem) LIKE ? OR LOWER(tags) LIKE ?) "
-                           "ORDER BY access_count DESC, created_at DESC LIMIT ?")
+                           "ORDER BY confidence_score DESC, access_count DESC, created_at DESC LIMIT ?")
                     params = (scope, q, q, q, limit)
                 else:
                     sql = ("SELECT * FROM skills WHERE status!='inactive' "
                            "AND (LOWER(title) LIKE ? OR LOWER(problem) LIKE ? OR LOWER(tags) LIKE ?) "
-                           "ORDER BY access_count DESC, created_at DESC LIMIT ?")
+                           "ORDER BY confidence_score DESC, access_count DESC, created_at DESC LIMIT ?")
                     params = (q, q, q, limit)
                 results.extend(self._conn.execute(sql, params).fetchall())
         seen, out = set(), []

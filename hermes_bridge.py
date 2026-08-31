@@ -909,3 +909,47 @@ class HermesBridge:
 
     def status(self) -> dict:
         return {"ready": self._ready, "error": self._error, "provider": self._provider, "model": self._model, "memory": self.memory_stats, "providers": self.available_providers()}
+
+    def evaluate_confidence(self, text: str, type: str = "fact") -> float:
+        """Evaluate confidence score (0-1) for a fact or skill using LLM."""
+        if not text or len(text.strip()) < 3:
+            return 0.5
+        # Check if confidence eval is disabled via settings
+        if hasattr(self.settings, 'CONFIDENCE_EVAL_ENABLED') and not self.settings.CONFIDENCE_EVAL_ENABLED:
+            return 0.5
+        # Build prompt based on type
+        if type == "skill":
+            prompt = (
+                "Rate the clarity, completeness, and generalizability of this procedure on a scale of 0-1.\n"
+                "Criteria:\n"
+                "- Clarity: Is the procedure clearly described? (0-1)\n"
+                "- Completeness: Are all steps detailed? (0-1)\n"
+                "- Generalizability: Can it be applied to similar problems? (0-1)\n"
+                "Return only a single number between 0 and 1 (e.g. 0.85).\n\n"
+                f"Text: {text[:500]}\n\nScore:"
+            )
+        else:
+            prompt = (
+                "Rate the clarity, specificity, and usefulness of this fact on a scale of 0-1.\n"
+                "Criteria:\n"
+                "- Clarity: Is the statement clear and unambiguous? (0-1)\n"
+                "- Specificity: Does it provide precise information? (0-1)\n"
+                "- Usefulness: Will it be relevant in future conversations? (0-1)\n"
+                "Return only a single number between 0 and 1 (e.g. 0.9).\n\n"
+                f"Text: {text[:500]}\n\nScore:"
+            )
+        try:
+            # Use chat with system_override to keep it cheap and isolated
+            result = self.chat(prompt, history=[], system_override=prompt)
+            # Parse the response: try to extract a float
+            import re
+            match = re.search(r'(\d+\.?\d*)', result)
+            if match:
+                score = float(match.group(1))
+                if 0.0 <= score <= 1.0:
+                    return score
+            # If parsing failed, default to 0.5
+            return 0.5
+        except Exception as e:
+            logger.warning("Confidence evaluation failed: %s", e)
+            return 0.5
