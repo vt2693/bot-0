@@ -1,1 +1,22 @@
-{"0": "For Workbench Composio", "1": "The Provider Error", "2": "Telegram Py To", "3": "Job Poll Jobs", "4": "Add Search Connection", "5": "Py Auto Learn", "6": "Py Composiomcp Close", "7": "Split Uses To", "8": "Synthesize Via Text", "9": "Sh Path Script", "10": "Py Http Json", "11": "Hermes Agent Overview", "12": "Sh Script", "13": "Wrap Python Code", "14": "Return Outbox Items", "15": "Try Calling Api", "16": "Graphify Knowledge Graph", "17": "Community 17", "18": "Community 18", "19": "Hermes Tokens Env", "20": "Dispatch", "21": "Requirements Txt", "22": "Sh", "23": "Sh", "24": "Community 24"}
+{
+  "0": "HermesBridge",
+  "1": "MemoryStore",
+  "2": "SchedulerEngine",
+  "3": "TelegramBot",
+  "4": "hermes_bridge.py",
+  "5": "TelegramImageTests",
+  "6": "android_bot.py",
+  "7": "._handle_callback",
+  "9": "_action_jira_show",
+  "11": "._send_message",
+  "12": "._send_tts_async",
+  "13": "tg_tts.py",
+  "14": "start_android.sh",
+  "15": "Hermes Agent Overview",
+  "16": "setup_android.sh",
+  "19": ".peek_outbox",
+  "20": "._send_direct",
+  "22": "Graphify Knowledge Graph Rules",
+  "23": "deploy_android.ps1",
+  "24": "deploy_android.ps1"
+}

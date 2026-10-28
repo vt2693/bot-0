@@ -385,11 +385,22 @@ start_android.sh
 git clone https://github.com/vt2693/bot-0.git ~/hermes-bot
 cd ~/hermes-bot && bash setup_android.sh && bash start_android.sh
 
-# Update and restart
-cd ~/hermes-bot && git pull origin main && tmux kill-session -t hermes; bash start_android.sh
+# Update and restart from the branch containing the desired release
+cd ~/hermes-bot
+git fetch origin
+git checkout feat/router0-combo-medium-default
+git pull --ff-only origin feat/router0-combo-medium-default
+(tmux kill-session -t hermes 2>/dev/null || true)
+bash start_android.sh
 
 # View logs
 tail -f ~/hermes-bot/logs/bot.log
+
+# Image-analysis smoke test after deploying commit 56e19e4:
+# 1. Send a photo (optionally with a caption); expect a description and follow-up question.
+# 2. Send ordinary text; expect the reply to use that image.
+# 3. Upload another photo before follow-up; newest image should replace the prior one.
+# Requires a vision-capable provider/model. For later releases, use the branch containing the intended commit.
 
 # Attach to tmux
 tmux attach -t hermes
