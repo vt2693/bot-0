@@ -35,6 +35,7 @@ class TelegramBot:
         self._chat_history: dict[str, list] = {}
         self._history_max = 1000
         self._pdf_context: dict[str, dict] = {}  # chat_id -> {"filename", "text"}
+        self._pending_images: dict[int, dict] = {}  # chat_id -> {"data", "mime_type"}
         self._voice_queue: list[dict] = []
         self._voice_lock = threading.Lock()
         self._menu_msg_id: dict[int, int] = {}  # chat_id -> last menu message_id
@@ -167,9 +168,20 @@ class TelegramBot:
                 self._voice_queue.append({"chat_id": chat_id, "file_id": v.get("file_id"), "duration_s": v.get("duration", 0), "timestamp": time.time()})
             self._send_message(chat_id, "Voice memo received -- transcribing...")
             return
+        photos = msg.get("photo") or []
+        if photos:
+            photo = max(photos, key=lambda item: item.get("file_size", 0))
+            await self._handle_image(chat_id, photo, msg.get("caption", ""), "image/jpeg")
+            return
         doc = msg.get("document")
         if doc:
-            await self._handle_document(chat_id, doc)
+            mime_type = str(doc.get("mime_type", "")).lower()
+            if mime_type in ("image/jpeg", "image/png", "image/webp"):
+                await self._handle_image(chat_id, doc, msg.get("caption", ""), mime_type)
+            elif is_pdf(doc):
+                await self._handle_document(chat_id, doc)
+            else:
+                self._send_message(chat_id, "Unsupported document — only PDFs and images are analyzed.")
             return
         text = msg.get("text") or ""
         if text.startswith("/"):
@@ -184,6 +196,7 @@ class TelegramBot:
         if cmd == "/start":
             self._chat_history.pop(str(chat_id), None)
             self._pdf_context.pop(str(chat_id), None)
+            self._pending_images.pop(chat_id, None)
             self._send_message(chat_id, "Hello -- Hermes Agent online. Send text or voice. Use /menu for the interactive menu.")
         elif cmd == "/menu":
             self._menu_msg_id.pop(chat_id, None)  # fresh send, never edit
@@ -269,6 +282,40 @@ class TelegramBot:
                 else:
                     self._send_message(chat_id, "Edit session expired.")
             return
+        # The newest uploaded image takes precedence for the next ordinary request.
+        image_ctx = self._pending_images.get(chat_id)
+        if image_ctx and self.bridge:
+            self._enqueue_typing(chat_id)
+            refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
+            try:
+                response = await asyncio.to_thread(
+                    self.bridge.chat_with_image, text, image_ctx["data"],
+                    image_ctx["mime_type"], self._chat_history.get(key, []),
+                )
+            except Exception as e:
+                logger.error("Image follow-up failed chat %s: %s", chat_id, e)
+                self._send_message(
+                    chat_id,
+                    "⚠️ Image analysis is temporarily unavailable. Try again or upload the image again.",
+                )
+                return
+            finally:
+                refresh_task.cancel()
+                try:
+                    await refresh_task
+                except asyncio.CancelledError:
+                    pass
+            self._pending_images.pop(chat_id, None)
+            self._chat_history.setdefault(key, []).extend([
+                {"role": "user", "content": text},
+                {"role": "assistant", "content": response},
+            ])
+            self._chat_history[key] = self._chat_history[key][-self._history_max:]
+            self._send_message(chat_id, response)
+            if chat_id in self._tts_chats:
+                model = self._tts_models.get(chat_id, "")
+                asyncio.create_task(self._send_tts_async(chat_id, response, model))
+            return
         # Auto-detect scheduling intent from plain chat
         if self.scheduler and re.search(
             r'\b(check|scan|summarize|monitor|watch|fetch|poll|read|get|review|report|remind|provide)\b.*?'
@@ -341,6 +388,63 @@ class TelegramBot:
             asyncio.create_task(self._send_tts_async(chat_id, response, model))
         if skill_info:
             self._show_skill_confirmation(chat_id, skill_info)
+
+    async def _handle_image(self, chat_id: int, image: dict, caption: str, mime_type: str) -> None:
+        """Analyze an uploaded image, then retain it for the next user request."""
+        if not self.bridge or not hasattr(self.bridge, "chat_with_image"):
+            self._send_message(chat_id, "Image analysis unavailable (vision bridge offline).")
+            return
+        file_id = image.get("file_id", "")
+        if not file_id:
+            self._send_message(chat_id, "Couldn't read the image from Telegram.")
+            return
+        if image.get("file_size", 0) > 10 * 1024 * 1024:
+            self._send_message(chat_id, "Image is too large (maximum 10 MiB).")
+            return
+        self._enqueue_typing(chat_id)
+        tmp = None
+        try:
+            file_path = await asyncio.to_thread(tg_file_path, self.token, file_id)
+            work_dir = Path(os.getenv("WORK_DIR", tempfile.gettempdir()))
+            work_dir.mkdir(parents=True, exist_ok=True)
+            suffix = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}.get(mime_type)
+            if suffix is None:
+                self._send_message(chat_id, "Unsupported image type. Send JPEG, PNG, or WebP.")
+                return
+            fd, tmp_name = tempfile.mkstemp(prefix=f"image_{chat_id}_", suffix=suffix, dir=work_dir)
+            os.close(fd)
+            tmp = Path(tmp_name)
+            await asyncio.to_thread(download_file, self.token, file_path, tmp)
+            if tmp.stat().st_size > 10 * 1024 * 1024:
+                self._send_message(chat_id, "Image is too large (maximum 10 MiB).")
+                return
+            data = tmp.read_bytes()
+            if not data:
+                self._send_message(chat_id, "The uploaded image is empty.")
+                return
+        except Exception as e:
+            logger.warning("Image download failed chat %s: %s", chat_id, e)
+            self._send_message(chat_id, "⚠️ Couldn't download the image.")
+            return
+        finally:
+            if tmp:
+                try:
+                    tmp.unlink(missing_ok=True)
+                except Exception:
+                    logger.warning("Image temp cleanup failed chat %s", chat_id)
+        self._pending_images[chat_id] = {"data": data, "mime_type": mime_type}
+        prompt = "Describe this image briefly."
+        if caption.strip():
+            prompt += f" Caption: {caption.strip()}"
+        try:
+            response = await asyncio.to_thread(
+                self.bridge.chat_with_image, prompt, data, mime_type, [],
+            )
+        except Exception as e:
+            logger.error("Image analysis failed chat %s: %s", chat_id, e)
+            self._send_message(chat_id, "⚠️ I couldn't analyze this image. You can ask again or upload another image.")
+            return
+        self._send_message(chat_id, f"{response}\n\nWhat would you like me to do with it?")
 
     async def _handle_document(self, chat_id: int, doc: dict) -> None:
         """Auto-analyze an uploaded PDF: download, extract text, summarize, offer Q&A."""

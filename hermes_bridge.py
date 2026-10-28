@@ -1,3 +1,4 @@
+import base64
 import json
 import re
 import time
@@ -232,15 +233,38 @@ class HermesBridge:
             logger.error("Chat failed: %s", e)
             raise
 
+    def chat_with_image(self, message: str, image: bytes, mime_type: str,
+                        history: list | None = None) -> str:
+        """Send a user message and image through the configured vision model."""
+        if not self._ready:
+            raise RuntimeError("Hermes Agent is not configured for image analysis.")
+        if mime_type not in ("image/jpeg", "image/png", "image/webp"):
+            raise ValueError("Unsupported image MIME type.")
+        encoded = base64.b64encode(image).decode("ascii")
+        messages = self._build_messages(message, history or [])
+        messages[-1]["content"] = [
+            {"type": "text", "text": message},
+            {"type": "image_url", "image_url": {
+                "url": f"data:{mime_type};base64,{encoded}",
+            }},
+        ]
+        return self._call_llm(
+            message, history or [], messages_override=messages,
+            disable_tools=True, allow_failover=False,
+        )
+
     def _call_llm(self, message: str, history: list,
                   memory_context: str | None = None,
                   injected_skills: list | None = None,
                   scope: str = "global",
                   enable_extraction: bool = False,
                   system_override: str | None = None,
-                  response_format: dict | None = None) -> str:
-        messages = self._build_messages(message, history, memory_context, injected_skills, system_override=system_override)
-        tools = [] if system_override else self._get_tools(enable_extraction=enable_extraction)
+                  response_format: dict | None = None,
+                  messages_override: list[dict] | None = None,
+                  disable_tools: bool = False,
+                  allow_failover: bool = True) -> str:
+        messages = messages_override or self._build_messages(message, history, memory_context, injected_skills, system_override=system_override)
+        tools = [] if system_override or disable_tools else self._get_tools(enable_extraction=enable_extraction)
         body = {
             "model": self._model,
             "messages": messages,
@@ -312,7 +336,7 @@ class HermesBridge:
             if last_err:
                 # Out of retries on a capacity/upstream failure: fail over to another
                 # configured provider (announced) rather than surfacing the raw error.
-                if (capacity_hit or isinstance(last_err, RetryableError)) and self._try_failover(primary_provider):
+                if allow_failover and (capacity_hit or isinstance(last_err, RetryableError)) and self._try_failover(primary_provider):
                     # _try_failover left self._provider on the fallback — re-resolve url/headers
                     # for it, then restore the primary for the next call.
                     base_url = self._resolve_base_url()
