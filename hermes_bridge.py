@@ -236,18 +236,31 @@ class HermesBridge:
     def chat_with_image(self, message: str, image: bytes, mime_type: str,
                         history: list | None = None) -> str:
         """Send a user message and image through the configured vision model."""
+        return self.chat_with_images(message, [
+            {"data": image, "mime_type": mime_type, "caption": ""},
+        ], history)
+
+    def chat_with_images(self, message: str, images: list[dict],
+                         history: list | None = None) -> str:
+        """Send an ordered image batch with captions through the vision model."""
         if not self._ready:
             raise RuntimeError("Hermes Agent is not configured for image analysis.")
-        if mime_type not in ("image/jpeg", "image/png", "image/webp"):
-            raise ValueError("Unsupported image MIME type.")
-        encoded = base64.b64encode(image).decode("ascii")
-        messages = self._build_messages(message, history or [])
-        messages[-1]["content"] = [
-            {"type": "text", "text": message},
-            {"type": "image_url", "image_url": {
+        if not images:
+            raise ValueError("At least one image is required.")
+        content = [{"type": "text", "text": message}]
+        for item in images:
+            mime_type = item.get("mime_type")
+            if mime_type not in ("image/jpeg", "image/png", "image/webp"):
+                raise ValueError("Unsupported image MIME type.")
+            caption = item.get("caption", "")
+            if caption:
+                content.append({"type": "text", "text": caption})
+            encoded = base64.b64encode(item["data"]).decode("ascii")
+            content.append({"type": "image_url", "image_url": {
                 "url": f"data:{mime_type};base64,{encoded}",
-            }},
-        ]
+            }})
+        messages = self._build_messages(message, history or [])
+        messages[-1]["content"] = content
         return self._call_llm(
             message, history or [], messages_override=messages,
             disable_tools=True, allow_failover=False,
@@ -272,6 +285,9 @@ class HermesBridge:
             "temperature": self.settings.TEMPERATURE,
             "stream": False,
         }
+        if disable_tools:
+            body["tools"] = []
+            body["tool_choice"] = "none"
         if system_override:
             body["temperature"] = 0
             body["max_tokens"] = 200

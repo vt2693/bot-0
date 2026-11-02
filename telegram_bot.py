@@ -35,7 +35,16 @@ class TelegramBot:
         self._chat_history: dict[str, list] = {}
         self._history_max = 1000
         self._pdf_context: dict[str, dict] = {}  # chat_id -> {"filename", "text"}
-        self._pending_images: dict[int, dict] = {}  # chat_id -> {"data", "mime_type"}
+        self._pending_images: dict[int, list[dict]] = {}  # chat_id -> ordered [{data, mime_type, caption}]
+        self._max_pending_images = 10
+        self._default_image_prompt = "Analyze these images and describe their contents."
+        self._next_image_keyboard = {"inline_keyboard": [
+            [{"text": "🔁 Analyze again", "callback_data": "ac:images_analyze"}],
+            [{"text": "📷 Upload new images", "callback_data": "ac:images_new"}],
+            [{"text": "🗑️ Clear images", "callback_data": "ac:images_clear"}],
+        ]}
+        self._analyzed_image_chats: set[int] = set()
+        self._image_state_locks: dict[int, asyncio.Lock] = {}
         self._voice_queue: list[dict] = []
         self._voice_lock = threading.Lock()
         self._menu_msg_id: dict[int, int] = {}  # chat_id -> last menu message_id
@@ -116,6 +125,8 @@ class TelegramBot:
             {"command": "start", "description": "Welcome"},
             {"command": "menu", "description": "Interactive menu"},
             {"command": "help", "description": "Help"},
+            {"command": "analyze", "description": "Analyze queued images"},
+            {"command": "clear_images", "description": "Clear queued images"},
             {"command": "model", "description": "List/switch provider"},
             {"command": "improve", "description": "Extract skills from conversation"},
             {"command": "secrets", "description": "Configured providers"},
@@ -191,18 +202,21 @@ class TelegramBot:
 
     async def _handle_command(self, chat_id: int, text: str) -> None:
         parts = text.split(maxsplit=1)
-        cmd = parts[0].lower()
+        cmd = parts[0].lower().split("@", 1)[0]
         arg = parts[1].strip() if len(parts) > 1 else ""
-        if cmd == "/start":
+        if cmd == "/analyze":
+            await self._analyze_images(chat_id, arg or self._default_image_prompt)
+        elif cmd == "/clear_images":
+            self._clear_images(chat_id)
+        elif cmd == "/start":
             self._chat_history.pop(str(chat_id), None)
             self._pdf_context.pop(str(chat_id), None)
-            self._pending_images.pop(chat_id, None)
             self._send_message(chat_id, "Hello -- Hermes Agent online. Send text or voice. Use /menu for the interactive menu.")
         elif cmd == "/menu":
             self._menu_msg_id.pop(chat_id, None)  # fresh send, never edit
             await self._show_menu(chat_id, "main")
         elif cmd == "/help":
-            self._send_message(chat_id, "/start /menu /model /secrets. Ask normally to chat.")
+            self._send_message(chat_id, "/start /menu /model /secrets /analyze [prompt] /clear_images. Ask normally to chat.")
         elif cmd == "/model":
             if not self.bridge:
                 self._send_message(chat_id, "Bridge unavailable")
@@ -282,40 +296,8 @@ class TelegramBot:
                 else:
                     self._send_message(chat_id, "Edit session expired.")
             return
-        # The newest uploaded image takes precedence for the next ordinary request.
+        # Ordinary text never implicitly triggers analysis on queued images.
         image_ctx = self._pending_images.get(chat_id)
-        if image_ctx and self.bridge:
-            self._enqueue_typing(chat_id)
-            refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
-            try:
-                response = await asyncio.to_thread(
-                    self.bridge.chat_with_image, text, image_ctx["data"],
-                    image_ctx["mime_type"], self._chat_history.get(key, []),
-                )
-            except Exception as e:
-                logger.error("Image follow-up failed chat %s: %s", chat_id, e)
-                self._send_message(
-                    chat_id,
-                    "⚠️ Image analysis is temporarily unavailable. Try again or upload the image again.",
-                )
-                return
-            finally:
-                refresh_task.cancel()
-                try:
-                    await refresh_task
-                except asyncio.CancelledError:
-                    pass
-            self._pending_images.pop(chat_id, None)
-            self._chat_history.setdefault(key, []).extend([
-                {"role": "user", "content": text},
-                {"role": "assistant", "content": response},
-            ])
-            self._chat_history[key] = self._chat_history[key][-self._history_max:]
-            self._send_message(chat_id, response)
-            if chat_id in self._tts_chats:
-                model = self._tts_models.get(chat_id, "")
-                asyncio.create_task(self._send_tts_async(chat_id, response, model))
-            return
         # Auto-detect scheduling intent from plain chat
         if self.scheduler and re.search(
             r'\b(check|scan|summarize|monitor|watch|fetch|poll|read|get|review|report|remind|provide)\b.*?'
@@ -389,9 +371,56 @@ class TelegramBot:
         if skill_info:
             self._show_skill_confirmation(chat_id, skill_info)
 
+    def _clear_images(self, chat_id: int) -> None:
+        if self._pending_images.pop(chat_id, None):
+            self._analyzed_image_chats.discard(chat_id)
+            self._send_message(chat_id, "Images cleared.")
+        else:
+            self._analyzed_image_chats.discard(chat_id)
+            self._send_message(chat_id, "No images to clear.")
+
+    async def _analyze_images(self, chat_id: int, prompt: str) -> None:
+        lock = self._image_state_locks.setdefault(chat_id, asyncio.Lock())
+        async with lock:
+            images = self._pending_images.get(chat_id, [])
+            if not images:
+                self._send_message(chat_id, "No images are queued. Upload images before analyzing.")
+                return
+            if not self.bridge or not hasattr(self.bridge, "chat_with_images"):
+                self._send_message(chat_id, "Image analysis unavailable (vision bridge offline).")
+                return
+            self._enqueue_typing(chat_id)
+            refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
+            try:
+                response = await asyncio.to_thread(
+                    self.bridge.chat_with_images, prompt or self._default_image_prompt,
+                    list(images), self._chat_history.get(str(chat_id), []),
+                )
+            except Exception as e:
+                logger.error("Image analysis failed chat %s: %s", chat_id, e)
+                self._send_message(chat_id, "⚠️ Image analysis is temporarily unavailable. Try /analyze again.")
+                return
+            finally:
+                refresh_task.cancel()
+                try:
+                    await refresh_task
+                except asyncio.CancelledError:
+                    pass
+            key = str(chat_id)
+            self._chat_history.setdefault(key, []).extend([
+                {"role": "user", "content": prompt or self._default_image_prompt},
+                {"role": "assistant", "content": response},
+            ])
+            self._chat_history[key] = self._chat_history[key][-self._history_max:]
+            self._analyzed_image_chats.add(chat_id)
+            self._send_message(
+                chat_id, f"{response}\n\nWhat would you like to do next?",
+                reply_markup=self._next_image_keyboard,
+            )
+
     async def _handle_image(self, chat_id: int, image: dict, caption: str, mime_type: str) -> None:
-        """Analyze an uploaded image, then retain it for the next user request."""
-        if not self.bridge or not hasattr(self.bridge, "chat_with_image"):
+        """Download and append an image without triggering analysis."""
+        if not self.bridge or not hasattr(self.bridge, "chat_with_images"):
             self._send_message(chat_id, "Image analysis unavailable (vision bridge offline).")
             return
         file_id = image.get("file_id", "")
@@ -401,7 +430,6 @@ class TelegramBot:
         if image.get("file_size", 0) > 10 * 1024 * 1024:
             self._send_message(chat_id, "Image is too large (maximum 10 MiB).")
             return
-        self._enqueue_typing(chat_id)
         tmp = None
         try:
             file_path = await asyncio.to_thread(tg_file_path, self.token, file_id)
@@ -432,19 +460,22 @@ class TelegramBot:
                     tmp.unlink(missing_ok=True)
                 except Exception:
                     logger.warning("Image temp cleanup failed chat %s", chat_id)
-        self._pending_images[chat_id] = {"data": data, "mime_type": mime_type}
-        prompt = "Describe this image briefly."
-        if caption.strip():
-            prompt += f" Caption: {caption.strip()}"
-        try:
-            response = await asyncio.to_thread(
-                self.bridge.chat_with_image, prompt, data, mime_type, [],
-            )
-        except Exception as e:
-            logger.error("Image analysis failed chat %s: %s", chat_id, e)
-            self._send_message(chat_id, "⚠️ I couldn't analyze this image. You can ask again or upload another image.")
-            return
-        self._send_message(chat_id, f"{response}\n\nWhat would you like me to do with it?")
+        # Serialize state mutation with analysis and other direct handler callers.
+        lock = self._image_state_locks.setdefault(chat_id, asyncio.Lock())
+        async with lock:
+            batch = self._pending_images.get(chat_id, [])
+            # Only an accepted upload starts a new batch after successful analysis.
+            if chat_id in self._analyzed_image_chats:
+                self._pending_images.pop(chat_id, None)
+                self._analyzed_image_chats.discard(chat_id)
+                batch = []
+            if len(batch) >= self._max_pending_images:
+                self._send_message(chat_id, f"Image limit reached ({self._max_pending_images}). Clear images or analyze before uploading more.")
+                return
+            batch.append({"data": data, "mime_type": mime_type, "caption": caption or ""})
+            self._pending_images[chat_id] = batch
+            self._send_message(chat_id, f"Image queued ({len(batch)}/{self._max_pending_images}). Use /analyze when ready.")
+
 
     async def _handle_document(self, chat_id: int, doc: dict) -> None:
         """Auto-analyze an uploaded PDF: download, extract text, summarize, offer Q&A."""
@@ -801,10 +832,26 @@ class TelegramBot:
         msg_id = cb.get("message", {}).get("message_id")
         if not chat_id or not cb_id:
             return
+        # Restrict state-changing callback actions to authorized callback senders.
+        callback_user_id = cb.get("from", {}).get("id")
+        if self.allowed_ids and callback_user_id not in self.allowed_ids:
+            self._send_callback_answer(cb_id, "Unauthorized")
+            return
         # Acknowledge the callback so Telegram stops the loading spinner
         self._send_callback_answer(cb_id, "")
         if msg_id:
             self._menu_msg_id[chat_id] = msg_id
+        if data == "ac:images_analyze":
+            await self._analyze_images(chat_id, self._default_image_prompt)
+            return
+        elif data == "ac:images_clear":
+            self._clear_images(chat_id)
+            return
+        elif data == "ac:images_new":
+            self._pending_images.pop(chat_id, None)
+            self._analyzed_image_chats.discard(chat_id)
+            self._send_message(chat_id, "Upload new images to start a fresh batch.")
+            return
         if data.startswith("mn:"):
             await self._show_menu(chat_id, data[3:])
         elif data.startswith("ac:model:"):
@@ -1186,8 +1233,10 @@ MENUS = {
         ],
     },
     "chat": {
-        "text": "Chat\n\nManage conversation context.",
+        "text": "Chat\n\nManage conversation context and queued images.",
         "buttons": [
+            [{"text": "🔎 Analyze Images", "callback_data": "ac:images_analyze"}],
+            [{"text": "🗑️ Clear Images", "callback_data": "ac:images_clear"}],
             [{"text": "📝 Summarize", "callback_data": "ac:chat_summarize"}],
             [{"text": "🔙 Back", "callback_data": "mn:main"}],
         ],
