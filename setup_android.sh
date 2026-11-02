@@ -28,18 +28,18 @@ else
   cd hermes-bot
 fi
 
-# Install Python deps — bot uses httpx directly, no openai SDK needed
+# Install all declared Python dependencies, including PDF extraction support.
 # Ensure pip is up to date
 pip install --upgrade pip 2>&1 | tail -1
 
-echo "Installing Python packages (httpx only — no openai SDK)..."
-pip install httpx 2>&1 || pip install --default-timeout=300 httpx 2>&1
+echo "Installing Python packages from requirements.txt..."
+pip install -r "$SCRIPT_DIR/requirements.txt" 2>&1 || pip install --default-timeout=300 -r "$SCRIPT_DIR/requirements.txt" 2>&1
 
 # Verify critical imports
 echo "Verifying packages..."
 python -c "
 import sys, importlib.util
-pkgs = ['httpx']
+pkgs = ['httpx', 'pypdf']
 missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
 if missing:
     print('ERROR: missing packages:', ' '.join(missing))
