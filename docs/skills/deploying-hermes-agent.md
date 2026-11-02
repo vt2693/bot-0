@@ -81,7 +81,7 @@ Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 
 | `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts, ROUTER_0_AUDIO_URL |
 | `start_android.sh` | tmux launcher with auto-restart, dep check, wake-lock |
 | `deploy_android.ps1` | Windows script: ADB push or SSH/rsync to phone (non-interactive) |
-| `requirements.txt` | pip deps list (for reference; phone uses `pip install httpx` directly) |
+| `requirements.txt` | Python dependency ranges installed by setup (`httpx`, `pypdf`) |
 | `.hermes-tokens.env.example` | Environment variable template for reference |
 
 ## Confidence: 100%
@@ -104,7 +104,7 @@ Confidence: 100% — Telegram `/model` command and inline model-switch menu (Sys
 Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `combo-medium`. Default base: `http://localhost:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
 
 ### Telegram bot + polling
-Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 8 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`. Inline keyboard menu (11 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira, TTS Model). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:tts_model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle`, `ac:pdf_stop` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
+Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 10 slash commands registered: `/start`, `/menu`, `/help`, `/analyze`, `/clear_images`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`. Inline keyboard menus are defined in `MENUS` for Main, Jira, Web, Memory, Chat, Voice, TTS Model, System, Model, Schedule, and Skills. Chat menu includes Analyze Images and Clear Images. Callback routing includes `mn:*`, `ac:*`, `ac:model:*`, `ac:tts_model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle`, `ac:pdf_stop`, and image actions. Per-chat history: 1000 messages as `[{role, content}]`.
 
 ### In-process voice (STT)
 Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice process needed.
@@ -199,8 +199,8 @@ bash start_android.sh   # starts in tmux
 ### Step 2: Setup Script (setup_android.sh)
 
 - Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`
-- Installs: `httpx` via pip (no openai SDK needed — bot uses direct httpx calls)
-- Verifies: `python -c "import httpx"`
+- Installs Python packages from `requirements.txt`: `httpx` (direct API calls) and `pypdf` (PDF extraction); no OpenAI SDK
+- Verifies imports for both `httpx` and `pypdf`
 - Prompts for 6 configs + 2 optional configs (TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults: TELEGRAM_BOT_TOKEN, ROUTER_0_API_KEY, ROUTER_0_BASE_URL, ROUTER_0_AUDIO_URL, COMPOSIO_CONSUMER_API_KEY, OPENCODE_ZEN_API_KEY
 - Writes `$HOME/.hermes-tokens.env` with `PROVIDER="router_0"`
 
@@ -219,7 +219,7 @@ fi
 . "$ENV_FILE"
 
 # Verify deps
-python -c "import sys, importlib.util; pkgs=['httpx']; missing=[...]; ..." || exit 1
+python -c "import sys, importlib.util; pkgs=['httpx', 'pypdf']; missing=[...]; ..." || exit 1
 
 termux-wake-lock || true
 tmux has-session -t hermes 2>/dev/null && echo "Killing existing session..." && tmux kill-session -t hermes
@@ -262,7 +262,8 @@ Main asyncio entry point. Key sections:
 - **Queue:** Thread-safe list. `enqueue_update()` adds, `process_queue_worker()` pops and calls `process_update()`.
 - **Outbox:** Thread-safe list. Methods write `{"_method": "sendMessage", ...}`. `drain_outbox()` returns and clears.
 - **Inline menus:** `MENUS` dict with 11 menus. Callback routing via `mn:*` (menu nav), `ac:*` (action handlers).
-- **Commands (8):** `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`.
+- **Commands:** `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`, `/analyze`, `/clear_images`.
+- **Image batches:** Photo uploads queue in order per chat, retaining captions, up to 10 images. Uploads do not trigger vision analysis. `/analyze [prompt]` or Chat-menu Analyze submits the queued batch; the batch stays available for re-analysis until a new accepted upload starts the next batch or `/clear_images`/Chat-menu Clear removes it. `/start` preserves queued images. Callback actions are restricted to allowed users.
 - **PDF auto-analyze:** Documents with a PDF mime/name trigger `_handle_document()` — download → pypdf text extraction → summary via bridge → per-chat `_pdf_context`. Subsequent non-command messages route through PDF Q&A (strict "answer only from the document" system prompt). `/pdf_stop` or the inline **❌ Exit PDF Q&A** button (`ac:pdf_stop`) clears the context; `/start` also clears it.
 - **Skills:** `/improve` — list/search/detail/edit/delete skills. Auto-detect via `_detect_skill()` + Save/Edit/Discard confirmation.
 - **Schedule — two entry paths to the same scheduler pipeline:**
@@ -343,7 +344,7 @@ After `bash start_android.sh`:
 ```
 start_android.sh
   → source .hermes-tokens.env
-  → verify httpx
+  → verify httpx + pypdf
   → kill old tmux session
   → tmux new-session
     → python android_bot.py
@@ -396,11 +397,12 @@ bash start_android.sh
 # View logs
 tail -f ~/hermes-bot/logs/bot.log
 
-# Image-analysis smoke test after deploying commit 56e19e4:
-# 1. Send a photo (optionally with a caption); expect a description and follow-up question.
-# 2. Send ordinary text; expect the reply to use that image.
-# 3. Upload another photo before follow-up; newest image should replace the prior one.
-# Requires a vision-capable provider/model. For later releases, use the branch containing the intended commit.
+# Image-analysis smoke test after deploying the multi-image workflow:
+# 1. Upload multiple photos (captions optional); each should queue without analysis.
+# 2. Run /analyze [prompt] or select Chat → Analyze Images; expect one batch analysis.
+# 3. Run /analyze again to re-analyze the retained batch.
+# 4. Use /clear_images or Chat → Clear Images to empty the batch.
+# Requires a vision-capable provider/model. Ordinary text does not invoke image analysis.
 
 # Attach to tmux
 tmux attach -t hermes
