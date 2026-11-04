@@ -170,9 +170,9 @@ class MemoryStore:
         words = [w for w in (query or "").lower().split() if len(w) > 3]
         for t in (extra_terms or []):
             words.extend(w for w in t.lower().split() if len(w) > 3)
-        words = words[:10]
+        words = words[:25]
         results = []
-        for w in words[:5]:
+        for w in words[:10]:
             results.extend(self.search(w, scope, limit))
         seen, out = set(), []
         for r in results:
