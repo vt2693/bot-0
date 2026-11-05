@@ -135,7 +135,8 @@ class HermesBridge:
     def _build_messages(self, message: str, history: list,
                          memory_context: str | None = None,
                          injected_skills: list | None = None,
-                         system_override: str | None = None) -> list[dict]:
+                         system_override: str | None = None,
+                         preference_context: str | None = None) -> list[dict]:
         if system_override:
             return [{"role": "system", "content": system_override},
                     {"role": "user", "content": message}]
@@ -149,6 +150,8 @@ class HermesBridge:
             sys += "\nAsk the user if they want the full procedure.\n"
         if memory_context:
             sys += "\n\n[USER FACTS]\n" + memory_context
+        if preference_context:
+            sys += "\n\n[USER PREFERENCES]\n" + preference_context
         msgs = [{"role": "system", "content": sys}]
         for item in history[-100:]:
             if isinstance(item, dict):
@@ -200,6 +203,20 @@ class HermesBridge:
                                         "type": "string",
                                         "enum": ["bio", "preference", "fact", "context"],
                                         "description": "Type of fact"
+                                    },
+                                    "preference_key": {
+                                        "type": "string",
+                                        "enum": ["response_style", "language", "format", "detail_level", "other"],
+                                        "description": "Canonical key for a preference, or empty for non-preferences"
+                                    },
+                                    "preference_value": {
+                                        "type": "string",
+                                        "maxLength": 200,
+                                        "description": "Preference value; use only for explicit user-stated preferences"
+                                    },
+                                    "explicit": {
+                                        "type": "boolean",
+                                        "description": "True only when directly stated or corrected by the user"
                                     }
                                 },
                                 "required": ["content"]
@@ -217,7 +234,8 @@ class HermesBridge:
              scope: str = "global",
              enable_extraction: bool = False,
              system_override: str | None = None,
-             response_format: dict | None = None) -> str:
+             response_format: dict | None = None,
+             preference_context: str | None = None) -> str:
         if not self._ready:
             return "Hermes Agent is not configured. Add a provider API key."
         try:
@@ -225,7 +243,8 @@ class HermesBridge:
                                   injected_skills, scope=scope,
                                   enable_extraction=enable_extraction,
                                   system_override=system_override,
-                                  response_format=response_format)
+                                  response_format=response_format,
+                                  preference_context=preference_context)
         except Exception as e:
             # Don't swallow provider errors into a returned string — let them
             # propagate so the Telegram layer can retry/fall back and render a
@@ -273,10 +292,14 @@ class HermesBridge:
                   enable_extraction: bool = False,
                   system_override: str | None = None,
                   response_format: dict | None = None,
+                  preference_context: str | None = None,
                   messages_override: list[dict] | None = None,
                   disable_tools: bool = False,
                   allow_failover: bool = True) -> str:
-        messages = messages_override or self._build_messages(message, history, memory_context, injected_skills, system_override=system_override)
+        messages = messages_override or self._build_messages(
+            message, history, memory_context, injected_skills,
+            system_override=system_override, preference_context=preference_context,
+        )
         tools = [] if system_override or disable_tools else self._get_tools(enable_extraction=enable_extraction)
         body = {
             "model": self._model,
@@ -443,14 +466,41 @@ class HermesBridge:
         if not self.memory_store:
             return json.dumps({"stored": 0, "error": "no memory store"})
         new_count = 0
-        for fact in args.get("facts", []):
-            content = fact.get("content", "").strip()[:1000]
+        facts = args.get("facts", [])
+        if not isinstance(facts, list):
+            return json.dumps({"stored": 0, "error": "facts must be a list"})
+        for fact in facts:
+            if not isinstance(fact, dict) or not isinstance(fact.get("content"), str):
+                continue
+            content = fact["content"].strip()[:1000]
             if not content:
                 continue
-            existing = self.memory_store.search(content, scope, 3)
-            if any(e["content"].strip().lower() == content.lower() for e in existing):
-                continue
-            metadata = {"category": fact.get("category", "fact"), "source": "llm_extraction"}
+            category = fact.get("category", "fact")
+            metadata = {"category": category, "source": "llm_extraction"}
+            if category == "preference":
+                key = fact.get("preference_key")
+                value = fact.get("preference_value")
+                if (fact.get("explicit") is not True or not isinstance(key, str)
+                        or key not in {"response_style", "language", "format", "detail_level", "other"}
+                        or not isinstance(value, str) or not value.strip()):
+                    continue
+                metadata.update(preference_key=key, preference_value=value.strip()[:200], explicit=True)
+                if key != "other":
+                    existing_preferences = self.memory_store.get_preferences(scope, limit=100)
+                    same = next((p for p in existing_preferences if p.get("preference_key", p.get("key")) == key), None)
+                    if same and same["preference_value"].lower() == value.strip().lower():
+                        continue
+                    if same and not self.memory_store.supersede_preference(
+                            scope, key, value.strip()[:200], content, metadata):
+                        continue
+                    if same:
+                        self._memory_stats["extractions"] += 1
+                        new_count += 1
+                        continue
+            else:
+                existing = self.memory_store.search(content, scope, 3)
+                if any(e["content"].strip().lower() == content.lower() for e in existing):
+                    continue
             self.memory_store.add(content, scope, metadata)
             self._memory_stats["extractions"] += 1
             new_count += 1
@@ -529,9 +579,21 @@ class HermesBridge:
 
     def chat_with_memory(self, message: str, history: list | None = None, scope: str = "global") -> str:
         mem_block = None
+        preference_context = None
         injected_skills = None
         is_simple = self._is_simple_chat(message)
         logger.info("chat_with_memory: scope=%s simple=%s", scope, is_simple)
+
+        if self.memory_enabled and self.memory_store:
+            try:
+                preferences = self.memory_store.get_preferences(scope, limit=10)
+                if preferences:
+                    preference_context = "\n".join(
+                        f"- {p['preference_key']}: {p['preference_value']}"
+                        for p in preferences
+                    )
+            except Exception:
+                logger.warning("Preference retrieval failed; continuing without preferences")
 
         if self.memory_enabled and self.memory_store:
             self._memory_stats["injections"] += 1
@@ -558,7 +620,8 @@ class HermesBridge:
         enable_extraction = not is_simple
         main_start = time.monotonic()
         response = self.chat(message, history or [], mem_block, injected_skills,
-                             scope=scope, enable_extraction=enable_extraction)
+                             scope=scope, enable_extraction=enable_extraction,
+                             preference_context=preference_context)
         elapsed_main = (time.monotonic() - main_start) * 1000
         logger.debug("Main chat took %.1fms", elapsed_main)
 
@@ -983,7 +1046,7 @@ class HermesBridge:
             result = self.chat(prompt, history=[], system_override=prompt)
             # Parse the response: try to extract a float
             import re
-            match = re.search(r'(\d+\.?\d*)', result)
+            match = re.search(r'([+-]?\d+\.?\d*)', result)
             if match:
                 score = float(match.group(1))
                 if 0.0 <= score <= 1.0:

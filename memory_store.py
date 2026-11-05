@@ -154,6 +154,74 @@ class MemoryStore:
         logger.info("fact search query=%r scope=%s limit=%s hits=%s", query, scope, limit, len(results))
         return results
 
+    def supersede_preference(self, scope: str, key: str, value: str,
+                             content: str, metadata: dict) -> bool:
+        """Atomically replace the active explicit value for one preference key."""
+        if not scope or not key or not value or not content:
+            return False
+        now = time.time()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT id, metadata FROM facts WHERE scope=?", (scope,)
+            ).fetchall()
+            ids = []
+            for row in rows:
+                try:
+                    current = json.loads(row["metadata"] or "{}")
+                except (TypeError, json.JSONDecodeError):
+                    continue
+                if (current.get("category") == "preference"
+                        and current.get("explicit") is True
+                        and current.get("preference_key") == key):
+                    ids.append(row["id"])
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                for fact_id in ids:
+                    self._conn.execute("DELETE FROM facts WHERE id=?", (fact_id,))
+                confidence = self._evaluate_confidence(content, "fact")
+                self._conn.execute(
+                    "INSERT INTO facts(scope,content,metadata,trust_score,created_at,updated_at) VALUES(?,?,?,?,?,?)",
+                    (scope, content[:1000], json.dumps(metadata), confidence, now, now),
+                )
+                self._conn.commit()
+            except Exception:
+                self._conn.rollback()
+                raise
+        return True
+
+    def get_preferences(self, scope: str = "global", limit: int = 10,
+                        max_chars: int = 2000) -> list[dict]:
+        """Return a bounded set of unambiguous, explicit scoped preferences."""
+        if limit <= 0 or max_chars <= 0:
+            return []
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM facts WHERE scope=? ORDER BY updated_at DESC, trust_score DESC, id DESC",
+                (scope or "global",),
+            ).fetchall()
+        by_key = {}
+        for row in rows:
+            metadata = json.loads(row["metadata"] or "{}")
+            if metadata.get("category") != "preference" or metadata.get("explicit") is not True:
+                continue
+            key = metadata.get("preference_key")
+            value = metadata.get("preference_value")
+            if not isinstance(key, str) or not key.strip() or not isinstance(value, str) or not value.strip():
+                continue
+            key, value = key.strip(), value.strip()
+            if key not in by_key:
+                by_key[key] = {"preference_key": key, "preference_value": value, "content": row["content"]}
+        result = []
+        used_chars = 0
+        for key in sorted(by_key):
+            item = by_key[key]
+            line = f"- {key}: {item['preference_value']}"
+            if len(result) >= limit or used_chars + len(line) > max_chars:
+                continue
+            used_chars += len(line)
+            result.append(item)
+        return result
+
     def _recent_facts(self, scope: str | None, limit: int) -> list[dict]:
         if scope:
             sql = "SELECT * FROM facts WHERE scope=? ORDER BY created_at DESC LIMIT ?"
