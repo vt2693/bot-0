@@ -134,7 +134,7 @@ Confidence: 100% — Event-driven dispatch: per-job timer map wakes a dispatcher
 | `ROUTER_0_API_KEY` | No | Router-0 dashboard | LLM proxy + STT/TTS (empty OK, passes `""` to httpx) |
 | `ROUTER_0_BASE_URL` | No | — | Router-0 LLM base URL (default `http://localhost:20128/v1`) |
 | `ROUTER_0_AUDIO_URL` | No | — | Router-0 audio base URL for TTS/STT (default none; set to e.g. `http://localhost:20128/v1`) |
-| `TELEGRAM_ALLOWED_USERS` | No | — | Comma-separated Telegram user IDs to restrict access |
+| `TELEGRAM_ALLOWED_USERS` | No | — | Comma- or space-separated numeric Telegram user IDs to restrict access; checked against `message.from.id` and `callback_query.from.id` |
 | `COMPOSIO_CONSUMER_API_KEY` | For tools | Composio dashboard | Jira, Firecrawl, etc. |
 | `OPENCODE_ZEN_API_KEY` | Optional | OpenCode | Alternative LLM provider |
 | `OPENROUTER_API_KEY` | Optional | OpenRouter | Alternative LLM provider |
@@ -200,6 +200,50 @@ bash start_android.sh   # starts in tmux
 ```powershell
 .\deploy_android.ps1    # ADB (or -Ip for SSH)
 ```
+
+### SSH Key Setup (recommended for remote deployment)
+
+Use an Ed25519 key instead of embedding the Termux password in scripts or command arguments.
+
+On the deployment machine, create a key if one does not exist:
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -C "hermes-termux"
+```
+
+Install the public key on Termux through one interactive password-authenticated session:
+
+```bash
+cat ~/.ssh/id_ed25519.pub | ssh -p 8022 u0_a296@PHONE_IP \\
+  'umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys; sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys'
+```
+
+Verify key-only login. Replace `PHONE_IP` with phone address; never place password in command text:
+
+```bash
+ssh -o PreferredAuthentications=publickey \\
+  -o PasswordAuthentication=no \\
+  -p 8022 u0_a296@PHONE_IP 'printf "key login works\\n"'
+```
+
+Optional `~/.ssh/config` entry:
+
+```sshconfig
+Host hermes-termux
+    HostName PHONE_IP
+    Port 8022
+    User u0_a296
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+```
+
+Then use:
+
+```bash
+ssh hermes-termux
+```
+
+Keep `~/.ssh/id_ed25519` private. Share only `~/.ssh/id_ed25519.pub`. Rotate the Termux password if it was exposed in chat, shell history, process arguments, or logs.
 
 ### Step 2: Setup Script (setup_android.sh)
 
@@ -288,7 +332,7 @@ SQLite-backed fact + skill store. SQLite-only on Android.
 
 ### Step 8: Scheduler (scheduler.py)
 
-Event-driven dispatch: per-job timer map (`_timers`), dispatcher task wakes at the earliest `next_run_at` via `asyncio.wait_for` and spawns due jobs promptly; 30s async poll loop stays as catch-up/cleanup backstop. Timers re-armed after each run by mode (daily/interval re-schedules, once/3-error clears). Checks `scheduled_jobs.next_run_at ≤ now`. 3 consecutive errors → auto-pause with notification. Cold-boot catch-up (skip >2 intervals behind). Max 20 jobs/chat.
+Event-driven dispatch: per-job timer map (`_timers`), dispatcher task wakes at the earliest `next_run_at` via `asyncio.wait_for` and spawns due jobs promptly; 30s async poll loop stays as catch-up/cleanup backstop. Timers re-armed after each run by mode (daily/interval re-schedules, once/3-error clears). Checks `scheduled_jobs.next_run_at ≤ now`. 3 consecutive errors → auto-pause with notification. Cold-boot catch-up (skip >2 intervals behind). Max 20 jobs/chat. Failure handling captures `now` inside the exception path before calculating retry backoff, so provider timeouts use failure time rather than stale job-start time.
 
 ### Step 9: Composio MCP (composio_mcp.py)
 
@@ -317,7 +361,7 @@ HTTP JSON-RPC client. Tools accessed via `initialize` → `tools/list` → `tool
 
 | Case | Handling |
 |------|----------|
-| Stale webhook from prior deployment | `deleteWebhook` called on startup |
+| Stale webhook from prior deployment | `deleteWebhook` called on startup; startup uses `drop_pending_updates=true`, so pending updates can be discarded |
 | Telegram API token invalid | `getMe` self-test at startup logs failure |
 | Voice download fails | User notified, no crash |
 | ffmpeg fails (STT/TTS) | Error logged with actual stderr (e.g., missing library), no crash, user notified |
@@ -342,6 +386,9 @@ After `bash start_android.sh`:
 7. Tap Menu → Voice & Minutes → TTS On/Off → toggle on, send text → should reply with text + voice message
 8. Send a PDF → should download, extract text, summarize, then answer questions about it; `/pdf_stop` (or the exit button) returns to normal chat
 9. Check logs: `tail -20 ~/hermes-bot/logs/bot.log`
+10. Check runtime: `tmux ls` and `ps -ef | grep -E "[a]ndroid_bot|[p]ython.*hermes"`.
+11. If a user gets `Unauthorized` from an inline button, add the exact numeric `callback_query.from.id` to `TELEGRAM_ALLOWED_USERS`; usernames and guessed IDs do not work. The parser accepts commas or spaces.
+12. If provider calls time out, inspect `bot.log` for `httpx.ReadTimeout`; scheduler failure handling uses failure-time backoff and should not raise `UnboundLocalError`.
 
 ## Quick Reference
 

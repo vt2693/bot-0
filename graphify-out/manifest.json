@@ -1,170 +1,104 @@
 {
   "android_bot.py": {
-    "mtime": 1788151888.2271764,
-    "seen": 1790839945.6034865,
+    "mtime": 1794407908.0143232,
+    "seen": 1794409048.2651868,
     "ast_hash": "18c1457aac21772018adcf9ecc54f490",
-    "semantic_hash": "18c1457aac21772018adcf9ecc54f490"
+    "semantic_hash": ""
   },
   "composio_mcp.py": {
-    "mtime": 1787559654.971218,
-    "seen": 1788150387.3274407,
+    "mtime": 1794407908.0143232,
+    "seen": 1794409048.2652147,
     "ast_hash": "ff08ecdaf25a532ba11eb06b58428468",
     "semantic_hash": "ff08ecdaf25a532ba11eb06b58428468"
   },
   "config.py": {
-    "mtime": 1791186113.4215858,
-    "seen": 1791186442.1825697,
+    "mtime": 1794407908.0143232,
+    "seen": 1794409048.2652235,
     "ast_hash": "7245b9717aca92e03064195a1e3221bf",
     "semantic_hash": ""
   },
   "deploy_android.ps1": {
-    "mtime": 1787559654.971218,
-    "seen": 1788150387.3274462,
+    "mtime": 1794407908.0143232,
+    "seen": 1794409048.265228,
     "ast_hash": "2402d33b73f7f0ec79d42853dd862786",
     "semantic_hash": "2402d33b73f7f0ec79d42853dd862786"
   },
   "hermes_bridge.py": {
-    "mtime": 1793689509.143716,
-    "seen": 1793689521.1233573,
-    "ast_hash": "ccd10ce308b5865d14fdbc04cd39c6cb",
+    "mtime": 1794407908.023268,
+    "seen": 1794409048.2652311,
+    "ast_hash": "b4d2cc667e8ae2a3ed06e0b6c4acc93e",
     "semantic_hash": ""
   },
   "memory_store.py": {
-    "mtime": 1793779863.40689,
-    "seen": 1793780748.551692,
-    "ast_hash": "fc75b2fc72671a7127cc19699fa5d742",
+    "mtime": 1794407908.023268,
+    "seen": 1794409048.265234,
+    "ast_hash": "4a059ad6e5de55fe9f7e6e3376d45009",
     "semantic_hash": ""
   },
   "scheduler.py": {
-    "mtime": 1787559654.9912174,
-    "seen": 1788150387.3274531,
-    "ast_hash": "93bdaffcb6dc7896cac7eaff60ef9edc",
-    "semantic_hash": "93bdaffcb6dc7896cac7eaff60ef9edc"
-  },
-  "setup_android.sh": {
-    "mtime": 1793608112.6332762,
-    "seen": 1793609355.832387,
-    "ast_hash": "38e4c26423eb3d9b81baaf31a6fa4b1b",
+    "mtime": 1794412573.468751,
+    "seen": 1794412600.0423064,
+    "ast_hash": "6da467cb8dc0a37c223336e215120a06",
     "semantic_hash": ""
   },
+  "setup_android.sh": {
+    "mtime": 1794407908.023268,
+    "seen": 1794409048.2652433,
+    "ast_hash": "a6db78550a3adcd211a1388d1bd15aab",
+    "semantic_hash": "a6db78550a3adcd211a1388d1bd15aab"
+  },
   "start_android.sh": {
-    "mtime": 1787559654.9912174,
-    "seen": 1788150387.3274567,
+    "mtime": 1794407908.023268,
+    "seen": 1794409048.2652457,
     "ast_hash": "4939980783d3ff307be7d4dece7585d0",
     "semantic_hash": "4939980783d3ff307be7d4dece7585d0"
   },
   "telegram_bot.py": {
-    "mtime": 1793606925.7135234,
-    "seen": 1793609355.8323889,
-    "ast_hash": "49512c7fcb1e1f1f87ef2fbccdfd7857",
+    "mtime": 1794407908.0242682,
+    "seen": 1794409048.2652485,
+    "ast_hash": "23b391624a182c98031315d98e26cf87",
     "semantic_hash": ""
   },
   "tg_tts.py": {
-    "mtime": 1787559654.9912174,
-    "seen": 1788150387.3274596,
+    "mtime": 1794407908.0242682,
+    "seen": 1794409048.2652512,
     "ast_hash": "9321694aa33ffd5482b17af6b7aacb67",
     "semantic_hash": "9321694aa33ffd5482b17af6b7aacb67"
   },
   "tg_voice.py": {
-    "mtime": 1787559654.9912174,
-    "seen": 1788150387.327461,
+    "mtime": 1794407908.0242682,
+    "seen": 1794409048.2652538,
     "ast_hash": "26cacb2c6f1444ce3cc199574e037ef2",
     "semantic_hash": "26cacb2c6f1444ce3cc199574e037ef2"
   },
   "README.md": {
-    "mtime": 1787559654.971218,
-    "seen": 1788150387.3274639,
+    "mtime": 1794407908.0143232,
+    "seen": 1794409048.2652605,
     "ast_hash": "8a76ec42a64ab5e02a4a49e652235646",
     "semantic_hash": "8a76ec42a64ab5e02a4a49e652235646"
   },
   "docs/skills/deploying-hermes-agent.md": {
-    "mtime": 1793609431.5323024,
-    "seen": 1793609437.4102314,
-    "ast_hash": "89f5e09822725137c806cf79c4554379",
+    "mtime": 1794407908.0155005,
+    "seen": 1794409048.2652633,
+    "ast_hash": "524e94280c80011e31e8084d2df331e2",
     "semantic_hash": ""
   },
   "requirements.txt": {
-    "mtime": 1787559654.9912174,
-    "seen": 1788150387.3274672,
+    "mtime": 1794407908.023268,
+    "seen": 1794409048.2652662,
     "ast_hash": "17fd1093fe88ad3aa8d3efc38c2fc821",
     "semantic_hash": "17fd1093fe88ad3aa8d3efc38c2fc821"
   },
   "CLAUDE.md": {
-    "mtime": 1793769315.7733762,
-    "seen": 1793780748.5517085,
-    "ast_hash": "b0d4a4b69270a7c3c41278cffc3466d1",
-    "semantic_hash": ""
+    "mtime": 1794407908.0143232,
+    "seen": 1794409048.2652571,
+    "ast_hash": "82efb97a359f5c7290bf2513d14686be",
+    "semantic_hash": "82efb97a359f5c7290bf2513d14686be"
   },
   "pdf_doc.py": {
-    "mtime": 1787559654.9912174,
-    "seen": 1788150387.3274517,
+    "mtime": 1794407908.023268,
+    "seen": 1794409048.265237,
     "ast_hash": "27f11f71cd15252eb2f86e08bfd59dc4",
     "semantic_hash": "27f11f71cd15252eb2f86e08bfd59dc4"
-  },
-  "tests/test_telegram_images.py": {
-    "mtime": 1793606907.6254566,
-    "seen": 1793609355.83239,
-    "ast_hash": "4b00a4a099a1e3a1de5fc25752490a97",
-    "semantic_hash": ""
-  },
-  ".reports/codemap-diff.txt": {
-    "mtime": 1793607759.1578898,
-    "seen": 1793609355.8323925,
-    "ast_hash": "89d26d10df48b13e4dd540cd11345675",
-    "semantic_hash": ""
-  },
-  "docs/CODEMAPS/architecture.md": {
-    "mtime": 1793606242.7663233,
-    "seen": 1793606250.9578764,
-    "ast_hash": "175144b89eaf5037a7d0bfc13e2a8271",
-    "semantic_hash": ""
-  },
-  "docs/CODEMAPS/backend.md": {
-    "mtime": 1793606234.8022962,
-    "seen": 1793606250.9578772,
-    "ast_hash": "669ab79678eee14e1108217474decd71",
-    "semantic_hash": ""
-  },
-  "docs/CODEMAPS/data.md": {
-    "mtime": 1793601147.3816288,
-    "seen": 1793606250.957878,
-    "ast_hash": "0f44fdcee24f17bd47e665b4e21af30b",
-    "semantic_hash": ""
-  },
-  "docs/CODEMAPS/dependencies.md": {
-    "mtime": 1793601156.989705,
-    "seen": 1793606250.9578788,
-    "ast_hash": "05a6eab5a359042a1151e47fedd90007",
-    "semantic_hash": ""
-  },
-  "docs/CODEMAPS/frontend.md": {
-    "mtime": 1793601162.6618338,
-    "seen": 1793606250.9578793,
-    "ast_hash": "a1bfd1d74a73d9ec63ee9d0236e592e1",
-    "semantic_hash": ""
-  },
-  "tests/test_text_llm_flow.py": {
-    "mtime": 1793681235.5868003,
-    "seen": 1793681248.1814094,
-    "ast_hash": "56f606392da94da29efe0585a3a8900a",
-    "semantic_hash": ""
-  },
-  "retrieval_benchmark.py": {
-    "mtime": 1793683444.4039733,
-    "seen": 1793683477.2231777,
-    "ast_hash": "98ed26014067e8279f632f552cb2deb9",
-    "semantic_hash": ""
-  },
-  "tests/test_retrieval_benchmark.py": {
-    "mtime": 1793779808.786121,
-    "seen": 1793780748.5517023,
-    "ast_hash": "4a81d7217fefd758e43bb0619d83aed0",
-    "semantic_hash": ""
-  },
-  "tests/test_confidence_evaluator.py": {
-    "mtime": 1793689434.9717464,
-    "seen": 1793689449.2270265,
-    "ast_hash": "af7f6618a55e376437cba64e38f6096f",
-    "semantic_hash": ""
   }
 }
