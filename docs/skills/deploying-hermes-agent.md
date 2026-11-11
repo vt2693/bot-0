@@ -81,7 +81,7 @@ Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 
 | `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts, ROUTER_0_AUDIO_URL |
 | `start_android.sh` | tmux launcher with auto-restart, dep check, wake-lock |
 | `deploy_android.ps1` | Windows script: ADB push or SSH/rsync to phone (non-interactive) |
-| `requirements.txt` | Python dependency ranges installed by setup (`httpx`, `pypdf`) |
+| `requirements.txt` | pip deps list (for reference; phone uses `pip install httpx` directly) |
 | `.hermes-tokens.env.example` | Environment variable template for reference |
 
 ## Confidence: 100%
@@ -104,7 +104,7 @@ Confidence: 100% — Telegram `/model` command and inline model-switch menu (Sys
 Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `combo-medium`. Default base: `http://localhost:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
 
 ### Telegram bot + polling
-Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 10 slash commands registered: `/start`, `/menu`, `/help`, `/analyze`, `/clear_images`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`. Inline keyboard menus are defined in `MENUS` for Main, Jira, Web, Memory, Chat, Voice, TTS Model, System, Model, Schedule, and Skills. Chat menu includes Analyze Images and Clear Images. Callback routing includes `mn:*`, `ac:*`, `ac:model:*`, `ac:tts_model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle`, `ac:pdf_stop`, and image actions. Per-chat history: 1000 messages as `[{role, content}]`.
+Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 8 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`. Inline keyboard menu (11 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira, TTS Model). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:tts_model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle`, `ac:pdf_stop` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
 
 ### In-process voice (STT)
 Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice process needed.
@@ -112,14 +112,9 @@ Confidence: 100% — Voice memo detected in poll loop → download via getFile A
 ### Text-to-Speech (TTS)
 Confidence: 100% — Toggleable per-user from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` per chat_id. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` per chat_id with default `edge-tts/en-US-AndrewMultilingualNeural`. Menu shows ✅ active and ⭐ default indicators. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
 
-### MemoryStore (SQLite facts, preferences, and skills)
-Confidence: 100% — Fact search uses keyword LIKE over message words plus LLM query-expansion terms (`get_relevant(extra_terms=...)`; `_expand_query` makes a temperature-0 `chat()` call and falls back to raw keywords on failure). Retrieval collects at most 25 words longer than 3 characters, then searches the first 10; each search is scope-filtered. Trivial chat (≤10 chars and ≤2 words, without scheduling/memory/tool keywords) skips query expansion. Empty results fall back to recent facts. Explicit keyed preferences are retrieved independently of lexical fact search on each normal memory-enabled chat, bounded to 10 entries / 2000 characters, and injected in a separate `[USER PREFERENCES]` prompt block. Only explicit preference extractions with a supported key/value are accepted; a newer explicit value supersedes the previous value for that key within the same scope. System-override calls remain isolated from user facts and preferences. No FTS5, HRR, numpy, or vector search. Learned skills use a separate title/problem/procedure/lifecycle table. SQLite-only; no remote sync. Fact and skill confidence scores are evaluated at insertion and influence retrieval ordering.
+### MemoryStore (LLM-expanded LIKE + SQLite)
+Confidence: 100% — Fact search via keyword LIKE on raw message words **plus LLM query-expansion terms** (`get_relevant(extra_terms=...)`; `_expand_query` runs a cheap temp-0 `chat()` call per message, degrades to raw keywords on any failure). **Fast-path optimization:** trivial chat messages (≤10 chars and ≤2 words, no scheduling/memory/tool keywords) skip query expansion entirely to reduce latency. Recent-facts fallback on empty hits. No FTS5, no HRR, no numpy, no vector search. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync. Confidence scoring (trust_score for facts, confidence_score for skills) is evaluated by the LLM at insertion time and used in retrieval ordering (confidence DESC, access_count DESC, created_at DESC).
 
-Preference retrieval and supersession implementation: `MemoryStore.get_preferences()` and `MemoryStore.supersede_preference()`; preference extraction and prompt injection: `HermesBridge.chat_with_memory()` and `_handle_extract_facts()`.
-
-Preference smoke test: tell the bot an explicit preference (for example, “Please answer in Spanish”), then start a new normal chat turn and confirm it appears in the injected preference context. Correct it (“Actually, answer in French”) and verify the newer value is used rather than both values. Preferences are scoped; confirm another chat scope does not inherit them. System-override flows such as PDF Q&A do not receive the preference block.
-
-Recent preference change validation: `python -m unittest discover -s tests` (62 tests passed in the implementation environment).
 ### Composio MCP integration
 Confidence: 100% — HTTP JSON-RPC client with initialize → tools/list → tools/call flow. Jira tools accessed via `COMPOSIO_REMOTE_WORKBENCH` + `run_composio_tool()` (not direct `tools/call` RPC). Cold-start retry pattern.
 
@@ -248,8 +243,8 @@ Keep `~/.ssh/id_ed25519` private. Share only `~/.ssh/id_ed25519.pub`. Rotate the
 ### Step 2: Setup Script (setup_android.sh)
 
 - Installs: `python`, `ffmpeg`, `tmux`, `termux-api`, `git`, `binutils`
-- Installs Python packages from `requirements.txt`: `httpx` (direct API calls) and `pypdf` (PDF extraction); no OpenAI SDK
-- Verifies imports for both `httpx` and `pypdf`
+- Installs: `httpx` via pip (no openai SDK needed — bot uses direct httpx calls)
+- Verifies: `python -c "import httpx"`
 - Prompts for 6 configs + 2 optional configs (TELEGRAM_ALLOWED_USERS, JIRA_EPICS) interactively with existing-value defaults: TELEGRAM_BOT_TOKEN, ROUTER_0_API_KEY, ROUTER_0_BASE_URL, ROUTER_0_AUDIO_URL, COMPOSIO_CONSUMER_API_KEY, OPENCODE_ZEN_API_KEY
 - Writes `$HOME/.hermes-tokens.env` with `PROVIDER="router_0"`
 
@@ -268,7 +263,7 @@ fi
 . "$ENV_FILE"
 
 # Verify deps
-python -c "import sys, importlib.util; pkgs=['httpx', 'pypdf']; missing=[...]; ..." || exit 1
+python -c "import sys, importlib.util; pkgs=['httpx']; missing=[...]; ..." || exit 1
 
 termux-wake-lock || true
 tmux has-session -t hermes 2>/dev/null && echo "Killing existing session..." && tmux kill-session -t hermes
@@ -311,8 +306,7 @@ Main asyncio entry point. Key sections:
 - **Queue:** Thread-safe list. `enqueue_update()` adds, `process_queue_worker()` pops and calls `process_update()`.
 - **Outbox:** Thread-safe list. Methods write `{"_method": "sendMessage", ...}`. `drain_outbox()` returns and clears.
 - **Inline menus:** `MENUS` dict with 11 menus. Callback routing via `mn:*` (menu nav), `ac:*` (action handlers).
-- **Commands:** `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`, `/analyze`, `/clear_images`.
-- **Image batches:** Photo uploads queue in order per chat, retaining captions, up to 10 images. Uploads do not trigger vision analysis. `/analyze [prompt]` or Chat-menu Analyze submits the queued batch; the batch stays available for re-analysis until a new accepted upload starts the next batch or `/clear_images`/Chat-menu Clear removes it. `/start` preserves queued images. Callback actions are restricted to allowed users.
+- **Commands (8):** `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`.
 - **PDF auto-analyze:** Documents with a PDF mime/name trigger `_handle_document()` — download → pypdf text extraction → summary via bridge → per-chat `_pdf_context`. Subsequent non-command messages route through PDF Q&A (strict "answer only from the document" system prompt). `/pdf_stop` or the inline **❌ Exit PDF Q&A** button (`ac:pdf_stop`) clears the context; `/start` also clears it.
 - **Skills:** `/improve` — list/search/detail/edit/delete skills. Auto-detect via `_detect_skill()` + Save/Edit/Discard confirmation.
 - **Schedule — two entry paths to the same scheduler pipeline:**
@@ -396,7 +390,7 @@ After `bash start_android.sh`:
 ```
 start_android.sh
   → source .hermes-tokens.env
-  → verify httpx + pypdf
+  → verify httpx
   → kill old tmux session
   → tmux new-session
     → python android_bot.py
@@ -438,23 +432,28 @@ start_android.sh
 git clone https://github.com/vt2693/bot-0.git ~/hermes-bot
 cd ~/hermes-bot && bash setup_android.sh && bash start_android.sh
 
-# Update and restart from the branch containing the desired release
+# Inspect before update
 cd ~/hermes-bot
-git fetch origin
-git checkout feat/router0-combo-medium-default
-git pull --ff-only origin feat/router0-combo-medium-default
-(tmux kill-session -t hermes 2>/dev/null || true)
+git status --short --branch
+git log --oneline --decorate -5
+
+# Safe update when Termux has local commits or edits
+# Keep a recovery branch and stash tracked + untracked files.
+backup="pre-main-update-$(date +%Y%m%d-%H%M%S)"
+git branch "$backup"
+git stash push -u -m "$backup"
+git fetch origin main
+git merge --no-edit origin/main
+git stash pop
+
+# Resolve conflicts before restarting. Generated graphify-out files can use origin/main,
+# then run graphify update . if source files changed locally.
+git status --short
+python -m py_compile android_bot.py telegram_bot.py hermes_bridge.py scheduler.py
 bash start_android.sh
 
 # View logs
 tail -f ~/hermes-bot/logs/bot.log
-
-# Image-analysis smoke test after deploying the multi-image workflow:
-# 1. Upload multiple photos (captions optional); each should queue without analysis.
-# 2. Run /analyze [prompt] or select Chat → Analyze Images; expect one batch analysis.
-# 3. Run /analyze again to re-analyze the retained batch.
-# 4. Use /clear_images or Chat → Clear Images to empty the batch.
-# Requires a vision-capable provider/model. Ordinary text does not invoke image analysis.
 
 # Attach to tmux
 tmux attach -t hermes
@@ -462,3 +461,13 @@ tmux attach -t hermes
 # Re-run setup (preserves existing tokens)
 bash setup_android.sh
 ```
+
+After restart, verify:
+
+```bash
+tmux ls
+ps -ef | grep -E "[a]ndroid_bot|[p]ython.*hermes"
+grep -E "Authenticated|Bot started|Scheduler started|Outbox drained" logs/bot.log | tail -10
+```
+
+Do not use `git reset --hard` during deployment unless local files and commits are backed up and discarded changes are explicitly approved. Never put Telegram or provider secrets in Git commands, SSH arguments, logs, or commit content.
