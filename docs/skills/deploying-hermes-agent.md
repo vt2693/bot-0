@@ -432,8 +432,25 @@ start_android.sh
 git clone https://github.com/vt2693/bot-0.git ~/hermes-bot
 cd ~/hermes-bot && bash setup_android.sh && bash start_android.sh
 
-# Update and restart
-cd ~/hermes-bot && git pull origin main && tmux kill-session -t hermes; bash start_android.sh
+# Inspect before update
+cd ~/hermes-bot
+git status --short --branch
+git log --oneline --decorate -5
+
+# Safe update when Termux has local commits or edits
+# Keep a recovery branch and stash tracked + untracked files.
+backup="pre-main-update-$(date +%Y%m%d-%H%M%S)"
+git branch "$backup"
+git stash push -u -m "$backup"
+git fetch origin main
+git merge --no-edit origin/main
+git stash pop
+
+# Resolve conflicts before restarting. Generated graphify-out files can use origin/main,
+# then run graphify update . if source files changed locally.
+git status --short
+python -m py_compile android_bot.py telegram_bot.py hermes_bridge.py scheduler.py
+bash start_android.sh
 
 # View logs
 tail -f ~/hermes-bot/logs/bot.log
@@ -444,3 +461,13 @@ tmux attach -t hermes
 # Re-run setup (preserves existing tokens)
 bash setup_android.sh
 ```
+
+After restart, verify:
+
+```bash
+tmux ls
+ps -ef | grep -E "[a]ndroid_bot|[p]ython.*hermes"
+grep -E "Authenticated|Bot started|Scheduler started|Outbox drained" logs/bot.log | tail -10
+```
+
+Do not use `git reset --hard` during deployment unless local files and commits are backed up and discarded changes are explicitly approved. Never put Telegram or provider secrets in Git commands, SSH arguments, logs, or commit content.
