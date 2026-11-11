@@ -19,6 +19,19 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 - **Android phone (Termux)** — primary deployment target
 - Local development machine (Windows/Linux/macOS) for testing
 
+## Final Verified Deployment State
+
+Verified 2026-11-12:
+
+- Source of truth: `main` on GitHub; local checkout and `origin/main` synchronized at latest pushed docs commit.
+- Termux deployment: `~/hermes-bot`, managed by `tmux` session `hermes` and `start_android.sh` auto-restart loop.
+- Remote administration: Ed25519 SSH key authentication on Termux port `8022`; password-free login verified.
+- Runtime: `android_bot.py` running; Telegram `getMe` authentication passed; `SchedulerEngine` polling every 30 seconds; Router-0 provider returned successful test responses.
+- Access control: `TELEGRAM_ALLOWED_USERS` contains numeric Telegram user IDs separated by spaces; text and callback authorization use sender IDs, not usernames.
+- Scheduler reliability: failed provider calls use failure-time retry backoff; no new `UnboundLocalError` after restart.
+- Health check: inspect `tmux ls`, Python process, and recent `Authenticated`, `Bot started`, `Scheduler started`, `Outbox drained`, and error log lines.
+- Deployment safety: preserve Termux local work with a backup branch and `git stash -u` before merging `origin/main`; do not use `git reset --hard` without explicit approval.
+
 ### Non-Goals
 
 - Remote memory persistence — SQLite-only, no cloud sync
