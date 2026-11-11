@@ -255,6 +255,7 @@ class SchedulerEngine:
             logger.info("Job %s: OK (chat %s, mode=%s)", job_id[:8], chat_id, mode)
         except Exception as e:
             logger.exception("Job %s failed: %s", job_id[:8], e)
+            now = time.time()
             if manual:
                 self._conn.execute(
                     "UPDATE scheduled_jobs SET last_run_at=?, last_result=? WHERE id=?",
