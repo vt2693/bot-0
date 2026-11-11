@@ -384,6 +384,54 @@ After `bash start_android.sh`:
 11. If a user gets `Unauthorized` from an inline button, add the exact numeric `callback_query.from.id` to `TELEGRAM_ALLOWED_USERS`; usernames and guessed IDs do not work. The parser accepts commas or spaces.
 12. If provider calls time out, inspect `bot.log` for `httpx.ReadTimeout`; scheduler failure handling uses failure-time backoff and should not raise `UnboundLocalError`.
 
+### Allowlist Troubleshooting
+
+`TELEGRAM_ALLOWED_USERS` accepts numeric IDs separated by spaces or commas. Usernames such as `@example` are not accepted. Incoming text checks `message.from.id`; inline-button callbacks check `callback_query.from.id`. A chat ID copied from another bot or guessed from a username can be wrong.
+
+To discover a new user's exact ID without letting the running poller consume the update:
+
+```bash
+cd ~/hermes-bot
+tmux kill-session -t hermes 2>/dev/null || true
+. "$HOME/.hermes-tokens.env"
+TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" python - <<'PY'
+import json
+import os
+import urllib.parse
+import urllib.request
+
+params = urllib.parse.urlencode({
+    "timeout": 3,
+    "allowed_updates": json.dumps(["message", "callback_query"]),
+})
+url = "https://api.telegram.org/bot" + os.environ["TELEGRAM_BOT_TOKEN"] + "/getUpdates?" + params
+with urllib.request.urlopen(url, timeout=10) as response:
+    data = json.loads(response.read().decode())
+for update in data.get("result", []):
+    message = update.get("message") or {}
+    callback = update.get("callback_query") or {}
+    sender = message.get("from") or callback.get("from") or {}
+    chat = message.get("chat") or (callback.get("message") or {}).get("chat") or {}
+    print({
+        "update_id": update.get("update_id"),
+        "user_id": sender.get("id"),
+        "chat_id": chat.get("id"),
+        "callback": bool(callback),
+    })
+PY
+```
+
+Add the exact `user_id`, preserving existing IDs, then restart:
+
+```bash
+sed -i 's/^export TELEGRAM_ALLOWED_USERS=.*/export TELEGRAM_ALLOWED_USERS="ID1 ID2 NEW_ID"/' "$HOME/.hermes-tokens.env"
+chmod 600 "$HOME/.hermes-tokens.env"
+bash start_android.sh
+grep -E "Authenticated|Bot started|Scheduler started|Outbox drained" logs/bot.log | tail -10
+```
+
+If Telegram returns `Bad Request: chat not found`, the ID is not an accessible chat for this bot. The user must open the bot and send `/start` first. If an inline button returns `Unauthorized`, capture `callback_query.from.id`, not only `message.chat.id`.
+
 ## Quick Reference
 
 ### Startup Flow
