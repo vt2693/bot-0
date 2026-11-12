@@ -207,6 +207,7 @@ class SchedulerEngine:
         prompt = job["prompt"]
         scope = job.get("scope", "sched_global")
         mode = job.get("mode", "interval")
+        now = time.time()
 
         logger.info("Job %s: started (manual=%s)", job_id[:8], manual)
 
