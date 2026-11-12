@@ -33,6 +33,7 @@ class TelegramBot:
         self.outbox: list[dict] = []
         self._outbox_lock = threading.Lock()
         self._chat_history: dict[str, list] = {}
+        self._chat_scopes: dict[int, str] = {}
         self._history_max = 1000
         self._pdf_context: dict[str, dict] = {}  # chat_id -> {"filename", "text"}
         self._pending_images: dict[int, list[dict]] = {}  # chat_id -> ordered [{data, mime_type, caption}]
@@ -53,11 +54,28 @@ class TelegramBot:
         self.scheduler = None
         self._pending_schedule: dict[str, dict] = {}
         self._pending_skills: dict[str, dict] = {}
-        self._tts_chats: set[int] = set()    # chat_ids with TTS enabled
-        self._tts_models: dict[int, str] = {}  # chat_id -> model name override
+        self._tts_chats: set[int] = set()    # runtime chat_ids with TTS enabled
+        self._tts_scopes: set[str] = set()   # persisted scopes with TTS enabled
+        self._tts_models: dict[int, str] = {}  # runtime chat_id -> model override
+        self._tts_scope_models: dict[str, str] = {}  # persisted scope -> model
         self._subtask_parents: dict[int, str] = {}  # chat_id -> parent issue key for back button
         epics_raw = os.getenv("JIRA_EPICS", "")
         self.jira_epics = [e.strip() for e in epics_raw.split(",") if e.strip()]
+
+    @staticmethod
+    def resolve_scope(chat: dict, sender_id: int | None) -> str | None:
+        """Return isolated memory scope for a Telegram chat, or None if invalid."""
+        if sender_id is None:
+            return None
+        chat_id = chat.get("id")
+        if chat_id is None:
+            return None
+        if chat.get("type") in ("group", "supergroup"):
+            return f"chat:{chat_id}"
+        return f"user:{sender_id}"
+
+    def _scope_for_chat_id(self, chat_id: int) -> str:
+        return self._chat_scopes.get(chat_id, str(chat_id))
 
     @property
     def configured(self) -> bool:
@@ -86,10 +104,7 @@ class TelegramBot:
                     scope = r.get("scope", "")
                     rid = r.get("id", 0)
                     if tts_by_scope.get(scope) == rid and r["content"].strip().lower() == "tts_enabled=true":
-                        try:
-                            self._tts_chats.add(int(scope))
-                        except (ValueError, TypeError):
-                            pass
+                        self._tts_scopes.add(scope)
             except Exception:
                 pass
         # Restore TTS model from memory_store
@@ -107,10 +122,7 @@ class TelegramBot:
                     if content.startswith("tts_model="):
                         model = content[10:]
                         if model:
-                            try:
-                                self._tts_models[int(scope)] = model
-                            except (ValueError, TypeError):
-                                pass
+                            self._tts_scope_models[scope] = model
             except Exception:
                 pass
         return True
@@ -166,13 +178,26 @@ class TelegramBot:
     async def process_update(self, update: dict) -> None:
         cb = update.get("callback_query")
         if cb:
+            callback_user_id = cb.get("from", {}).get("id")
+            if self.allowed_ids and callback_user_id not in self.allowed_ids:
+                return
+            callback_chat = cb.get("message", {}).get("chat") or {}
+            callback_scope = self.resolve_scope(callback_chat, callback_user_id)
+            if callback_scope is None:
+                return
+            callback_chat_id = callback_chat.get("id")
+            if callback_chat_id is not None:
+                self._chat_scopes[callback_chat_id] = callback_scope
             await self._handle_callback(cb)
             return
         msg = update.get("message") or update.get("edited_message") or {}
         user_id = msg.get("from", {}).get("id")
-        chat_id = msg.get("chat", {}).get("id")
-        if not chat_id or (self.allowed_ids and user_id not in self.allowed_ids):
+        chat = msg.get("chat") or {}
+        chat_id = chat.get("id")
+        scope = self.resolve_scope(chat, user_id)
+        if chat_id is None or scope is None or (self.allowed_ids and user_id not in self.allowed_ids):
             return
+        self._chat_scopes[chat_id] = scope
         if msg.get("voice"):
             v = msg["voice"]
             with self._voice_lock:
@@ -198,7 +223,7 @@ class TelegramBot:
         if text.startswith("/"):
             await self._handle_command(chat_id, text)
         elif text:
-            await self._handle_message(chat_id, text)
+            await self._handle_message(chat_id, text, scope=scope)
 
     async def _handle_command(self, chat_id: int, text: str) -> None:
         parts = text.split(maxsplit=1)
@@ -268,7 +293,9 @@ class TelegramBot:
         except asyncio.CancelledError:
             pass
 
-    async def _handle_message(self, chat_id: int, text: str) -> None:
+    async def _handle_message(self, chat_id: int, text: str, scope: str | None = None) -> None:
+        if not scope:
+            raise ValueError("resolved memory scope required")
         key = str(chat_id)
         # Check for skill-edit continuation before sending text to LLM
         edit_key = None
@@ -281,7 +308,7 @@ class TelegramBot:
             if edit_info:
                 skill_id = edit_info.get("skill_id")
                 if skill_id and self.bridge and self.bridge.memory_store:
-                    if self.bridge.memory_store.skill_update(int(skill_id), procedure=text):
+                    if self.bridge.memory_store.skill_update(int(skill_id), scope=self._scope_for_chat_id(chat_id), procedure=text):
                         self._send_message(chat_id, f"✅ Skill {skill_id} procedure updated.")
                     else:
                         self._send_message(chat_id, "Edit failed: skill not found.")
@@ -310,7 +337,7 @@ class TelegramBot:
             return
         # PDF Q&A: when a PDF is loaded for this chat and the message is not a
         # command/skill-edit/schedule intent, treat it as a question about the doc.
-        ctx = self._pdf_context.get(key)
+        ctx = self._pdf_context.get(scope)
         if ctx and self.bridge:
             self._enqueue_typing(chat_id)
             prompt = (
@@ -337,7 +364,7 @@ class TelegramBot:
         self._enqueue_typing(chat_id)
         refresh_task = asyncio.create_task(self._typing_refresher(chat_id))
         try:
-            response = await asyncio.to_thread(self.bridge_chat, text, hist, key)
+            response = await asyncio.to_thread(self.bridge_chat, text, hist, scope)
         except Exception as e:
             logger.error("LLM error for chat %s: %s", chat_id, e)
             self._send_message(
@@ -365,8 +392,9 @@ class TelegramBot:
         self._chat_history[key] = self._chat_history[key][-self._history_max:]
         self._send_message(chat_id, response)
         # Auto-TTS if enabled for this chat
-        if chat_id in self._tts_chats:
-            model = self._tts_models.get(chat_id, "")
+        scope = self._scope_for_chat_id(chat_id)
+        if chat_id in self._tts_chats or scope in self._tts_scopes:
+            model = self._tts_models.get(chat_id, self._tts_scope_models.get(scope, ""))
             asyncio.create_task(self._send_tts_async(chat_id, response, model))
         if skill_info:
             self._show_skill_confirmation(chat_id, skill_info)
@@ -520,7 +548,7 @@ class TelegramBot:
         if not text:
             self._send_message(chat_id, "🤔 Couldn't extract text — this may be a scanned/image PDF.")
             return
-        self._pdf_context[str(chat_id)] = {"filename": fname, "text": truncate(text)}
+        self._pdf_context[self._scope_for_chat_id(chat_id)] = {"filename": fname, "text": truncate(text)}
         try:
             self._send_message(chat_id, "⚙️ Analyzing…")
             prompt = f"Summarize this PDF and list its key points as bullets.\n\n=== PDF ===\n{text}"
@@ -588,7 +616,7 @@ class TelegramBot:
         sub_arg = parts[1].strip() if len(parts) > 1 else ""
         if not sub:
             # List all skills
-            skills = ms.skill_list(str(chat_id))
+            skills = ms.skill_list(self._scope_for_chat_id(chat_id))
             if not skills:
                 self._send_message(chat_id, "No skills saved yet. Skills are auto-detected with AUTO_LEARN=true.")
                 return
@@ -598,7 +626,7 @@ class TelegramBot:
                 lines.append(f"{icon} {s['id']}: {s['title'][:80]}")
             self._send_message(chat_id, "\n".join(lines))
         elif sub == "search" and sub_arg:
-            results = ms.skill_search(sub_arg, str(chat_id), 10)
+            results = ms.skill_search(sub_arg, self._scope_for_chat_id(chat_id), 10)
             if not results:
                 self._send_message(chat_id, f"No skills matching: {sub_arg}")
                 return
@@ -612,7 +640,7 @@ class TelegramBot:
             except ValueError:
                 self._send_message(chat_id, "Usage: /improve delete <id>")
                 return
-            if ms.skill_remove(sid):
+            if ms.skill_remove(sid, scope=self._scope_for_chat_id(chat_id)):
                 self._send_message(chat_id, f"✅ Skill {sid} deleted.")
             else:
                 self._send_message(chat_id, f"Skill {sid} not found.")
@@ -622,7 +650,7 @@ class TelegramBot:
             except ValueError:
                 self._send_message(chat_id, "Usage: /improve edit <id>")
                 return
-            s = ms.skill_get(sid)
+            s = ms.skill_get(sid, scope=self._scope_for_chat_id(chat_id))
             if not s:
                 self._send_message(chat_id, f"Skill {sid} not found.")
                 return
@@ -635,7 +663,7 @@ class TelegramBot:
             }
             self._send_message(chat_id, f"Send the new procedure text for skill {sid} now.")
         elif sub == "export":
-            skills = ms.skill_list(str(chat_id))
+            skills = ms.skill_list(self._scope_for_chat_id(chat_id))
             blob = json.dumps(skills, indent=2, default=str)
             for chunk in [blob[i:i+3900] for i in range(0, len(blob), 3900)]:
                 self._send_message(chat_id, chunk)
@@ -646,7 +674,7 @@ class TelegramBot:
             except ValueError:
                 self._send_message(chat_id, "Usage: /improve [list|search <q>|edit <id>|delete <id>|export]")
                 return
-            s = ms.skill_get(sid)
+            s = ms.skill_get(sid, scope=self._scope_for_chat_id(chat_id))
             if not s:
                 self._send_message(chat_id, f"Skill {sid} not found.")
                 return
@@ -936,7 +964,7 @@ class TelegramBot:
                 procedure=skill.get("procedure", ""),
                 failure_pattern=skill.get("failure_pattern", ""),
                 tags=[],
-                scope=str(chat_id),
+                scope=self._scope_for_chat_id(chat_id),
             )
             if r.get("error"):
                 self._send_message(chat_id, f"Failed to save: {r['error']}")
@@ -973,7 +1001,7 @@ class TelegramBot:
             if not ms:
                 self._send_message(chat_id, "Memory not available.")
                 return
-            s = ms.skill_get(sid)
+            s = ms.skill_get(sid, scope=self._scope_for_chat_id(chat_id))
             if not s:
                 self._send_message(chat_id, f"Skill {sid} not found.")
                 return
@@ -993,18 +1021,18 @@ class TelegramBot:
                 self._send_message(chat_id, "Memory not available.")
                 return
             # Toggle via a fact entry; newest exact flag wins
-            current = ms.search("auto_learn", str(chat_id), 20)
+            current = ms.search("auto_learn", self._scope_for_chat_id(chat_id), 20)
             exact = [c for c in current if c["content"].strip().lower() in ("auto_learn=true", "auto_learn=false")]
             is_on = False
             if exact:
                 latest = max(exact, key=lambda c: c.get("id", 0))
                 is_on = latest["content"].strip().lower() == "auto_learn=true"
             if is_on:
-                ms.add("auto_learn=false", str(chat_id))
+                ms.add("auto_learn=false", self._scope_for_chat_id(chat_id))
                 logger.info("autolearn toggled OFF chat_id=%s", chat_id)
                 self._send_message(chat_id, "⚙️ Auto-learn turned OFF.")
             else:
-                ms.add("auto_learn=true", str(chat_id))
+                ms.add("auto_learn=true", self._scope_for_chat_id(chat_id))
                 logger.info("autolearn toggled ON chat_id=%s", chat_id)
                 self._send_message(chat_id, "⚙️ Auto-learn turned ON.")
         elif data.startswith("ac:skill_forget_inactive"):
@@ -1012,11 +1040,11 @@ class TelegramBot:
             if not ms:
                 self._send_message(chat_id, "Memory not available.")
                 return
-            skills = ms.skill_list(str(chat_id))
+            skills = ms.skill_list(self._scope_for_chat_id(chat_id))
             removed = 0
             for s in skills:
                 if s["status"] == "inactive":
-                    ms.skill_remove(s["id"])
+                    ms.skill_remove(s["id"], scope=self._scope_for_chat_id(chat_id))
                     removed += 1
             self._send_message(chat_id, f"Removed {removed} inactive skills.")
         elif data.startswith("ac:jira_run:"):
@@ -1330,7 +1358,7 @@ async def _action_memory_view(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory system not available.")
         return
-    s = ms.status()
+    s = ms.status(scope=bot._scope_for_chat_id(chat_id))
     count = s.get("fact_count", 0)
     if count == 0:
         bot._send_message(chat_id, "Memory\n\nNo facts stored yet. Facts are auto-extracted during conversations.")
@@ -1351,7 +1379,7 @@ async def _action_memory_status(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    s = ms.status()
+    s = ms.status(scope=bot._scope_for_chat_id(chat_id))
     bot._send_message(chat_id, "Memory Status\n\nFacts: " + str(s["fact_count"]) + "\nAvg trust: " + str(round(s.get("avg_trust", 0), 2)) + "\nAuto-extract: " + str(bot.bridge.memory_enabled if bot.bridge else "?"))
 
 
@@ -1369,7 +1397,7 @@ async def _action_memory_cleanup(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    n = ms.cleanup_low_trust()
+    n = ms.cleanup_low_trust(scope=bot._scope_for_chat_id(chat_id))
     bot._send_message(chat_id, "Cleanup complete. Removed " + str(n) + " low-trust facts.")
 
 
@@ -1378,7 +1406,7 @@ async def _action_chat_summarize(bot: TelegramBot, chat_id: int) -> None:
         bot._send_message(chat_id, "Bridge not available.")
         return
     try:
-        response = await asyncio.to_thread(bot.bridge_chat, "Summarize the conversation so far in 3-4 bullet points.", [], str(chat_id))
+        response = await asyncio.to_thread(bot.bridge_chat, "Summarize the conversation so far in 3-4 bullet points.", [], bot._scope_for_chat_id(chat_id))
         bot._send_message(chat_id, "Summary\n\n" + response)
     except Exception as e:
         bot._send_message(chat_id, "Summary failed: " + str(e)[:200])
@@ -1471,18 +1499,21 @@ def _split_tts_text(text: str, max_chars: int = 1200) -> list[str]:
 
 async def _action_tts_toggle(bot: TelegramBot, chat_id: int) -> None:
     """Toggle TTS on/off for this chat. Persists to memory_store."""
-    currently_enabled = chat_id in bot._tts_chats
+    scope = bot._scope_for_chat_id(chat_id)
+    currently_enabled = chat_id in bot._tts_chats or scope in bot._tts_scopes
     if currently_enabled:
         bot._tts_chats.discard(chat_id)
+        bot._tts_scopes.discard(scope)
         bot._send_message(chat_id, "🔇 TTS turned OFF. Text replies will not be spoken.")
     else:
         bot._tts_chats.add(chat_id)
+        bot._tts_scopes.add(scope)
         bot._send_message(chat_id, "🔊 TTS turned ON. Text replies will also arrive as voice.")
     # Persist
     ms = bot.bridge.memory_store if bot.bridge else None
     if ms:
         state = "false" if currently_enabled else "true"
-        ms.add(f"tts_enabled={state}", str(chat_id))
+        ms.add(f"tts_enabled={state}", bot._scope_for_chat_id(chat_id))
 
 
 async def _action_tts_model_switch(bot: TelegramBot, chat_id: int, model: str) -> None:
@@ -1491,7 +1522,7 @@ async def _action_tts_model_switch(bot: TelegramBot, chat_id: int, model: str) -
     bot._send_message(chat_id, f"🎤 TTS model switched to {model}")
     ms = bot.bridge.memory_store if bot.bridge else None
     if ms:
-        ms.add(f"tts_model={model}", str(chat_id))
+        ms.add(f"tts_model={model}", bot._scope_for_chat_id(chat_id))
     await bot._show_menu(chat_id, "tts_model")
 
 
@@ -1573,7 +1604,7 @@ async def _action_schedule_remove_by_id(bot: TelegramBot, chat_id: int, job_id: 
     if not bot.scheduler:
         bot._send_message(chat_id, "Scheduler not available.")
         return
-    r = bot.scheduler.remove_job(job_id)
+    r = bot.scheduler.remove_job(job_id, chat_id=chat_id)
     if "error" in r:
         bot._send_message(chat_id, "Failed: " + r["error"])
     else:
@@ -1584,7 +1615,7 @@ async def _action_schedule_pause_by_id(bot: TelegramBot, chat_id: int, job_id: s
     if not bot.scheduler:
         bot._send_message(chat_id, "Scheduler not available.")
         return
-    r = bot.scheduler.pause_job(job_id)
+    r = bot.scheduler.pause_job(job_id, chat_id=chat_id)
     if "error" in r:
         bot._send_message(chat_id, "Failed: " + r["error"])
     else:
@@ -1595,7 +1626,7 @@ async def _action_schedule_resume_by_id(bot: TelegramBot, chat_id: int, job_id: 
     if not bot.scheduler:
         bot._send_message(chat_id, "Scheduler not available.")
         return
-    r = bot.scheduler.resume_job(job_id)
+    r = bot.scheduler.resume_job(job_id, chat_id=chat_id)
     if "error" in r:
         bot._send_message(chat_id, "Failed: " + r["error"])
     else:
@@ -1607,7 +1638,7 @@ async def _action_schedule_run_by_id(bot: TelegramBot, chat_id: int, job_id: str
     if not bot.scheduler:
         bot._send_message(chat_id, "Scheduler not available.")
         return
-    r = bot.scheduler.run_now(job_id)
+    r = bot.scheduler.run_now(job_id, chat_id=chat_id)
     if "error" in r:
         bot._send_message(chat_id, "Failed: " + r["error"])
     else:
@@ -1622,7 +1653,7 @@ async def _action_skill_list(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    skills = ms.skill_list(str(chat_id))
+    skills = ms.skill_list(self._scope_for_chat_id(chat_id))
     if not skills:
         bot._send_message(chat_id, "No skills saved yet.")
         return
@@ -1647,17 +1678,17 @@ async def _action_skill_autolearn_toggle(bot: TelegramBot, chat_id: int) -> None
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    current = ms.search("auto_learn", str(chat_id), 20)
+    current = ms.search("auto_learn", self._scope_for_chat_id(chat_id), 20)
     exact = [c for c in current if c["content"].strip().lower() in ("auto_learn=true", "auto_learn=false")]
     is_on = False
     if exact:
         latest = max(exact, key=lambda c: c.get("id", 0))
         is_on = latest["content"].strip().lower() == "auto_learn=true"
     if is_on:
-        ms.add("auto_learn=false", str(chat_id))
+        ms.add("auto_learn=false", self._scope_for_chat_id(chat_id))
         bot._send_message(chat_id, "⚙️ Auto-learn turned OFF.")
     else:
-        ms.add("auto_learn=true", str(chat_id))
+        ms.add("auto_learn=true", self._scope_for_chat_id(chat_id))
         bot._send_message(chat_id, "⚙️ Auto-learn turned ON.")
 
 
@@ -1666,11 +1697,11 @@ async def _action_skill_forget_inactive(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    skills = ms.skill_list(str(chat_id))
+    skills = ms.skill_list(self._scope_for_chat_id(chat_id))
     removed = 0
     for s in skills:
         if s["status"] == "inactive":
-            ms.skill_remove(s["id"])
+            ms.skill_remove(s["id"], scope=self._scope_for_chat_id(chat_id))
             removed += 1
     bot._send_message(chat_id, f"Removed {removed} inactive skills.")
 
@@ -2011,7 +2042,7 @@ async def _action_jira_run(bot: TelegramBot, chat_id: int, issue_key: str) -> No
 
 async def _action_pdf_stop(bot: TelegramBot, chat_id: int) -> None:
     """Exit PDF Q&A mode for this chat, dropping the stored document context."""
-    if bot._pdf_context.pop(str(chat_id), None):
+    if bot._pdf_context.pop(bot._scope_for_chat_id(chat_id), None):
         bot._send_message(chat_id, "✅ Left PDF Q&A mode. You're back to normal chat.")
     else:
         bot._send_message(chat_id, "No active PDF Q&A session.")

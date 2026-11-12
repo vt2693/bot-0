@@ -629,7 +629,7 @@ class HermesBridge:
             if injected_skills and re.search(r"skill|procedure|steps|here.?s how", response or "", re.I):
                 for s in injected_skills:
                     try:
-                        self.memory_store.skill_record_usage(s["id"])
+                        self.memory_store.skill_record_usage(s["id"], scope=scope)
                     except Exception:
                         pass
             if self._auto_learn_enabled(scope):

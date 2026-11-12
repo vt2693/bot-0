@@ -371,8 +371,8 @@ class SchedulerEngine:
         else:
             next_run = now + interval_minutes * 60
         self._conn.execute(
-            "INSERT INTO scheduled_jobs(id,chat_id,prompt,interval_minutes,mode,status,created_at,next_run_at,scope) VALUES(?,?,?,?,?,'active',?,?,'sched_global')",
-            (job_id, chat_id, prompt, interval_minutes, mode, now, next_run),
+            "INSERT INTO scheduled_jobs(id,chat_id,prompt,interval_minutes,mode,status,created_at,next_run_at,scope) VALUES(?,?,?,?,?,'active',?, ?, ?)",
+            (job_id, chat_id, prompt, interval_minutes, mode, now, next_run, str(chat_id)),
         )
         self._conn.commit()
         self._memory_store.sync()
@@ -380,35 +380,53 @@ class SchedulerEngine:
         logger.info("Job %s created: chat %s, mode=%s", job_id[:8], chat_id, mode)
         return {"success": True, "id": job_id, "next_run_at": next_run}
 
-    def remove_job(self, job_id: str) -> dict:
-        cur = self._conn.execute("DELETE FROM scheduled_jobs WHERE id=?", (job_id,))
-        self._conn.commit()
-        if cur.rowcount:
-            self._memory_store.sync()
-            self._clear_timer(job_id)
-            return {"success": True}
-        return {"error": "Job not found"}
-
-    def pause_job(self, job_id: str) -> dict:
+    def remove_job(self, job_id: str, chat_id: int | None = None) -> dict:
+        if chat_id is None:
+            return {"error": "Job owner chat_id required"}
         cur = self._conn.execute(
-            "UPDATE scheduled_jobs SET status='paused' WHERE id=? AND status='active'",
-            (job_id,),
+            "DELETE FROM scheduled_jobs WHERE id=? AND chat_id=?", (job_id, chat_id)
         )
         self._conn.commit()
         if cur.rowcount:
             self._memory_store.sync()
             self._clear_timer(job_id)
             return {"success": True}
+        return {"error": "Job not found or not owned by chat"}
+
+    def pause_job(self, job_id: str, chat_id: int | None = None) -> dict:
+        if chat_id is None:
+            return {"error": "Job owner chat_id required"}
+        cur = self._conn.execute(
+            "UPDATE scheduled_jobs SET status='paused' WHERE id=? AND chat_id=? AND status='active'",
+            (job_id, chat_id),
+        )
+        self._conn.commit()
+        if cur.rowcount:
+            self._memory_store.sync()
+            self._clear_timer(job_id)
+            return {"success": True}
+        exists = self._conn.execute(
+            "SELECT 1 FROM scheduled_jobs WHERE id=?", (job_id,)
+        ).fetchone()
+        if exists:
+            return {"error": "Job not found or not owned by chat"}
         return {"error": "Job not found or already paused"}
 
-    def resume_job(self, job_id: str) -> dict:
+    def resume_job(self, job_id: str, chat_id: int | None = None) -> dict:
+        if chat_id is None:
+            return {"error": "Job owner chat_id required"}
         now = time.time()
         cur = self._conn.execute(
-            "SELECT interval_minutes FROM scheduled_jobs WHERE id=? AND status='paused'",
-            (job_id,),
+            "SELECT interval_minutes FROM scheduled_jobs WHERE id=? AND chat_id=? AND status='paused'",
+            (job_id, chat_id),
         )
         row = cur.fetchone()
         if not row:
+            exists = self._conn.execute(
+                "SELECT 1 FROM scheduled_jobs WHERE id=?", (job_id,)
+            ).fetchone()
+            if exists:
+                return {"error": "Job not found or not owned by chat"}
             return {"error": "Job not found or not paused"}
         next_run = now + row["interval_minutes"] * 60
         self._conn.execute(
@@ -434,15 +452,17 @@ class SchedulerEngine:
         row = cur.fetchone()
         return self._row_to_dict(row) if row else None
 
-    def run_now(self, job_id: str) -> dict:
-        """Fire a job immediately without disturbing its schedule.
+    def run_now(self, job_id: str, chat_id: int | None = None) -> dict:
+        """Fire an owned job immediately without disturbing its schedule.
 
         Returns {'success': True} or {'error': ...}. The result is delivered
         asynchronously to the job's chat by the spawned _fire_job task.
         """
+        if chat_id is None:
+            return {"error": "Job owner chat_id required"}
         job = self.get_job(job_id)
-        if not job:
-            return {"error": "Job not found"}
+        if not job or job["chat_id"] != chat_id:
+            return {"error": "Job not found or not owned by chat"}
         if not self._spawn_job(job, manual=True):
             return {"error": "Job already running"}
         return {"success": True}

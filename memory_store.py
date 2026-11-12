@@ -90,6 +90,10 @@ class MemoryStore:
             self._conn.execute("ALTER TABLE scheduled_jobs ADD COLUMN mode TEXT DEFAULT 'interval'")
         except sqlite3.OperationalError:
             pass
+        # Migrate legacy scheduler rows to per-chat ownership scope.
+        self._conn.execute(
+            "UPDATE scheduled_jobs SET scope=CAST(chat_id AS TEXT) WHERE scope='sched_global'"
+        )
         self._conn.commit()
         self._ready = True
 
@@ -275,27 +279,44 @@ class MemoryStore:
             self._conn.commit()
             logger.info("facts cleared scope=%s rows=%s", scope, cur.rowcount)
 
-    def cleanup_low_trust(self) -> int:
+    def cleanup_low_trust(self, scope: str) -> int:
         with self._lock:
-            cur = self._conn.execute("DELETE FROM facts WHERE trust_score < 0.2")
+            cur = self._conn.execute(
+                "DELETE FROM facts WHERE scope=? AND trust_score < 0.2", (scope,)
+            )
             self._conn.commit()
             removed = cur.rowcount
         logger.info("cleanup_low_trust removed=%s", removed)
         return removed
 
-    def stats(self) -> dict:
+    def stats(self, scope: str) -> dict:
         with self._lock:
-            total = self._conn.execute("SELECT COUNT(*) FROM facts").fetchone()[0]
-            avg = self._conn.execute("SELECT COALESCE(AVG(trust_score),0) FROM facts").fetchone()[0]
-            top = self._conn.execute("SELECT * FROM facts ORDER BY created_at DESC LIMIT 10").fetchall()
-            skill_count = self._conn.execute("SELECT COUNT(*) FROM skills").fetchone()[0]
-            active_skills = self._conn.execute("SELECT COUNT(*) FROM skills WHERE status='active'").fetchone()[0]
-            unverified_skills = self._conn.execute("SELECT COUNT(*) FROM skills WHERE status='unverified'").fetchone()[0]
-            inactive_skills = self._conn.execute("SELECT COUNT(*) FROM skills WHERE status='inactive'").fetchone()[0]
+            total = self._conn.execute(
+                "SELECT COUNT(*) FROM facts WHERE scope=?", (scope,)
+            ).fetchone()[0]
+            avg = self._conn.execute(
+                "SELECT COALESCE(AVG(trust_score),0) FROM facts WHERE scope=?", (scope,)
+            ).fetchone()[0]
+            top = self._conn.execute(
+                "SELECT * FROM facts WHERE scope=? ORDER BY created_at DESC LIMIT 10",
+                (scope,),
+            ).fetchall()
+            skill_count = self._conn.execute(
+                "SELECT COUNT(*) FROM skills WHERE scope=?", (scope,)
+            ).fetchone()[0]
+            active_skills = self._conn.execute(
+                "SELECT COUNT(*) FROM skills WHERE scope=? AND status='active'", (scope,)
+            ).fetchone()[0]
+            unverified_skills = self._conn.execute(
+                "SELECT COUNT(*) FROM skills WHERE scope=? AND status='unverified'", (scope,)
+            ).fetchone()[0]
+            inactive_skills = self._conn.execute(
+                "SELECT COUNT(*) FROM skills WHERE scope=? AND status='inactive'", (scope,)
+            ).fetchone()[0]
         return {"total_facts": total, "avg_trust": avg, "top_facts": [self._row(r) for r in top], "skill_count": skill_count, "active_skills": active_skills, "unverified_skills": unverified_skills, "inactive_skills": inactive_skills}
 
-    def status(self) -> dict:
-        s = self.stats()
+    def status(self, scope: str) -> dict:
+        s = self.stats(scope)
         return {"ready": self.ready, "db_path": self.db_path, "fact_count": s["total_facts"], "avg_trust": s["avg_trust"], "top_facts": s["top_facts"], "skill_count": s["skill_count"], "active_skills": s["active_skills"], "unverified_skills": s["unverified_skills"], "inactive_skills": s["inactive_skills"]}
 
     def close(self) -> None:
@@ -336,7 +357,8 @@ class MemoryStore:
         now = time.time()
         with self._lock:
             existing = self._conn.execute(
-                "SELECT id FROM skills WHERE LOWER(TRIM(title))=?", (norm,)
+                "SELECT id FROM skills WHERE LOWER(TRIM(title))=? AND scope=?",
+                (norm, scope),
             ).fetchone()
             if existing:
                 self._conn.execute(
@@ -399,10 +421,10 @@ class MemoryStore:
         logger.info("skill list scope=%s count=%s", scope, len(rows))
         return [self._skill_row(r) for r in rows]
 
-    def skill_get(self, skill_id: int) -> dict | None:
+    def skill_get(self, skill_id: int, scope: str) -> dict | None:
         with self._lock:
             row = self._conn.execute(
-                "SELECT * FROM skills WHERE id=?", (skill_id,)
+                "SELECT * FROM skills WHERE id=? AND scope=?", (skill_id, scope)
             ).fetchone()
         if row is None:
             logger.debug("skill get id=%s not found", skill_id)
@@ -410,7 +432,7 @@ class MemoryStore:
         logger.debug("skill get id=%s title=%r", skill_id, row["title"])
         return self._skill_row(row)
 
-    def skill_update(self, skill_id: int, **fields) -> bool:
+    def skill_update(self, skill_id: int, scope: str, **fields) -> bool:
         allowed = {"title", "problem", "procedure", "failure_pattern",
                    "tags", "status"}
         updates = {k: v for k, v in fields.items() if k in allowed}
@@ -423,9 +445,11 @@ class MemoryStore:
         updates["updated_at"] = now
         sets = ", ".join(f"{k}=?" for k in updates)
         vals = list(updates.values()) + [skill_id]
+        where = "id=? AND scope=?"
+        vals.append(scope)
         with self._lock:
             self._conn.execute(
-                f"UPDATE skills SET {sets} WHERE id=?", vals
+                f"UPDATE skills SET {sets} WHERE {where}", vals
             )
             self._conn.commit()
             rc = self._conn.execute(
@@ -434,9 +458,11 @@ class MemoryStore:
         logger.info("skill update id=%s fields=%s updated=%s", skill_id, list(updates.keys()), rc > 0)
         return rc > 0
 
-    def skill_remove(self, skill_id: int) -> bool:
+    def skill_remove(self, skill_id: int, scope: str) -> bool:
         with self._lock:
-            self._conn.execute("DELETE FROM skills WHERE id=?", (skill_id,))
+            self._conn.execute(
+                "DELETE FROM skills WHERE id=? AND scope=?", (skill_id, scope)
+            )
             self._conn.commit()
             rc = self._conn.execute("SELECT changes()").fetchone()[0]
         logger.info("skill remove id=%s removed=%s", skill_id, rc > 0)
@@ -468,15 +494,15 @@ class MemoryStore:
         logger.info("skill inject query=%r scope=%s limit=%s injected=%s", query, scope, limit, len(skills))
         return skills
 
-    def skill_record_usage(self, skill_id: int, success: bool = True) -> bool:
+    def skill_record_usage(self, skill_id: int, scope: str, success: bool = True) -> bool:
         with self._lock:
             # adjust confidence
             delta = 0.05 if success else -0.05
             self._conn.execute(
                 "UPDATE skills SET access_count=access_count+1, "
                 "status='active', confidence_score = MAX(0, MIN(1, confidence_score + ?)), "
-                "updated_at=? WHERE id=?",
-                (delta, time.time(), skill_id),
+                "updated_at=? WHERE id=? AND scope=?",
+                (delta, time.time(), skill_id, scope),
             )
             self._conn.commit()
             rc = self._conn.execute(
@@ -485,13 +511,13 @@ class MemoryStore:
         logger.info("skill usage recorded id=%s accessed=%s success=%s", skill_id, rc > 0, success)
         return rc > 0
 
-    def skill_feedback(self, skill_id: int, feedback: str) -> bool:
+    def skill_feedback(self, skill_id: int, scope: str, feedback: str) -> bool:
         """Adjust skill confidence based on feedback: +0.05 for positive, -0.10 for negative."""
         delta = 0.05 if "good" in (feedback or "").lower() or "+" in (feedback or "") else -0.10
         with self._lock:
             cur = self._conn.execute(
-                "UPDATE skills SET confidence_score = MAX(0, MIN(1, confidence_score + ?)), updated_at=? WHERE id=?",
-                (delta, time.time(), skill_id),
+                "UPDATE skills SET confidence_score = MAX(0, MIN(1, confidence_score + ?)), updated_at=? WHERE id=? AND scope=?",
+                (delta, time.time(), skill_id, scope),
             )
             self._conn.commit()
             updated = cur.rowcount > 0

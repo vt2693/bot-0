@@ -19,6 +19,21 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 - **Android phone (Termux)** — primary deployment target
 - Local development machine (Windows/Linux/macOS) for testing
 
+## Final Verified Deployment State
+
+Verified 2026-11-12:
+
+- Source of truth: `main` on GitHub; local checkout and `origin/main` synchronized at commit `9f3cf75`.
+- Termux deployment: `~/hermes-bot`, managed by `tmux` session `hermes` and `start_android.sh` auto-restart loop.
+- Remote administration: Ed25519 SSH key authentication on Termux port `8022`; password-free login verified.
+- Runtime: `android_bot.py` running; Telegram `getMe` authentication passed; `SchedulerEngine` polling every 30 seconds; Router-0 provider returned successful test responses.
+- Access control: `TELEGRAM_ALLOWED_USERS` contains numeric Telegram user IDs separated by spaces; text and callback authorization use sender IDs, not usernames. Callback sender checks run before acknowledgement or action routing.
+- Memory scope policy: private chats use `user:<sender_id>`; group and supergroup chats use `chat:<chat_id>`. Updates without valid sender/chat identity are rejected.
+- Scheduler ownership: jobs use per-chat scope; remove, pause, resume, and run-now require owning `chat_id`. Legacy `sched_global` rows migrate to the stored chat scope at startup.
+- Scheduler reliability: failed provider calls use failure-time retry backoff; no new `UnboundLocalError` after restart.
+- Health check: inspect `tmux ls`, Python process, and recent `Authenticated`, `Bot started`, `Scheduler started`, `Outbox drained`, and error log lines.
+- Deployment safety: preserve Termux local work with a backup branch and `git stash -u` before merging `origin/main`; do not use `git reset --hard` without explicit approval.
+
 ### Non-Goals
 
 - Remote memory persistence — SQLite-only, no cloud sync
@@ -60,7 +75,7 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 
 **Key insight:** Android bot uses **direct** Telegram API calls. `android_bot.py` long-polls `getUpdates` for inbound messages and calls `api.telegram.org` directly for outbound via `_send_direct()`. No webhook.
 
-PDFs sent to the chat are auto-analyzed: `_handle_document()` downloads the file, extracts text via `pdf_doc.py` (pypdf), sends a summary, then loads the text into per-chat `_pdf_context` so follow-up messages become PDF Q&A. `/pdf_stop` (or the inline "Exit PDF Q&A" button) clears that context and returns to normal chat.
+PDFs sent to the chat are auto-analyzed: `_handle_document()` downloads the file, extracts text via `pdf_doc.py` (pypdf), sends a summary, then loads the text into scope-keyed `_pdf_context` so follow-up messages become PDF Q&A. Private-chat context uses `user:<sender_id>`; group context uses `chat:<chat_id>`. `/pdf_stop` (or the inline "Exit PDF Q&A" button) clears that context and returns to normal chat.
 
 Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 STT (groq/whisper-large-v3). TTS: text → `synthesize()` (MP3) → `to_opus()` (OggOpus) → `sendVoice`.
 
@@ -110,7 +125,7 @@ Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-pol
 Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice process needed.
 
 ### Text-to-Speech (TTS)
-Confidence: 100% — Toggleable per-user from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` per chat_id. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` per chat_id with default `edge-tts/en-US-AndrewMultilingualNeural`. Menu shows ✅ active and ⭐ default indicators. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
+Confidence: 100% — Toggleable per resolved Telegram scope from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` under `user:<sender_id>` for private chats or `chat:<chat_id>` for groups. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` under same scope with default `edge-tts/en-US-AndrewMultilingualNeural`. Runtime and startup restore use scope keys, preventing cross-user/group leakage. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
 
 ### MemoryStore (LLM-expanded LIKE + SQLite)
 Confidence: 100% — Fact search via keyword LIKE on raw message words **plus LLM query-expansion terms** (`get_relevant(extra_terms=...)`; `_expand_query` runs a cheap temp-0 `chat()` call per message, degrades to raw keywords on any failure). **Fast-path optimization:** trivial chat messages (≤10 chars and ≤2 words, no scheduling/memory/tool keywords) skip query expansion entirely to reduce latency. Recent-facts fallback on empty hits. No FTS5, no HRR, no numpy, no vector search. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync. Confidence scoring (trust_score for facts, confidence_score for skills) is evaluated by the LLM at insertion time and used in retrieval ordering (confidence DESC, access_count DESC, created_at DESC).
@@ -307,14 +322,14 @@ Main asyncio entry point. Key sections:
 - **Outbox:** Thread-safe list. Methods write `{"_method": "sendMessage", ...}`. `drain_outbox()` returns and clears.
 - **Inline menus:** `MENUS` dict with 11 menus. Callback routing via `mn:*` (menu nav), `ac:*` (action handlers).
 - **Commands (8):** `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`.
-- **PDF auto-analyze:** Documents with a PDF mime/name trigger `_handle_document()` — download → pypdf text extraction → summary via bridge → per-chat `_pdf_context`. Subsequent non-command messages route through PDF Q&A (strict "answer only from the document" system prompt). `/pdf_stop` or the inline **❌ Exit PDF Q&A** button (`ac:pdf_stop`) clears the context; `/start` also clears it.
+- **PDF auto-analyze:** Documents with a PDF mime/name trigger `_handle_document()` — download → pypdf text extraction → summary via bridge → scope-keyed `_pdf_context`. Subsequent non-command messages route through PDF Q&A (strict "answer only from the document" system prompt). `/pdf_stop` or the inline **❌ Exit PDF Q&A** button (`ac:pdf_stop`) clears the resolved scope context; `/start` also clears the chat's context.
 - **Skills:** `/improve` — list/search/detail/edit/delete skills. Auto-detect via `_detect_skill()` + Save/Edit/Discard confirmation.
 - **Schedule — two entry paths to the same scheduler pipeline:**
   - **Manual:** `/schedule add <text>` routes to `parse_schedule()`. Subcommands: `add`, `list`, `remove <id>`, `pause <id>`, `resume <id>`; bare `/schedule` opens the Schedule menu.
   - **Auto-detect:** Plain chat messages matching an action verb + time expression are intercepted in `_handle_message()` before LLM processing. Verb group: `check|scan|summarize|monitor|watch|fetch|poll|read|get|review|report|remind`. Time patterns: `every N`, `in N min/hour/day/sec`, `at HH:MM am/pm`. Non-matches fall through to normal chat.
 - **NL→JSON parsing** in `parse_schedule()`: constrained LLM call with `system_override=` (clean prompt, no personality/memory/skills injected), 3-attempt retry loop with error feedback, epoch validation, `temperature=0`. Returns one of three shapes: `{"interval_minutes": N, "prompt": "..."}`, `{"absolute_epoch": UnixTS, "prompt": "..."}`, or `{"error": "reason"}`. Full CRUD via inline buttons, plus **⚡ Run Now** (immediate manual run — updates `last_run`, keeps `next_run_at` intact). Supports interval, absolute-time (Run Once / Daily), and once/daily modes.
 - **Jira:** `mn:jira` → `ac:jira_open_tasks` → `COMPOSIO_REMOTE_WORKBENCH` with `run_composio_tool("JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET", ...)`. Open tasks filtered to `status IN ("To Do","In Progress")`. Subtask rows: `[🔵 key: summary] [▶️ Run]`. Tapping subtask left button (`ac:jira_show:*`) fetches full issue via `JIRA_GET_ISSUE` and renders description as plain text (ADF → text converter via `json.loads` + `ast.literal_eval` fallback). `ac:jira_run:*` sends description as LLM prompt with `_skill_detected` JSON unwrap. Subtask list filtered to open statuses only (no Done items).
-- **TTS:** Per-user toggle via `ac:tts_toggle`. `_tts_chats` set tracks enabled chats. State persisted to MemoryStore (`tts_enabled=true|false`). After each text response, background task fires: `_send_tts_async()` → `tg_tts.synthesize()` (MP3) → `tg_tts.to_opus()` (OggOpus) → `_send_voice_direct()` (httpx multipart POST to api.telegram.org). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
+- **TTS:** Scope-aware toggle via `ac:tts_toggle`. `_tts_chats` and `_tts_scopes` track runtime state; MemoryStore persists `tts_enabled=true|false` under resolved scope. Models use the same scope key. After each text response, background task fires: `_send_tts_async()` → `tg_tts.synthesize()` (MP3) → `tg_tts.to_opus()` (OggOpus) → `_send_voice_direct()` (httpx multipart POST to api.telegram.org). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
 
 ### Step 7: Memory Store (memory_store.py)
 
@@ -322,7 +337,7 @@ SQLite-backed fact + skill store. SQLite-only on Android.
 
 - **Facts:** `facts` table with LIKE search, trust_score (+0.05/-0.10), cleanup_low_trust (< 0.2). Retrieval is keyword `LIKE` on raw message words plus LLM-expanded terms (`get_relevant(extra_terms=...)`, word cap 10); recent-facts fallback on empty hits.
 - **Skills:** `skills` table with title/problem/procedure/failure_pattern/status lifecycle (unverified → active → inactive).
-- **Scheduled jobs:** `scheduled_jobs` table co-located for SchedulerEngine.
+- **Scheduled jobs:** `scheduled_jobs` table co-located for SchedulerEngine. New rows use per-chat ownership scope; legacy `sched_global` rows migrate from stored `chat_id` at startup. CRUD controls require owning `chat_id`.
 
 ### Step 8: Scheduler (scheduler.py)
 
@@ -471,7 +486,8 @@ start_android.sh
 | **Auto-learn** | Detect reusable procedures via heuristic → LLM extraction → Save/Edit/Discard |
 | **Router-0** | LLM proxy at configurable `ROUTER_0_BASE_URL`; TTS/STT at configurable `ROUTER_0_AUDIO_URL`, both OpenAI-compatible |
 | **Telegram offset** | In-memory `update_id + 1` tracking; on crash ~1 batch may be lost |
-| **TTS toggle** | Per-user TTS enable/disable state persisted in MemoryStore as `tts_enabled=true\|false` |
+| **Memory scope** | Private Telegram chats use `user:<sender_id>`; groups use `chat:<chat_id>` |
+| **TTS toggle** | Scope-aware TTS enable/disable state persisted in MemoryStore as `tts_enabled=true\|false` |
 
 ## Deploy Commands
 
