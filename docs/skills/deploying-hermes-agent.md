@@ -23,9 +23,9 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 
 Verified 2026-11-12:
 
-- Source of truth: `main` on GitHub; local checkout and `origin/main` synchronized at commit `9f3cf75`.
+- Source of truth: `main` on GitHub; local checkout and `origin/main` synchronized at commit `89047ad`.
 - Termux deployment: `~/hermes-bot`, managed by `tmux` session `hermes` and `start_android.sh` auto-restart loop.
-- Remote administration: Ed25519 SSH key authentication on Termux port `8022`; password-free login verified.
+- Remote administration: Ed25519 SSH key authentication on Termux port `8022`; password-free login verified. Termux GitHub access uses the SSH remote `git@github.com:vt2693/bot-0.git`; verify with `ssh -T git@github.com` before pushing.
 - Runtime: `android_bot.py` running; Telegram `getMe` authentication passed; `SchedulerEngine` polling every 30 seconds; Router-0 provider returned successful test responses.
 - Access control: `TELEGRAM_ALLOWED_USERS` contains numeric Telegram user IDs separated by spaces; text and callback authorization use sender IDs, not usernames. Callback sender checks run before acknowledgement or action routing.
 - Memory scope policy: private chats use `user:<sender_id>`; group and supergroup chats use `chat:<chat_id>`. Updates without valid sender/chat identity are rejected.
@@ -213,7 +213,7 @@ bash start_android.sh   # starts in tmux
 
 ### SSH Key Setup (recommended for remote deployment)
 
-Use an Ed25519 key instead of embedding the Termux password in scripts or command arguments.
+Use an Ed25519 key instead of embedding the Termux password in scripts or command arguments. Two SSH trust paths exist: workstation → Termux for administration, and Termux → GitHub for Git pushes. Configure both separately.
 
 On the deployment machine, create a key if one does not exist:
 
@@ -254,6 +254,33 @@ ssh hermes-termux
 ```
 
 Keep `~/.ssh/id_ed25519` private. Share only `~/.ssh/id_ed25519.pub`. Rotate the Termux password if it was exposed in chat, shell history, process arguments, or logs.
+
+#### Termux → GitHub Git SSH
+
+On Termux, configure repository remote and trust GitHub host key:
+
+```bash
+cd ~/hermes-bot
+git remote set-url origin git@github.com:vt2693/bot-0.git
+ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+ssh -T git@github.com    # expect authentication success; GitHub provides no shell
+```
+
+If authentication fails, create an Ed25519 key, add only its `.pub` contents to GitHub SSH keys, then retry `ssh -T git@github.com`. Never put private key text, tokens, or passwords in commands or docs.
+
+Push a known commit explicitly:
+
+```bash
+git push origin <commit>:refs/heads/main
+```
+
+Verify remote state after push:
+
+```bash
+git fetch origin main
+git log -1 --oneline origin/main
+git status --short --branch
+```
 
 ### Step 2: Setup Script (setup_android.sh)
 
