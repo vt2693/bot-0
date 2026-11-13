@@ -114,6 +114,41 @@ class TelegramIsolationCharacterizationTests(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn("Hidden", messages[0]["text"])
             store.close()
 
+    async def test_non_admin_cannot_add_global_fact(self):
+        store = MemoryStore(":memory:")
+        bot = TelegramBot("token", lambda *_args: "reply", bridge=SimpleNamespace(memory_store=store), allowed_users="101", admin_users="202")
+        bot._initialized = True
+        await bot.process_update({"update_id": 8, "message": {"from": {"id": 101}, "chat": {"id": 202, "type": "private"}, "text": "/global add fact secret"}})
+        self.assertEqual(store.search("secret", "global"), [])
+        store.close()
+
+    async def test_admin_global_fact_requires_confirmation(self):
+        store = MemoryStore(":memory:")
+        bot = TelegramBot("token", lambda *_args: "reply", bridge=SimpleNamespace(memory_store=store), allowed_users="202", admin_users="202")
+        bot._initialized = True
+        await bot.process_update({"update_id": 9, "message": {"from": {"id": 202}, "chat": {"id": 202, "type": "private"}, "text": "/global add fact shared"}})
+        self.assertEqual(store.search("shared", "global"), [])
+        messages = await bot.peek_outbox()
+        callback_data = messages[-1]["reply_markup"]["inline_keyboard"][0][0]["callback_data"]
+        await bot.process_update({"update_id": 10, "callback_query": {"id": "cb", "from": {"id": 202}, "message": {"chat": {"id": 202, "type": "private"}, "message_id": 1}, "data": callback_data}})
+        self.assertEqual(len(store.search("shared", "global")), 1)
+        store.close()
+
+    async def test_global_skill_actions_require_matching_admin_confirmation(self):
+        store = MemoryStore(":memory:")
+        skill_id = store.global_skill_add("Shared skill", "problem", "procedure")["id"]
+        bot = TelegramBot("token", lambda *_args: "reply", bridge=SimpleNamespace(memory_store=store), allowed_users="202 303", admin_users="202")
+        bot._initialized = True
+        await bot.process_update({"update_id": 11, "message": {"from": {"id": 202}, "chat": {"id": 202, "type": "private"}, "text": f"/global disable skill {skill_id}"}})
+        messages = await bot.peek_outbox()
+        callback_data = messages[-1]["reply_markup"]["inline_keyboard"][0][0]["callback_data"]
+        await bot.process_update({"update_id": 12, "callback_query": {"id": "cb1", "from": {"id": 303}, "message": {"chat": {"id": 202, "type": "private"}, "message_id": 1}, "data": callback_data}})
+        self.assertEqual(store.skill_get(skill_id, "global")["status"], "unverified")
+        bot._pending_skills[next(iter(bot._pending_skills))]["expires_at"] = 0
+        await bot.process_update({"update_id": 13, "callback_query": {"id": "cb2", "from": {"id": 202}, "message": {"chat": {"id": 202, "type": "private"}, "message_id": 1}, "data": callback_data}})
+        self.assertEqual(store.skill_get(skill_id, "global")["status"], "unverified")
+        store.close()
+
     async def test_callback_from_authorized_user_is_routed(self):
         bot = RecordingBot("token", lambda *_args: "reply", allowed_users="101")
         bot._initialized = True

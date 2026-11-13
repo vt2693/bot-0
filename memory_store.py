@@ -7,6 +7,7 @@ import threading
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+GLOBAL_SCOPE = "global"
 
 
 class MemoryStore:
@@ -138,7 +139,19 @@ class MemoryStore:
         logger.info("fact stored id=%s scope=%s confidence=%.2f", rowid, scope, confidence)
         return rowid
 
-    def search(self, query: str, scope: str | None = "global", limit: int = 5) -> list[dict]:
+    def _read_scopes(self, scope: str | None, include_global: bool) -> list[str] | None:
+        if scope is None:
+            return None
+        scopes = [scope]
+        if include_global and scope != GLOBAL_SCOPE:
+            scopes.append(GLOBAL_SCOPE)
+        return scopes
+
+    def search(self, query: str, scope: str | None = "global", limit: int = 5,
+               include_global: bool = False) -> list[dict]:
+        scopes = self._read_scopes(scope, include_global)
+        if scopes is not None and len(scopes) > 1:
+            return self.search_scopes(query, scopes, limit)
         q = f"%{(query or '').strip()}%"
         if not query:
             return self._recent_facts(scope, limit)
@@ -157,6 +170,25 @@ class MemoryStore:
         results = [self._row(r) for r in rows]
         logger.info("fact search query=%r scope=%s limit=%s hits=%s", query, scope, limit, len(results))
         return results
+
+    def search_scopes(self, query: str, scopes: list[str], limit: int = 5) -> list[dict]:
+        ordered = list(dict.fromkeys(s for s in scopes if s))
+        if not ordered or limit <= 0:
+            return []
+        rows: list[dict] = []
+        for scope in ordered:
+            rows.extend(self.search(query, scope, limit))
+        seen: set[str] = set()
+        result = []
+        for row in rows:
+            key = row["content"].strip().casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            result.append(row)
+            if len(result) >= limit:
+                break
+        return result
 
     def supersede_preference(self, scope: str, key: str, value: str,
                              content: str, metadata: dict) -> bool:
@@ -194,7 +226,13 @@ class MemoryStore:
         return True
 
     def get_preferences(self, scope: str = "global", limit: int = 10,
-                        max_chars: int = 2000) -> list[dict]:
+                        max_chars: int = 2000, include_global: bool = False) -> list[dict]:
+        """Return bounded explicit preferences, optionally with global fallback."""
+        if include_global and scope != GLOBAL_SCOPE:
+            rows = self.get_preferences(scope, limit=limit, max_chars=max_chars)
+            global_rows = self.get_preferences(GLOBAL_SCOPE, limit=limit, max_chars=max_chars)
+            seen = {r["preference_key"] for r in rows}
+            return rows + [r for r in global_rows if r["preference_key"] not in seen][:max(0, limit - len(rows))]
         """Return a bounded set of unambiguous, explicit scoped preferences."""
         if limit <= 0 or max_chars <= 0:
             return []
@@ -238,7 +276,10 @@ class MemoryStore:
         return [self._row(r) for r in rows]
 
     def get_relevant(self, query: str, scope: str = "global", limit: int = 5,
-                     extra_terms: list[str] | None = None) -> list[dict]:
+                     extra_terms: list[str] | None = None,
+                     include_global: bool = False) -> list[dict]:
+        if include_global and scope != GLOBAL_SCOPE:
+            return self.get_relevant_scopes(query, [scope, GLOBAL_SCOPE], limit, extra_terms)
         words = [w for w in (query or "").lower().split() if len(w) > 3]
         for t in (extra_terms or []):
             words.extend(w for w in t.lower().split() if len(w) > 3)
@@ -251,6 +292,23 @@ class MemoryStore:
             if r["id"] not in seen:
                 seen.add(r["id"]); out.append(r)
         return out[:limit] or self._recent_facts(scope, limit)
+
+    def get_relevant_scopes(self, query: str, scopes: list[str], limit: int = 5,
+                            extra_terms: list[str] | None = None) -> list[dict]:
+        words = [w for w in (query or "").lower().split() if len(w) > 3]
+        for term in extra_terms or []:
+            words.extend(w for w in term.lower().split() if len(w) > 3)
+        words = words[:25]
+        results = []
+        for word in words[:10]:
+            results.extend(self.search_scopes(word, scopes, limit))
+        seen, out = set(), []
+        for row in results:
+            key = row["content"].strip().casefold()
+            if key not in seen:
+                seen.add(key)
+                out.append(row)
+        return out[:limit] or self.search_scopes("", scopes, limit)
 
     def probe(self, entity: str, scope: str = "global") -> dict:
         return {"entity": entity, "results": self.search(entity, scope, 5)}
@@ -278,6 +336,33 @@ class MemoryStore:
                 cur = self._conn.execute("DELETE FROM facts")
             self._conn.commit()
             logger.info("facts cleared scope=%s rows=%s", scope, cur.rowcount)
+
+    def global_fact_list(self, limit: int = 100) -> list[dict]:
+        return self.search("", GLOBAL_SCOPE, max(0, min(limit, 1000)))
+
+    def global_fact_add(self, content: str, metadata: dict | None = None) -> int:
+        return self.add(content, scope=GLOBAL_SCOPE, metadata=metadata or {"source": "admin"})
+
+    def global_fact_delete(self, fact_id: int) -> bool:
+        with self._lock:
+            cur = self._conn.execute("DELETE FROM facts WHERE id=? AND scope=?", (fact_id, GLOBAL_SCOPE))
+            self._conn.commit()
+        return cur.rowcount > 0
+
+    def global_skill_list(self, limit: int = 100) -> list[dict]:
+        return self.skill_list(GLOBAL_SCOPE)[:max(0, min(limit, 1000))]
+
+    def global_skill_add(self, title: str, problem: str, procedure: str,
+                         failure_pattern: str = "", tags: list | None = None) -> dict:
+        return self.skill_add(title, problem, procedure, failure_pattern, tags, GLOBAL_SCOPE)
+
+    def global_skill_set_status(self, skill_id: int, status: str) -> bool:
+        if status not in {"active", "inactive", "unverified"}:
+            return False
+        return self.skill_update(skill_id, GLOBAL_SCOPE, status=status)
+
+    def global_skill_delete(self, skill_id: int) -> bool:
+        return self.skill_remove(skill_id, GLOBAL_SCOPE)
 
     def cleanup_low_trust(self, scope: str) -> int:
         with self._lock:
@@ -380,8 +465,10 @@ class MemoryStore:
         return {"id": rowid, "error": ""}
 
     def skill_search(self, query: str, scope: str | None = "global",
-                     limit: int = 5) -> list[dict]:
+                     limit: int = 5, include_global: bool = False) -> list[dict]:
         """LIKE-based token match on title + problem + tags. Excludes inactive."""
+        if include_global and scope and scope != GLOBAL_SCOPE:
+            return self.skill_search_scopes(query, [scope, GLOBAL_SCOPE], limit)
         words = [w for w in (query or "").lower().split() if len(w) > 2]
         if not words:
             return [s for s in self.skill_list(scope) if s["status"] != "inactive"][:limit]
@@ -408,6 +495,19 @@ class MemoryStore:
         out = out[:limit]
         logger.info("skill search query=%r scope=%s holes=%s hits=%s", query, scope, len(results), len(out))
         return out
+
+    def skill_search_scopes(self, query: str, scopes: list[str], limit: int = 5) -> list[dict]:
+        result = []
+        seen: set[str] = set()
+        for scope in dict.fromkeys(s for s in scopes if s):
+            for skill in self.skill_search(query, scope, limit):
+                key = skill["title"].strip().casefold()
+                if key not in seen:
+                    seen.add(key)
+                    result.append(skill)
+                    if len(result) >= limit:
+                        return result
+        return result
 
     def skill_list(self, scope: str | None = "global") -> list[dict]:
         if scope:
@@ -469,12 +569,24 @@ class MemoryStore:
         return rc > 0
 
     def skill_inject(self, query: str, scope: str = "global",
-                     limit: int = 3) -> list[dict]:
+                     limit: int = 3, include_global: bool = False) -> list[dict]:
         """Search + increment injection_count. For injection pipeline."""
+        if include_global and scope != GLOBAL_SCOPE:
+            skills = self.skill_search_scopes(query, [scope, GLOBAL_SCOPE], limit)
+            if skills:
+                ids = [s["id"] for s in skills]
+                with self._lock:
+                    self._conn.execute(
+                        f"UPDATE skills SET injection_count=injection_count+1, updated_at=? WHERE id IN ({','.join('?' for _ in ids)})",
+                        [time.time()] + ids,
+                    )
+                    self._conn.commit()
+            return skills
         with self._lock:
             cur = self._conn.execute(
                 "UPDATE skills SET status='inactive' "
-                "WHERE status!='inactive' AND injection_count>=3 AND access_count=0"
+                "WHERE scope=? AND status!='inactive' AND injection_count>=3 AND access_count=0",
+                (scope,),
             )
             self._conn.commit()
             if cur.rowcount:

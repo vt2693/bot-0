@@ -81,6 +81,29 @@ class MemoryStoreCharacterizationTests(unittest.TestCase):
             ["User B fact"],
         )
 
+    def test_global_facts_and_skills_are_explicitly_visible(self):
+        self.store.add("Shared policy", scope="global")
+        self.store.add("Private note", scope="user:1")
+        self.store.skill_add("Shared procedure", "shared problem", "shared steps", scope="global")
+        self.store.skill_add("Local procedure", "shared problem", "local steps", scope="user:1")
+
+        facts = self.store.get_relevant("shared", "user:1", include_global=True)
+        skills = self.store.skill_inject("shared", "user:1", include_global=True)
+
+        self.assertEqual({row["scope"] for row in facts}, {"global"})
+        self.assertEqual({row["scope"] for row in skills}, {"global", "user:1"})
+        self.assertEqual(self.store.search("private", "user:2", include_global=True), [])
+
+    def test_global_crud_is_scope_locked(self):
+        fact_id = self.store.global_fact_add("Shared fact")
+        self.assertTrue(self.store.global_fact_delete(fact_id))
+        self.assertFalse(self.store.global_fact_delete(fact_id))
+        skill_id = self.store.global_skill_add("Shared skill", "problem", "procedure")["id"]
+        self.assertTrue(self.store.global_skill_set_status(skill_id, "active"))
+        self.assertEqual(self.store.global_skill_list()[0]["status"], "active")
+        self.assertTrue(self.store.global_skill_delete(skill_id))
+        self.assertFalse(self.store.global_skill_set_status(skill_id, "inactive"))
+
     def test_cleanup_only_deletes_low_trust_facts_in_requested_scope(self):
         self.store.add("User A low trust", scope="101")
         self.store.add("User B low trust", scope="202")

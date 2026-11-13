@@ -14,6 +14,7 @@ class Settings:
 
     TELEGRAM_BOT_TOKEN: Optional[str] = os.getenv("TELEGRAM_BOT_TOKEN")
     TELEGRAM_ALLOWED_USERS = os.getenv("TELEGRAM_ALLOWED_USERS", "")
+    TELEGRAM_ADMIN_USERS = os.getenv("TELEGRAM_ADMIN_USERS", "")
 
     OPENROUTER_API_KEY: Optional[str] = os.getenv("OPENROUTER_API_KEY")
     OPENCODE_ZEN_API_KEY: Optional[str] = os.getenv("OPENCODE_ZEN_API_KEY")

@@ -586,7 +586,7 @@ class HermesBridge:
 
         if self.memory_enabled and self.memory_store:
             try:
-                preferences = self.memory_store.get_preferences(scope, limit=10)
+                preferences = self.memory_store.get_preferences(scope, limit=10, include_global=True)
                 if preferences:
                     preference_context = "\n".join(
                         f"- {p['preference_key']}: {p['preference_value']}"
@@ -600,7 +600,7 @@ class HermesBridge:
             if not is_simple:
                 expanded = self._expand_query(message)
                 logger.info("query expanded terms=%s", expanded)
-                mems = self.memory_store.get_relevant(message, scope, 100, extra_terms=expanded)
+                mems = self.memory_store.get_relevant(message, scope, 100, extra_terms=expanded, include_global=True)
                 if mems:
                     self._memory_stats["hits"] += 1
                     mem_block = "\n".join("- " + m["content"] for m in mems)
@@ -608,7 +608,7 @@ class HermesBridge:
                 else:
                     self._memory_stats["misses"] += 1
                     logger.info("memory context: no relevant facts found")
-                skills = self.memory_store.skill_inject(message, scope, 10)
+                skills = self.memory_store.skill_inject(message, scope, 10, include_global=True)
                 if skills:
                     injected_skills = skills
                     logger.info("skills injected count=%s titles=%s", len(skills), [s["title"][:40] for s in skills])

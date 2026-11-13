@@ -171,6 +171,7 @@ async def main() -> None:
         ),
         bridge=bridge,
         allowed_users=s.TELEGRAM_ALLOWED_USERS,
+        admin_users=s.TELEGRAM_ADMIN_USERS,
     )
 
     if composio.configured:

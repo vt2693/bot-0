@@ -19,11 +19,13 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramBot:
-    def __init__(self, token: str, bridge_chat: Callable, bridge=None, allowed_users: str = ""):
+    def __init__(self, token: str, bridge_chat: Callable, bridge=None, allowed_users: str = "", admin_users: str = ""):
         self.token = token or ""
         self.bridge_chat = bridge_chat
         self.bridge = bridge
         self.allowed_ids = {int(x) for x in allowed_users.replace(",", " ").split() if x.isdigit()}
+        self.admin_ids = {int(x) for x in admin_users.replace(",", " ").split() if x.isdigit()}
+        self._actors: dict[int, int] = {}
         self._initialized = False
         self._start_time = 0.0
         self._queue: list[dict] = []
@@ -76,6 +78,15 @@ class TelegramBot:
 
     def _scope_for_chat_id(self, chat_id: int) -> str:
         return self._chat_scopes.get(chat_id, str(chat_id))
+
+    def _is_authorized_user(self, user_id: int | None) -> bool:
+        return user_id is not None and (not self.allowed_ids or user_id in self.allowed_ids)
+
+    def _is_admin_user(self, user_id: int | None) -> bool:
+        return user_id is not None and user_id in self.admin_ids and self._is_authorized_user(user_id)
+
+    def _actor_for_chat_id(self, chat_id: int) -> int | None:
+        return self._actors.get(chat_id)
 
     @property
     def configured(self) -> bool:
@@ -144,6 +155,7 @@ class TelegramBot:
             {"command": "secrets", "description": "Configured providers"},
             {"command": "schedule", "description": "Manage scheduled tasks"},
             {"command": "pdf_stop", "description": "Exit PDF Q&A mode"},
+            {"command": "global", "description": "Manage shared global memory (admins)"},
         ]
         self.enqueue_config("setMyCommands", {"commands": cmds})
         # Do NOT call setChatMenuButton — let Telegram use its own default
@@ -188,6 +200,7 @@ class TelegramBot:
             callback_chat_id = callback_chat.get("id")
             if callback_chat_id is not None:
                 self._chat_scopes[callback_chat_id] = callback_scope
+                self._actors[callback_chat_id] = callback_user_id
             await self._handle_callback(cb)
             return
         msg = update.get("message") or update.get("edited_message") or {}
@@ -198,6 +211,7 @@ class TelegramBot:
         if chat_id is None or scope is None or (self.allowed_ids and user_id not in self.allowed_ids):
             return
         self._chat_scopes[chat_id] = scope
+        self._actors[chat_id] = user_id
         if msg.get("voice"):
             v = msg["voice"]
             with self._voice_lock:
@@ -260,6 +274,8 @@ class TelegramBot:
                 self._send_message(chat_id, "✅ Left PDF Q&A mode. You're back to normal chat.")
             else:
                 self._send_message(chat_id, "No active PDF Q&A session.")
+        elif cmd == "/global":
+            await self._handle_global_command(chat_id, user_id=self._actor_for_chat_id(chat_id), arg=arg)
         elif cmd == "/schedule":
             if not arg:
                 self._menu_msg_id.pop(chat_id, None)
@@ -605,6 +621,58 @@ class TelegramBot:
         now = time.time()
         self._pending_skills = {k: v for k, v in self._pending_skills.items() if v.get("expires_at", 0) > now}
 
+    async def _handle_global_command(self, chat_id: int, user_id: int | None, arg: str) -> None:
+        if not self._is_admin_user(user_id):
+            self._send_message(chat_id, "Unauthorized: global memory management is admin-only.")
+            return
+        ms = self.bridge.memory_store if self.bridge else None
+        if not ms:
+            self._send_message(chat_id, "Memory system not available.")
+            return
+        parts = arg.split(maxsplit=2)
+        if parts[:2] == ["list", "facts"] or parts == ["list"]:
+            facts = ms.global_fact_list(50)
+            self._send_message(chat_id, "Global facts\n\n" + ("\n".join(f"{f['id']}: {f['content']}" for f in facts) or "No global facts."))
+            return
+        if parts[:2] == ["list", "skills"]:
+            skills = ms.global_skill_list(100)
+            self._send_message(chat_id, "Global skills\n\n" + ("\n".join(f"{s['id']}: {s['status']} — {s['title']}" for s in skills) or "No global skills."))
+            return
+        if len(parts) >= 3 and parts[0] == "approve" and parts[1] == "skill":
+            return await self._queue_global_skill_action(chat_id, user_id, "approve", parts[2])
+        if len(parts) >= 3 and parts[0] == "disable" and parts[1] == "skill":
+            return await self._queue_global_skill_action(chat_id, user_id, "disable", parts[2])
+        if len(parts) >= 3 and parts[0] == "delete" and parts[1] in ("fact", "skill"):
+            return await self._queue_global_skill_action(chat_id, user_id, "delete_" + parts[1], parts[2])
+        if len(parts) >= 3 and parts[:2] == ["add", "skill"]:
+            fields = parts[2].split("|", 2)
+            if len(fields) != 3:
+                self._send_message(chat_id, "Usage: /global add skill title | problem | procedure")
+                return
+            import uuid as _uuid
+            token = "gs_" + _uuid.uuid4().hex
+            self._pending_skills[token] = {"chat_id": chat_id, "user_id": user_id, "kind": "global_skill", "title": fields[0].strip(), "problem": fields[1].strip(), "procedure": fields[2].strip(), "expires_at": time.time() + 300}
+            self._send_message(chat_id, "Confirm global skill:\n" + fields[0].strip(), reply_markup={"inline_keyboard":[[{"text":"✅ Confirm", "callback_data":f"ac:global_confirm:{token}"},{"text":"❌ Cancel", "callback_data":f"ac:global_cancel:{token}"}]]})
+            return
+        if len(parts) >= 3 and parts[0] == "add" and parts[1] == "fact":
+            import uuid as _uuid
+            token = "gf_" + _uuid.uuid4().hex
+            self._pending_skills[token] = {"chat_id": chat_id, "user_id": user_id, "kind": "global_fact", "content": parts[2], "expires_at": time.time() + 300}
+            self._send_message(chat_id, f"Confirm global fact:\n{parts[2]}", reply_markup={"inline_keyboard":[[{"text":"✅ Confirm", "callback_data":f"ac:global_confirm:{token}"},{"text":"❌ Cancel", "callback_data":f"ac:global_cancel:{token}"}]]})
+            return
+        self._send_message(chat_id, "Usage: /global list facts|skills | /global add fact <text>")
+
+    async def _queue_global_skill_action(self, chat_id: int, user_id: int | None, action: str, target: str) -> None:
+        try:
+            target_id = int(target)
+        except ValueError:
+            self._send_message(chat_id, "Invalid global record ID.")
+            return
+        import uuid as _uuid
+        token = "ga_" + _uuid.uuid4().hex
+        self._pending_skills[token] = {"chat_id": chat_id, "user_id": user_id, "kind": action, "target_id": target_id, "expires_at": time.time() + 300}
+        self._send_message(chat_id, f"Confirm global {action.replace('_', ' ')} for ID {target_id}?", reply_markup={"inline_keyboard":[[{"text":"✅ Confirm", "callback_data":f"ac:global_confirm:{token}"},{"text":"❌ Cancel", "callback_data":f"ac:global_cancel:{token}"}]]})
+
     async def _handle_improve(self, chat_id: int, arg: str) -> None:
         ms = self.bridge.memory_store if self.bridge else None
         if not ms:
@@ -844,7 +912,10 @@ class TelegramBot:
                 buttons.append([btn])
             kb = {"inline_keyboard": buttons}
         else:
-            kb = {"inline_keyboard": menu["buttons"]}
+            rows = menu["buttons"]
+            if menu_name == "main" and not self._is_admin_user(self._actor_for_chat_id(chat_id)):
+                rows = [row for row in rows if row[0].get("callback_data") != "ac:global_menu"]
+            kb = {"inline_keyboard": rows}
             text = menu["text"]
         msg_id = self._menu_msg_id.get(chat_id)
         if msg_id:
@@ -943,6 +1014,55 @@ class TelegramBot:
         elif data.startswith("ac:schedule_run:"):
             job_id = data[len("ac:schedule_run:"):]
             await _action_schedule_run_by_id(self, chat_id, job_id)
+        elif data in ("ac:global_list_facts", "ac:global_list_skills"):
+            if not self._is_admin_user(callback_user_id):
+                self._send_message(chat_id, "Unauthorized.")
+                return
+            ms = self.bridge.memory_store if self.bridge else None
+            if not ms:
+                self._send_message(chat_id, "Memory system not available.")
+                return
+            if data.endswith("facts"):
+                rows = ms.search("", "global", 50)
+                text = "Global facts\n\n" + ("\n".join(f"{r['id']}: {r['content']}" for r in rows) or "No global facts.")
+            else:
+                rows = ms.skill_list("global")
+                text = "Global skills\n\n" + ("\n".join(f"{r['id']}: {r['status']} — {r['title']}" for r in rows) or "No global skills.")
+            self._send_message(chat_id, text)
+        elif data.startswith("ac:global_confirm:") or data.startswith("ac:global_cancel:"):
+            token = data.split(":", 2)[2]
+            pending = self._pending_skills.get(token)
+            if not pending or pending.get("chat_id") != chat_id or pending.get("user_id") != callback_user_id or pending.get("expires_at", 0) < time.time() or not self._is_admin_user(callback_user_id):
+                self._send_message(chat_id, "Confirmation expired or unauthorized.")
+                return
+            self._pending_skills.pop(token, None)
+            if data.startswith("ac:global_cancel:"):
+                self._send_message(chat_id, "Cancelled.")
+                return
+            ms = self.bridge.memory_store if self.bridge else None
+            if not ms:
+                self._send_message(chat_id, "Memory system not available.")
+                return
+            kind = pending.get("kind")
+            if kind == "global_fact":
+                ms.global_fact_add(pending["content"])
+                self._send_message(chat_id, "✅ Global fact added.")
+            elif kind == "global_skill":
+                result = ms.global_skill_add(pending["title"], pending["problem"], pending["procedure"])
+                self._send_message(chat_id, "✅ Global skill added." if not result.get("error") else "Failed: " + result["error"])
+            else:
+                target_id = pending.get("target_id")
+                if kind == "approve":
+                    ok = ms.global_skill_set_status(target_id, "active")
+                elif kind == "disable":
+                    ok = ms.global_skill_set_status(target_id, "inactive")
+                elif kind == "delete_fact":
+                    ok = ms.global_fact_delete(target_id)
+                elif kind == "delete_skill":
+                    ok = ms.global_skill_delete(target_id)
+                else:
+                    ok = False
+                self._send_message(chat_id, "✅ Global change applied." if ok else "Global record not found.")
         elif data.startswith("ac:skill_save:"):
             token = data[len("ac:skill_save:"):]
             self._pending_skill_cleanup()
@@ -1231,6 +1351,7 @@ MENUS = {
             [{"text": "💬 Chat", "callback_data": "mn:chat"}],
             [{"text": "🎤 Voice & Minutes", "callback_data": "mn:voice"}],
             [{"text": "📘 Skills", "callback_data": "mn:skills"}],
+            [{"text": "🌐 Global Memory (admins)", "callback_data": "ac:global_menu"}],
             [{"text": "⚙️ System", "callback_data": "mn:system"}],
             [{"text": "⏰ Schedule", "callback_data": "mn:schedule"}],
             [{"text": "📋 Jira", "callback_data": "mn:jira"}],
@@ -1318,6 +1439,14 @@ MENUS = {
             [{"text": "🔙 Back", "callback_data": "mn:main"}],
         ],
     },
+    "global": {
+        "text": "Global Memory (admins only)",
+        "buttons": [
+            [{"text": "📋 List Global Facts", "callback_data": "ac:global_list_facts"}],
+            [{"text": "📘 List Global Skills", "callback_data": "ac:global_list_skills"}],
+            [{"text": "🔙 Back", "callback_data": "mn:main"}],
+        ],
+    },
     "skills": {
         "text": "📘 Skills\n\nSkills let you save reusable procedures from conversations.\n\nUse /improve for detail and management.",
         "buttons": [
@@ -1388,8 +1517,8 @@ async def _action_memory_clear(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    ms.clear(scope=None)
-    bot._send_message(chat_id, "Memory cleared (all scopes).")
+    ms.clear(scope=bot._scope_for_chat_id(chat_id))
+    bot._send_message(chat_id, "Memory cleared for this chat.")
 
 
 async def _action_memory_cleanup(bot: TelegramBot, chat_id: int) -> None:
@@ -2040,6 +2169,14 @@ async def _action_jira_run(bot: TelegramBot, chat_id: int, issue_key: str) -> No
     bot._send_message(chat_id, response)
 
 
+async def _action_global_menu(bot: TelegramBot, chat_id: int) -> None:
+    actor = bot._actor_for_chat_id(chat_id)
+    if not bot._is_admin_user(actor):
+        bot._send_message(chat_id, "Unauthorized: global memory management is admin-only.")
+        return
+    await bot._show_menu(chat_id, "global")
+
+
 async def _action_pdf_stop(bot: TelegramBot, chat_id: int) -> None:
     """Exit PDF Q&A mode for this chat, dropping the stored document context."""
     if bot._pdf_context.pop(bot._scope_for_chat_id(chat_id), None):
@@ -2070,4 +2207,5 @@ MENU_ACTIONS_ASYNC: dict[str, Callable] = {
     "skill_forget_inactive": _action_skill_forget_inactive,
     "jira_open_tasks": _action_jira_open_tasks,
     "pdf_stop": _action_pdf_stop,
+    "global_menu": _action_global_menu,
 }

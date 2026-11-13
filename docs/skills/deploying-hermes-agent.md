@@ -28,7 +28,8 @@ Verified 2026-11-13:
 - Remote administration: Ed25519 SSH key authentication on Termux port `8022`; password-free login verified. Termux GitHub access uses the SSH remote `git@github.com:vt2693/bot-0.git`; verify with `ssh -T git@github.com` before pushing.
 - Runtime: `android_bot.py` running; Telegram `getMe` authentication passed; `SchedulerEngine` polling every 30 seconds; Router-0 provider returned successful test responses.
 - Access control: `TELEGRAM_ALLOWED_USERS` contains numeric Telegram user IDs separated by spaces; text and callback authorization use sender IDs, not usernames. Callback sender checks run before acknowledgement or action routing.
-- Memory scope policy: private chats use `user:<sender_id>`; group and supergroup chats use `chat:<chat_id>`. Updates without valid sender/chat identity are rejected.
+- Memory scope policy: private chats use `user:<sender_id>`; group and supergroup chats use `chat:<chat_id>`. Updates without valid sender/chat identity are rejected. Global facts and active global skills are readable during authorized conversations; local data remains isolated and takes precedence on duplicate entries.
+- Global memory administration: `TELEGRAM_ADMIN_USERS` contains numeric IDs (also listed in `TELEGRAM_ALLOWED_USERS`). Admins use `/global list facts|skills` and `/global add fact <text>`; writes require inline confirmation and expire after five minutes. Global reads are shared; global writes are admin-only.
 - Scheduler ownership: jobs use per-chat scope; remove, pause, resume, and run-now require owning `chat_id`. Legacy `sched_global` rows migrate to the stored chat scope at startup.
 - Scheduler reliability: failed provider calls use failure-time retry backoff; no new `UnboundLocalError` after restart.
 - Skill menu: Android menu → Skills → List Skills uses the passed bot scope and is covered by a chat-isolation regression test.
@@ -159,6 +160,7 @@ Set in `$HOME/.hermes-tokens.env` (loaded by `start_android.sh`). Config module 
 |----------|---------|----------|---------|
 | `TELEGRAM_BOT_TOKEN` | — | Yes | Telegram bot auth |
 | `TELEGRAM_ALLOWED_USERS` | `""` | No | Restrict to specific user IDs |
+| `TELEGRAM_ADMIN_USERS` | `""` | No | Numeric IDs permitted to manage shared global facts/skills; admins must also be allowed users |
 | `PROVIDER` | *auto-detect* | No | Override LLM provider |
 | `ROUTER_0_API_KEY` | — | Yes | Router-0 LLM provider |
 | `ROUTER_0_MODEL` | `combo-medium` | No | Router-0 model name |
