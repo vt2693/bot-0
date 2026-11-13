@@ -29,7 +29,7 @@ Verified 2026-11-13:
 - Runtime: `android_bot.py` running; Telegram `getMe` authentication passed; `SchedulerEngine` polling every 30 seconds; Router-0 provider returned successful test responses.
 - Access control: `TELEGRAM_ALLOWED_USERS` contains numeric Telegram user IDs separated by spaces; text and callback authorization use sender IDs, not usernames. Callback sender checks run before acknowledgement or action routing.
 - Memory scope policy: private chats use `user:<sender_id>`; group and supergroup chats use `chat:<chat_id>`. Updates without valid sender/chat identity are rejected. Global facts and active global skills are readable during authorized conversations; local data remains isolated and takes precedence on duplicate entries.
-- Global memory administration: `TELEGRAM_ADMIN_USERS` contains numeric IDs (also listed in `TELEGRAM_ALLOWED_USERS`). Admins use `/global list facts|skills` and `/global add fact <text>`; writes require inline confirmation and expire after five minutes. Global reads are shared; global writes are admin-only.
+- Global memory administration: `TELEGRAM_ADMIN_USERS` contains numeric IDs (also listed in `TELEGRAM_ALLOWED_USERS`). Admins use `/global list facts|skills`, `/global add fact <text>`, `/global add skill title | problem | procedure`, `/global approve skill <id>`, `/global disable skill <id>`, `/global delete fact <id>`, and `/global delete skill <id>`. Every global mutation requires an inline confirmation bound to the admin and chat, expires after five minutes, and is single-use. Global reads are shared; global writes are admin-only.
 - Scheduler ownership: jobs use per-chat scope; remove, pause, resume, and run-now require owning `chat_id`. Legacy `sched_global` rows migrate to the stored chat scope at startup.
 - Scheduler reliability: failed provider calls use failure-time retry backoff; no new `UnboundLocalError` after restart.
 - Skill menu: Android menu → Skills → List Skills uses the passed bot scope and is covered by a chat-isolation regression test.
@@ -121,7 +121,7 @@ Confidence: 100% — Telegram `/model` command and inline model-switch menu (Sys
 Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `combo-medium`. Default base: `http://localhost:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
 
 ### Telegram bot + polling
-Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). 8 slash commands registered: `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/schedule`, `/pdf_stop`. Inline keyboard menu (11 menus: Main, Web, Memory, Chat, Voice, Skills, System, Model, Schedule, Jira, TTS Model). Callback routing with `mn:*`, `ac:*`, `ac:model:*`, `ac:tts_model:*`, `ac:schedule_*`, `ac:skill_*`, `ac:jira_task:*`, `ac:jira_show:*`, `ac:jira_run:*`, `ac:tts_toggle`, `ac:pdf_stop` prefixes. Per-chat history: 1000 messages as `[{role, content}]`.
+Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). Slash commands include `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/global`, `/schedule`, and `/pdf_stop`. Inline keyboard menus cover Main, Web, Memory, Chat, Voice, Skills, Global Memory (admin-only), System, Model, Schedule, Jira, and TTS Model. Callback routing uses `mn:*`, `ac:*`, model/schedule/skill/Jira prefixes, plus actor-bound `ac:global_*` actions. Per-chat history: 1000 messages as `[{role, content}]`.
 
 ### In-process voice (STT)
 Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice process needed.
@@ -131,6 +131,8 @@ Confidence: 100% — Toggleable per resolved Telegram scope from Voice & Minutes
 
 ### MemoryStore (LLM-expanded LIKE + SQLite)
 Confidence: 100% — Fact search via keyword LIKE on raw message words **plus LLM query-expansion terms** (`get_relevant(extra_terms=...)`; `_expand_query` runs a cheap temp-0 `chat()` call per message, degrades to raw keywords on any failure). **Fast-path optimization:** trivial chat messages (≤10 chars and ≤2 words, no scheduling/memory/tool keywords) skip query expansion entirely to reduce latency. Recent-facts fallback on empty hits. No FTS5, no HRR, no numpy, no vector search. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync. Confidence scoring (trust_score for facts, confidence_score for skills) is evaluated by the LLM at insertion time and used in retrieval ordering (confidence DESC, access_count DESC, created_at DESC).
+
+Global facts and skills use the existing `scope="global"` rows. Authorized conversations retrieve `[local scope, global]`; local duplicate content/title wins, private and group records never enter another local scope. Global skills with `status="inactive"` are excluded from injection but remain visible to administrators. Global mutation APIs are explicit (`global_fact_add/delete`, `global_skill_add/set_status/delete`) and are called only after Telegram admin authorization. LLM fact extraction and normal skill approval remain local-scope operations.
 
 ### Composio MCP integration
 Confidence: 100% — HTTP JSON-RPC client with initialize → tools/list → tools/call flow. Jira tools accessed via `COMPOSIO_REMOTE_WORKBENCH` + `run_composio_tool()` (not direct `tools/call` RPC). Cold-start retry pattern.
@@ -147,6 +149,7 @@ Confidence: 100% — Event-driven dispatch: per-job timer map wakes a dispatcher
 | `ROUTER_0_BASE_URL` | No | — | Router-0 LLM base URL (default `http://localhost:20128/v1`) |
 | `ROUTER_0_AUDIO_URL` | No | — | Router-0 audio base URL for TTS/STT (default none; set to e.g. `http://localhost:20128/v1`) |
 | `TELEGRAM_ALLOWED_USERS` | No | — | Comma- or space-separated numeric Telegram user IDs to restrict access; checked against `message.from.id` and `callback_query.from.id` |
+| `TELEGRAM_ADMIN_USERS` | No | — | Comma- or space-separated numeric Telegram user IDs allowed to mutate shared global facts/skills; each admin must also be in `TELEGRAM_ALLOWED_USERS` when that allowlist is configured |
 | `COMPOSIO_CONSUMER_API_KEY` | For tools | Composio dashboard | Jira, Firecrawl, etc. |
 | `OPENCODE_ZEN_API_KEY` | Optional | OpenCode | Alternative LLM provider |
 | `OPENROUTER_API_KEY` | Optional | OpenRouter | Alternative LLM provider |
