@@ -1,6 +1,10 @@
+import tempfile
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 
-from telegram_bot import TelegramBot
+from memory_store import MemoryStore
+from telegram_bot import MENU_ACTIONS_ASYNC, TelegramBot
 
 
 class RecordingBot(TelegramBot):
@@ -92,6 +96,23 @@ class TelegramIsolationCharacterizationTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(bot.callbacks_seen, [])
         self.assertEqual(await bot.peek_outbox(), [])
+
+    async def test_skill_list_menu_action_uses_chat_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = MemoryStore(str(Path(tmp) / "memory.db"))
+            store.skill_add("Visible", "problem", "procedure", scope="chat:202")
+            store.skill_add("Hidden", "problem", "procedure", scope="chat:303")
+            bot = TelegramBot("token", lambda *_args: "reply")
+            bot.bridge = SimpleNamespace(memory_store=store)
+            bot._chat_scopes[202] = "chat:202"
+
+            await MENU_ACTIONS_ASYNC["skill_list"](bot, 202)
+
+            messages = await bot.peek_outbox()
+            self.assertEqual(len(messages), 1)
+            self.assertIn("Visible", messages[0]["text"])
+            self.assertNotIn("Hidden", messages[0]["text"])
+            store.close()
 
     async def test_callback_from_authorized_user_is_routed(self):
         bot = RecordingBot("token", lambda *_args: "reply", allowed_users="101")

@@ -1653,7 +1653,7 @@ async def _action_skill_list(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    skills = ms.skill_list(self._scope_for_chat_id(chat_id))
+    skills = ms.skill_list(bot._scope_for_chat_id(chat_id))
     if not skills:
         bot._send_message(chat_id, "No skills saved yet.")
         return
@@ -1678,17 +1678,17 @@ async def _action_skill_autolearn_toggle(bot: TelegramBot, chat_id: int) -> None
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    current = ms.search("auto_learn", self._scope_for_chat_id(chat_id), 20)
+    current = ms.search("auto_learn", bot._scope_for_chat_id(chat_id), 20)
     exact = [c for c in current if c["content"].strip().lower() in ("auto_learn=true", "auto_learn=false")]
     is_on = False
     if exact:
         latest = max(exact, key=lambda c: c.get("id", 0))
         is_on = latest["content"].strip().lower() == "auto_learn=true"
     if is_on:
-        ms.add("auto_learn=false", self._scope_for_chat_id(chat_id))
+        ms.add("auto_learn=false", bot._scope_for_chat_id(chat_id))
         bot._send_message(chat_id, "⚙️ Auto-learn turned OFF.")
     else:
-        ms.add("auto_learn=true", self._scope_for_chat_id(chat_id))
+        ms.add("auto_learn=true", bot._scope_for_chat_id(chat_id))
         bot._send_message(chat_id, "⚙️ Auto-learn turned ON.")
 
 
@@ -1697,11 +1697,11 @@ async def _action_skill_forget_inactive(bot: TelegramBot, chat_id: int) -> None:
     if not ms:
         bot._send_message(chat_id, "Memory not available.")
         return
-    skills = ms.skill_list(self._scope_for_chat_id(chat_id))
+    skills = ms.skill_list(bot._scope_for_chat_id(chat_id))
     removed = 0
     for s in skills:
         if s["status"] == "inactive":
-            ms.skill_remove(s["id"], scope=self._scope_for_chat_id(chat_id))
+            ms.skill_remove(s["id"], scope=bot._scope_for_chat_id(chat_id))
             removed += 1
     bot._send_message(chat_id, f"Removed {removed} inactive skills.")
 
