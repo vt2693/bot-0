@@ -465,6 +465,8 @@ class HermesBridge:
     def _handle_extract_facts(self, args: dict, scope: str) -> str:
         if not self.memory_store:
             return json.dumps({"stored": 0, "error": "no memory store"})
+        if not isinstance(scope, str) or not re.fullmatch(r"(?:user|chat):-?\d+", scope):
+            return json.dumps({"stored": 0, "error": "invalid extraction scope"})
         new_count = 0
         facts = args.get("facts", [])
         if not isinstance(facts, list):
@@ -498,9 +500,11 @@ class HermesBridge:
                         new_count += 1
                         continue
             else:
-                existing = self.memory_store.search(content, scope, 3)
-                if any(e["content"].strip().lower() == content.lower() for e in existing):
+                if self.memory_store.add_if_absent(content, scope, metadata) <= 0:
                     continue
+                self._memory_stats["extractions"] += 1
+                new_count += 1
+                continue
             self.memory_store.add(content, scope, metadata)
             self._memory_stats["extractions"] += 1
             new_count += 1

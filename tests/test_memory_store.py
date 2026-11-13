@@ -104,6 +104,26 @@ class MemoryStoreCharacterizationTests(unittest.TestCase):
         self.assertTrue(self.store.global_skill_delete(skill_id))
         self.assertFalse(self.store.global_skill_set_status(skill_id, "inactive"))
 
+    def test_skill_inject_prunes_local_and_global_unused_skills_with_fallback(self):
+        local_id = self.store.skill_add(
+            "Local stale procedure", "deployment policy", "local steps", scope="user:101"
+        )["id"]
+        global_id = self.store.global_skill_add(
+            "Global stale procedure", "deployment policy", "global steps"
+        )["id"]
+        self.store._conn.execute(
+            "UPDATE skills SET injection_count=3, access_count=0 WHERE id IN (?, ?)",
+            (local_id, global_id),
+        )
+        self.store._conn.commit()
+
+        self.assertEqual(
+            self.store.skill_inject("deployment policy", "user:101", include_global=True),
+            [],
+        )
+        self.assertEqual(self.store.skill_get(local_id, "user:101")["status"], "inactive")
+        self.assertEqual(self.store.skill_get(global_id, "global")["status"], "inactive")
+
     def test_cleanup_only_deletes_low_trust_facts_in_requested_scope(self):
         self.store.add("User A low trust", scope="101")
         self.store.add("User B low trust", scope="202")

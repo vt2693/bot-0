@@ -147,6 +147,29 @@ class MemoryStore:
             scopes.append(GLOBAL_SCOPE)
         return scopes
 
+    def add_if_absent(self, content: str, scope: str, metadata: dict | None = None) -> int:
+        """Insert a fact unless exact content already exists in the scope."""
+        content = (content or "").strip()[:1000]
+        if not content or not scope:
+            return -1
+        confidence = self._evaluate_confidence(content, "fact")
+        now = time.time()
+        with self._lock:
+            duplicate = self._conn.execute(
+                "SELECT 1 FROM facts WHERE scope=? AND LOWER(content)=? LIMIT 1",
+                (scope, content.casefold()),
+            ).fetchone()
+            if duplicate:
+                return 0
+            cur = self._conn.execute(
+                "INSERT INTO facts(scope,content,metadata,trust_score,created_at,updated_at) VALUES(?,?,?,?,?,?)",
+                (scope, content, json.dumps(metadata or {}), confidence, now, now),
+            )
+            self._conn.commit()
+            rowid = int(cur.lastrowid)
+        logger.info("fact stored id=%s scope=%s confidence=%.2f", rowid, scope, confidence)
+        return rowid
+
     def search(self, query: str, scope: str | None = "global", limit: int = 5,
                include_global: bool = False) -> list[dict]:
         scopes = self._read_scopes(scope, include_global)
@@ -571,6 +594,19 @@ class MemoryStore:
     def skill_inject(self, query: str, scope: str = "global",
                      limit: int = 3, include_global: bool = False) -> list[dict]:
         """Search + increment injection_count. For injection pipeline."""
+        prune_scopes = [scope]
+        if include_global and scope != GLOBAL_SCOPE:
+            prune_scopes.append(GLOBAL_SCOPE)
+        for prune_scope in dict.fromkeys(s for s in prune_scopes if s):
+            with self._lock:
+                cur = self._conn.execute(
+                    "UPDATE skills SET status='inactive' "
+                    "WHERE scope=? AND status!='inactive' AND injection_count>=3 AND access_count=0",
+                    (prune_scope,),
+                )
+                self._conn.commit()
+                if cur.rowcount:
+                    logger.info("skill_inject: auto-inactivated %s unused skills scope=%s", cur.rowcount, prune_scope)
         if include_global and scope != GLOBAL_SCOPE:
             skills = self.skill_search_scopes(query, [scope, GLOBAL_SCOPE], limit)
             if skills:
@@ -582,15 +618,6 @@ class MemoryStore:
                     )
                     self._conn.commit()
             return skills
-        with self._lock:
-            cur = self._conn.execute(
-                "UPDATE skills SET status='inactive' "
-                "WHERE scope=? AND status!='inactive' AND injection_count>=3 AND access_count=0",
-                (scope,),
-            )
-            self._conn.commit()
-            if cur.rowcount:
-                logger.info("skill_inject: auto-inactivated %s unused skills", cur.rowcount)
         skills = self.skill_search(query, scope, limit)
         if skills:
             ids = [s["id"] for s in skills]

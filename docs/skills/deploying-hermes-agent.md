@@ -5,7 +5,7 @@ description: >-
   3-provider LLM config with router_0, SchedulerEngine, MemoryStore (SQLite),
   Composio MCP tools, TTS and in-process voice transcription via local router-0.
   Retry + provider failover on upstream capacity exhaustion.
-  Confidence: 100%
+  Confidence: scoped; global-memory live verification pending
 ---
 
 # Deploying Hermes Agent to Android (Termux)
@@ -101,44 +101,48 @@ Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 
 | `requirements.txt` | pip deps list (for reference; phone uses `pip install httpx` directly) |
 | `.hermes-tokens.env.example` | Environment variable template for reference |
 
-## Confidence: 100%
+## Validation status
 
-All components validated end-to-end on Android/Termux with Python 3.14. Voice, TTS, memory, scheduler, Jira, menus, provider switching all verified live.
+- **Previously live-verified:** Core Android/Termux deployment, voice, TTS, scheduler, Jira, menus, provider switching, and provider integrations.
+- **Unit-test-verified:** Global memory scope isolation, global fact/skill CRUD, admin authorization, confirmation expiry/replay protection, injection precedence, and local-only extraction.
+- **Pending live verification:** Global-memory commands and admin menu flows on the current Termux deployment.
+
+The evidence above is scoped by validation type. Do not interpret this document as a blanket 100% confidence claim for every environment or feature.
 
 ### Architecture & deployment
-Confidence: 100% — Validated end-to-end with live Telegram message delivery. Headless polling, no web server needed.
+Evidence: live-verified — Validated end-to-end with live Telegram message delivery. Headless polling, no web server needed.
 
 ### config.py provider logic
-Confidence: 100% — 3 provider names including `router_0`. Provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter`. Settings immutable, cached via `@lru_cache()`.
+Evidence: live-verified — 3 provider names including `router_0`. Provider auto-detection order: PROVIDER env → `router_0` → `opencode_zen` → `openrouter`. Settings immutable, cached via `@lru_cache()`.
 
 ### Provider fallback chain
-Confidence: 100% — Transient provider errors (server_error, upstream 5xx, resource exhaustion, rate limit) are classified and retried. Capacity-exhaustion class uses `LLM_RETRY_ATTEMPTS` attempts (default 3, configurable) with `2**attempt` backoff (1/2/4s per capacity exhaustion, or 1.5x for network flakiness). Each attempt has a per-call timeout of `LLM_TIMEOUT` (default 60s, configurable). On exhaustion beyond retries, the bridge fails over to the next configured provider with an announced ⚠️ notice (provider restored next turn); hard client errors (auth, bad request) fail fast. `chat()` re-raises provider errors (logs trace first) so the Telegram layer renders a clean message — no raw API dump to the user.
+Evidence: live-verified — Transient provider errors (server_error, upstream 5xx, resource exhaustion, rate limit) are classified and retried. Capacity-exhaustion class uses `LLM_RETRY_ATTEMPTS` attempts (default 3, configurable) with `2**attempt` backoff (1/2/4s per capacity exhaustion, or 1.5x for network flakiness). Each attempt has a per-call timeout of `LLM_TIMEOUT` (default 60s, configurable). On exhaustion beyond retries, the bridge fails over to the next configured provider with an announced ⚠️ notice (provider restored next turn); hard client errors (auth, bad request) fail fast. `chat()` re-raises provider errors (logs trace first) so the Telegram layer renders a clean message — no raw API dump to the user.
 
 ### Provider switching (/model + inline menu)
-Confidence: 100% — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing). Menu dynamically shows ✅ on active model, ⭐ on provider default.
+Evidence: live-verified — Telegram `/model` command and inline model-switch menu (System → Switch Model → `ac:model:*` callback routing). Menu dynamically shows ✅ on active model, ⭐ on provider default.
 
 ### Router-0 provider
-Confidence: 100% — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `combo-medium`. Default base: `http://localhost:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
+Evidence: live-verified — Auto-detected by API key or base URL. No key required (passes `""` to httpx). Default model: `combo-medium`. Default base: `http://localhost:20128/v1`. Model-switch menu options include `combo-high`, `combo-medium`, `combo-low`, `combo-xlow`, and `combo-xxlow` (routed via `ac:model:combo-*`).
 
 ### Telegram bot + polling
-Confidence: 100% — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). Slash commands include `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/global`, `/schedule`, and `/pdf_stop`. Inline keyboard menus cover Main, Web, Memory, Chat, Voice, Skills, Global Memory (admin-only), System, Model, Schedule, Jira, and TTS Model. Callback routing uses `mn:*`, `ac:*`, model/schedule/skill/Jira prefixes, plus actor-bound `ac:global_*` actions. Per-chat history: 1000 messages as `[{role, content}]`.
+Evidence: live-verified — Direct Telegram API calls via `urllib`. getUpdates long-poll (30s timeout). Outbound via `_send_direct()` mapping `_TELEGRAM_PATHS`. Outbox drain background task (1 retry). Slash commands include `/start`, `/menu`, `/help`, `/model`, `/improve`, `/secrets`, `/global`, `/schedule`, and `/pdf_stop`. Inline keyboard menus cover Main, Web, Memory, Chat, Voice, Skills, Global Memory (admin-only), System, Model, Schedule, Jira, and TTS Model. Callback routing uses `mn:*`, `ac:*`, model/schedule/skill/Jira prefixes, plus actor-bound `ac:global_*` actions. Per-chat history: 1000 messages as `[{role, content}]`.
 
 ### In-process voice (STT)
-Confidence: 100% — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice process needed.
+Evidence: live-verified — Voice memo detected in poll loop → download via getFile API → ffmpeg (16kHz mono WAV) → router-0 STT (groq/whisper-large-v3). No separate voice process needed.
 
 ### Text-to-Speech (TTS)
-Confidence: 100% — Toggleable per resolved Telegram scope from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` under `user:<sender_id>` for private chats or `chat:<chat_id>` for groups. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` under same scope with default `edge-tts/en-US-AndrewMultilingualNeural`. Runtime and startup restore use scope keys, preventing cross-user/group leakage. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
+Evidence: live-verified — Toggleable per resolved Telegram scope from Voice & Minutes menu (`ac:tts_toggle`). State stored in MemoryStore as `tts_enabled=true|false` under `user:<sender_id>` for private chats or `chat:<chat_id>` for groups. TTS model switchable from sub-menu (`mn:tts_model` → `ac:tts_model:*`), stored as `tts_model=<name>` under same scope with default `edge-tts/en-US-AndrewMultilingualNeural`. Runtime and startup restore use scope keys, preventing cross-user/group leakage. On each text response, background task: `tg_tts.synthesize()` → router-0 TTS (MP3) → `tg_tts.to_opus()` (ffmpeg pipe to OggOpus) → `_send_voice_direct()` (httpx multipart POST to `api.telegram.org/bot<token>/sendVoice`). 3 retries with backoff. Long responses split at sentence boundaries into multiple voice messages (~1200 chars per chunk, ~80s audio each) with 1s gap. Text replies similarly split at sentence boundaries into multiple messages (4096 chars max per message, up to 25 messages). Defaults off.
 
 ### MemoryStore (LLM-expanded LIKE + SQLite)
-Confidence: 100% — Fact search via keyword LIKE on raw message words **plus LLM query-expansion terms** (`get_relevant(extra_terms=...)`; `_expand_query` runs a cheap temp-0 `chat()` call per message, degrades to raw keywords on any failure). **Fast-path optimization:** trivial chat messages (≤10 chars and ≤2 words, no scheduling/memory/tool keywords) skip query expansion entirely to reduce latency. Recent-facts fallback on empty hits. No FTS5, no HRR, no numpy, no vector search. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync. Confidence scoring (trust_score for facts, confidence_score for skills) is evaluated by the LLM at insertion time and used in retrieval ordering (confidence DESC, access_count DESC, created_at DESC).
+Confidence: high for unit-tested behavior; live global-memory verification pending — Fact search via keyword LIKE on raw message words **plus LLM query-expansion terms** (`get_relevant(extra_terms=...)`; `_expand_query` runs a cheap temp-0 `chat()` call per message, degrades to raw keywords on any failure). **Fast-path optimization:** trivial chat messages (≤10 chars and ≤2 words, no scheduling/memory/tool keywords) skip query expansion entirely to reduce latency. Recent-facts fallback on empty hits. No FTS5, no HRR, no numpy, no vector search. Learned skills table with title/problem/procedure/lifecycle. SQLite-only — no remote sync. Confidence scoring (trust_score for facts, confidence_score for skills) is evaluated by the LLM at insertion time and used in retrieval ordering (confidence DESC, access_count DESC, created_at DESC).
 
 Global facts and skills use the existing `scope="global"` rows. Authorized conversations retrieve `[local scope, global]`; local duplicate content/title wins, private and group records never enter another local scope. Global skills with `status="inactive"` are excluded from injection but remain visible to administrators. Global mutation APIs are explicit (`global_fact_add/delete`, `global_skill_add/set_status/delete`) and are called only after Telegram admin authorization. LLM fact extraction and normal skill approval remain local-scope operations.
 
 ### Composio MCP integration
-Confidence: 100% — HTTP JSON-RPC client with initialize → tools/list → tools/call flow. Jira tools accessed via `COMPOSIO_REMOTE_WORKBENCH` + `run_composio_tool()` (not direct `tools/call` RPC). Cold-start retry pattern.
+Evidence: live-verified — HTTP JSON-RPC client with initialize → tools/list → tools/call flow. Jira tools accessed via `COMPOSIO_REMOTE_WORKBENCH` + `run_composio_tool()` (not direct `tools/call` RPC). Cold-start retry pattern.
 
 ### SchedulerEngine
-Confidence: 100% — Event-driven dispatch: per-job timer map wakes a dispatcher task at the earliest `next_run_at` so due jobs start promptly; the 30s async poll loop remains as catch-up/cleanup backstop. SQLite persistence. NL+structured `/schedule` parsing with interval/time-target support. 5-min confirmation TTL. 3-error auto-pause. Once/daily/interval modes. `catch_up` skips once-mode jobs (interval=0 guard). **Run Now** (`⚡ Run Now` button on each job row, `ac:schedule_run:*`) fires a job immediately via `run_now()` → `_spawn_job(job, manual=True)`; manual runs update `last_run_at`/`last_result` but leave `next_run_at` (and thus the schedule) untouched, and `_spawn_job` is the single guard against duplicate concurrent executions.
+Evidence: live-verified — Event-driven dispatch: per-job timer map wakes a dispatcher task at the earliest `next_run_at` so due jobs start promptly; the 30s async poll loop remains as catch-up/cleanup backstop. SQLite persistence. NL+structured `/schedule` parsing with interval/time-target support. 5-min confirmation TTL. 3-error auto-pause. Once/daily/interval modes. `catch_up` skips once-mode jobs (interval=0 guard). **Run Now** (`⚡ Run Now` button on each job row, `ac:schedule_run:*`) fires a job immediately via `run_now()` → `_spawn_job(job, manual=True)`; manual runs update `last_run_at`/`last_result` but leave `next_run_at` (and thus the schedule) untouched, and `_spawn_job` is the single guard against duplicate concurrent executions.
 
 ## Inputs (secrets)
 
