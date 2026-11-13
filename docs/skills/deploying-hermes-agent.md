@@ -21,9 +21,9 @@ Run the Hermes Agent on an Android phone via Termux — a headless Telegram bot 
 
 ## Final Verified Deployment State
 
-Verified 2026-11-12:
+Verified 2026-11-13:
 
-- Source of truth: `main` on GitHub; local checkout and `origin/main` synchronized at commit `89047ad`.
+- Source of truth: `main` on GitHub; `origin/main` contains the Android skill-menu fix at commit `6c7d4c3`.
 - Termux deployment: `~/hermes-bot`, managed by `tmux` session `hermes` and `start_android.sh` auto-restart loop.
 - Remote administration: Ed25519 SSH key authentication on Termux port `8022`; password-free login verified. Termux GitHub access uses the SSH remote `git@github.com:vt2693/bot-0.git`; verify with `ssh -T git@github.com` before pushing.
 - Runtime: `android_bot.py` running; Telegram `getMe` authentication passed; `SchedulerEngine` polling every 30 seconds; Router-0 provider returned successful test responses.
@@ -31,8 +31,9 @@ Verified 2026-11-12:
 - Memory scope policy: private chats use `user:<sender_id>`; group and supergroup chats use `chat:<chat_id>`. Updates without valid sender/chat identity are rejected.
 - Scheduler ownership: jobs use per-chat scope; remove, pause, resume, and run-now require owning `chat_id`. Legacy `sched_global` rows migrate to the stored chat scope at startup.
 - Scheduler reliability: failed provider calls use failure-time retry backoff; no new `UnboundLocalError` after restart.
+- Skill menu: Android menu → Skills → List Skills uses the passed bot scope and is covered by a chat-isolation regression test.
 - Health check: inspect `tmux ls`, Python process, and recent `Authenticated`, `Bot started`, `Scheduler started`, `Outbox drained`, and error log lines.
-- Deployment safety: preserve Termux local work with a backup branch and `git stash -u` before merging `origin/main`; do not use `git reset --hard` without explicit approval.
+- Deployment safety: preserve Termux local work with a backup branch and `git stash -u` before rebasing onto `origin/main`; do not use `git reset --hard` or `git clean -fd` without explicit approval.
 
 ### Non-Goals
 
@@ -267,6 +268,33 @@ ssh -T git@github.com    # expect authentication success; GitHub provides no she
 ```
 
 If authentication fails, create an Ed25519 key, add only its `.pub` contents to GitHub SSH keys, then retry `ssh -T git@github.com`. Never put private key text, tokens, or passwords in commands or docs.
+
+Pull a deployed commit safely on Termux. Preserve local work before rebasing:
+
+```bash
+cd ~/hermes-bot
+git status
+git fetch origin
+git branch backup-before-main-sync-$(date +%Y%m%d-%H%M%S)
+git stash push -u -m "before-main-sync"  # only when status shows local changes
+git rebase origin/main
+```
+
+Resolve conflicts with `git status`, edit files, `git add <resolved-file>`, and `git rebase --continue`. Abort without applying the update with `git rebase --abort`. Do not use `git reset --hard` or `git clean -fd` unless explicitly approved.
+
+Restart and verify after a successful rebase:
+
+```bash
+tmux kill-session -t hermes 2>/dev/null || true
+tmux new-session -d -s hermes \
+  'cd ~/hermes-bot && python -u android_bot.py >> logs/bot.log 2>&1'
+git rev-parse --short HEAD
+tmux has-session -t hermes && echo running
+pgrep -af "python.*android_bot.py"
+tail -40 logs/bot.log
+```
+
+Expected current commit: `6c7d4c3`. Test Android menu → Skills → List Skills. Confirm no `name 'self' is not defined` and only the current chat's skills are listed.
 
 Push a known commit explicitly:
 
