@@ -8,6 +8,11 @@ from pypdf import PdfReader
 # Chars of extracted text kept for Q&A injection, so normal conversation
 # history is not flooded with a full document.
 MAX_QA_CTX = 50_000
+MAX_PDF_PAGES = 100
+
+
+class PdfPageLimitError(ValueError):
+    """Raised when a PDF exceeds the supported page count."""
 
 
 def is_pdf(doc: dict) -> bool:
@@ -32,6 +37,10 @@ def extract_text_from_pdf_bytes(data: bytes) -> str:
         reader = PdfReader(io.BytesIO(data))
     except Exception as e:
         raise ValueError(f"Could not parse PDF: {e}") from e
+    if len(reader.pages) > MAX_PDF_PAGES:
+        raise PdfPageLimitError(
+            f"PDF has {len(reader.pages)} pages; maximum is {MAX_PDF_PAGES}"
+        )
     pages = []
     for page in reader.pages:
         try:

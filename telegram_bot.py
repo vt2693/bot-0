@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Callable
 import httpx
 
-from pdf_doc import extract_text_from_pdf_bytes, is_pdf, truncate
+from pdf_doc import PdfPageLimitError, extract_text_from_pdf_bytes, is_pdf, truncate
 from tg_voice import tg_file_path, download_file
 
 logger = logging.getLogger(__name__)
@@ -557,6 +557,9 @@ class TelegramBot:
         try:
             self._send_message(chat_id, "🧠 Extracting text…")
             text = await asyncio.to_thread(extract_text_from_pdf_bytes, data)
+        except PdfPageLimitError:
+            self._send_message(chat_id, "⚠️ PDF is too large — maximum 100 pages.")
+            return
         except ValueError as e:
             logger.warning("PDF parse failed chat %s: %s", chat_id, e)
             self._send_message(chat_id, "⚠️ Couldn't read this PDF — it may be corrupted.")
