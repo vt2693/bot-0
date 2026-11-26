@@ -77,7 +77,7 @@ Verified 2026-11-13:
 
 **Key insight:** Android bot uses **direct** Telegram API calls. `android_bot.py` long-polls `getUpdates` for inbound messages and calls `api.telegram.org` directly for outbound via `_send_direct()`. No webhook.
 
-PDFs sent to the chat are auto-analyzed: `_handle_document()` downloads the file, extracts text via `pdf_doc.py` (pypdf), sends a summary, then loads the text into scope-keyed `_pdf_context` so follow-up messages become PDF Q&A. Private-chat context uses `user:<sender_id>`; group context uses `chat:<chat_id>`. `/pdf_stop` (or the inline "Exit PDF Q&A" button) clears that context and returns to normal chat.
+PDFs sent to the chat are auto-analyzed: `_handle_document()` downloads the file, extracts text via `pdf_doc.py` (pypdf), sends a summary, then loads the text into scope-keyed `_pdf_context` so follow-up messages become PDF Q&A. Private-chat context uses `user:<sender_id>`; group context uses `chat:<chat_id>`. PDFs over 100 pages are rejected after download and before text extraction or LLM analysis with `⚠️ PDF is too large — maximum 100 pages.` Extracted Q&A context is capped at 50,000 characters and marked `…[truncated]`; the initial summary currently receives the full extracted text. Corrupt PDFs, download failures, and image-only/scanned PDFs produce friendly error messages. `/pdf_stop` (or the inline "Exit PDF Q&A" button) clears that context and returns to normal chat.
 
 Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 STT (groq/whisper-large-v3). TTS: text → `synthesize()` (MP3) → `to_opus()` (OggOpus) → `sendVoice`.
 
@@ -94,7 +94,7 @@ Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 
 | `scheduler.py` | SchedulerEngine (event-driven dispatch + 30s poll backstop) |
 | `tg_voice.py` | Voice helper: download, ffmpeg, router-0 STT transcription |
 | `tg_tts.py` | TTS helper: synthesize via router-0 (google-tts/en), ffmpeg to OggOpus |
-| `pdf_doc.py` | PDF helpers: detect, download, extract text via pypdf (for PDF auto-analyze) |
+| `pdf_doc.py` | PDF helpers: detect, download, enforce 100-page limit, extract text via pypdf (for PDF auto-analyze) |
 | `setup_android.sh` | One-shot setup: pkg install, pip deps, token prompts, ROUTER_0_AUDIO_URL |
 | `start_android.sh` | tmux launcher with auto-restart, dep check, wake-lock |
 | `deploy_android.ps1` | Windows script: ADB push or SSH/rsync to phone (non-interactive) |
@@ -104,6 +104,7 @@ Voice is processed **in-process**: download → ffmpeg (16kHz WAV) → router-0 
 ## Validation status
 
 - **Previously live-verified:** Core Android/Termux deployment, voice, TTS, scheduler, Jira, menus, provider switching, and provider integrations.
+- **Unit-test-verified 2026-11-26:** PDFs over 100 pages are rejected during extraction; PDFs at exactly 100 pages remain accepted. The rejection is handled separately from malformed/corrupt PDF errors.
 - **Unit-test-verified:** Global memory scope isolation, global fact/skill CRUD, admin authorization, confirmation expiry/replay protection, injection precedence, and local-only extraction.
 - **Live-verified 2026-11-26:** Global-memory commands on the current Termux deployment: global fact add/list/delete, global skill add/list/approve/disable/delete, and admin confirmation flow. Fact `Live global verification 20261118` remains as ID `191`; verification fact ID `195` was created and deleted during the current lifecycle test. Temporary skill `Live verification` used ID `14` and was deleted after lifecycle testing. Admin-only mutation authorization and callback confirmation were exercised during the live flow. Transport evidence confirmed inbound updates, callback handling, and outbound responses; the bot log does not record message text, so final fact-list contents were confirmed from Telegram responses.
 
